@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Quartz;
+using EnglishPartner.SharedKernel.Events;
+using EnglishPartner.SharedKernel.Domain;
 
 namespace EnglishPartner.SharedKernel.Application.BackgroundJobs;
 
@@ -51,8 +53,21 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
                 }
 
                 // Publish through MediatR so handlers (like Domain -> Integration mappers) can pick it up
-                // EventBus can also be used here depending on architectural choice.
-                await publisher.Publish(domainEvent, context.CancellationToken);
+                
+                if (domainEvent is IDomainEvent validDomainEvent)
+                {
+                    // Use reflection/dynamic to instantiate the generic DomainEventNotification<T> type
+                    var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
+                    var notification = Activator.CreateInstance(notificationType, domainEvent);
+                    if (notification != null)
+                    {
+                        await publisher.Publish(notification, context.CancellationToken);
+                    }
+                }
+                else
+                {
+                    await publisher.Publish(domainEvent, context.CancellationToken);
+                }
 
                 message.ProcessedOn = DateTime.UtcNow;
             }

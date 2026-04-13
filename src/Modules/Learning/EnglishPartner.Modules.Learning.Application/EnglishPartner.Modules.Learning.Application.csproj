@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\EnglishPartner.SharedKernel.Application\EnglishPartner.SharedKernel.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishPartner.Messaging\EnglishPartner.Messaging.csproj" />
+    <ProjectReference Include="..\..\Identity\EnglishPartner.Modules.Identity.Contracts\EnglishPartner.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\EnglishPartner.Modules.Learning.Domain\EnglishPartner.Modules.Learning.Domain.csproj" />
   </ItemGroup>
 

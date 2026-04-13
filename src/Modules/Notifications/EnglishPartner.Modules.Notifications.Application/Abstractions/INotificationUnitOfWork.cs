@@ -1,6 +1,5 @@
+using EnglishPartner.SharedKernel.Interfaces;
+
 namespace EnglishPartner.Modules.Notifications.Application.Abstractions;
 
-public interface INotificationUnitOfWork
-{
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-}
+public interface INotificationUnitOfWork : IUnitOfWork;

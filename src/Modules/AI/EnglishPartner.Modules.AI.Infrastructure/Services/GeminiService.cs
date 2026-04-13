@@ -27,8 +27,6 @@ internal sealed class GeminiService(
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static readonly string GeminiBaseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
-
     private GeminiAISettings Config => settings.Value;
 
     public async Task<EvaluationResult> EvaluateInputAsync(string itemContext, string userInput, CancellationToken cancellationToken = default)
@@ -60,11 +58,64 @@ internal sealed class GeminiService(
                 return new EvaluationResult(0, false, "", "Không thể phân tích phản hồi từ AI.");
 
             var score = Math.Clamp(parsed.QualityScore, 0, 5);
-            return new EvaluationResult(score, parsed.IsCorrect, parsed.SuggestedCorrection ?? "", parsed.Explanation ?? "");
+            return new EvaluationResult(score, parsed.IsCorrect, parsed.SuggestedCorrection ?? "", parsed.Explanation ?? "", parsed.Transcription ?? "");
         }
         catch (JsonException ex)
         {
             logger.LogWarning(ex, "[Gemini] Failed to parse evaluation response: {Json}", json);
+            return new EvaluationResult(0, false, "", "AI trả lời không hợp lệ. Vui lòng thử lại.");
+        }
+    }
+
+    public async Task<EvaluationResult> EvaluateAudioAsync(string itemContext, byte[] audioData, string mimeType, CancellationToken cancellationToken = default)
+    {
+        var prompt = $$"""
+            You are an English language teacher evaluating a student's spoken audio answer.
+            
+            Context (question/prompt the student is answering):
+            {{itemContext}}
+            
+            First, carefully transcribe what the student said in the audio.
+            Then, evaluate the answer and respond in this exact JSON format (no markdown):
+            {
+              "transcription": "<exact transcription of the student's audio>",
+              "qualityScore": <int 0-5 where 0=empty/no speech, 1=completely wrong/unintelligible, 2=partially wrong/poor pronunciation, 3=correct but with noticeable pronunciation/grammar mistakes, 4=correct with minor issues, 5=perfect native-like>,
+              "isCorrect": <bool>,
+              "suggestedCorrection": "<the correct version of the answer if they made a mistake>",
+              "explanation": "<brief explanation in Vietnamese of what was right/wrong with their pronunciation or grammar>"
+            }
+            """;
+
+        var base64Audio = Convert.ToBase64String(audioData);
+        var requestBody = new
+        {
+            contents = new[] { 
+                new { 
+                    role = "user", 
+                    parts = new object[] 
+                    { 
+                        new { text = prompt },
+                        new { inline_data = new { mime_type = mimeType, data = base64Audio } }
+                    } 
+                } 
+            },
+            generationConfig = BuildGenerationConfig()
+        };
+
+        var (json, _, _, _) = await ExecuteGeminiRequestAsync("EvaluateAudio", requestBody, prompt, cancellationToken);
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<EvaluationJsonResponse>(json, JsonOptions);
+            if (parsed is null)
+                return new EvaluationResult(0, false, "", "Không thể phân tích phản hồi từ AI.");
+
+            var score = Math.Clamp(parsed.QualityScore, 0, 5);
+            return new EvaluationResult(score, parsed.IsCorrect, parsed.SuggestedCorrection ?? "", parsed.Explanation ?? "", parsed.Transcription ?? "");
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse audio evaluation response: {Json}", json);
             return new EvaluationResult(0, false, "", "AI trả lời không hợp lệ. Vui lòng thử lại.");
         }
     }
@@ -117,11 +168,8 @@ internal sealed class GeminiService(
                 role = h.Role,
                 parts = new[] { new { text = h.Text } }
             }).ToArray(),
-            generationConfig = new
-            {
-                maxOutputTokens = Config.MaxTokens,
-                temperature = Config.Temperature
-            }
+            generationConfig = BuildGenerationConfig(requireJsonResponse: false),
+            safetySettings = BuildSafetySettings()
         };
 
         var sw = Stopwatch.StartNew();
@@ -132,7 +180,11 @@ internal sealed class GeminiService(
         try
         {
             logger.LogInformation("[Gemini] Calling Chat on model {Model}", Config.ModelName);
-            var url = $"{GeminiBaseUrl}/{Config.ModelName}:generateContent";
+            var url = $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
+            if (url.Contains('?') == false && !string.IsNullOrWhiteSpace(Config.ApiKey))
+            {
+                url += $"?key={Config.ApiKey}";
+            }
             var content = new StringContent(JsonSerializer.Serialize(requestBody, JsonOptions), Encoding.UTF8, "application/json");
             var response = await httpClient.PostAsync(url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -166,6 +218,42 @@ internal sealed class GeminiService(
         return responseText;
     }
 
+    private object BuildGenerationConfig(bool requireJsonResponse = true)
+    {
+        var config = new Dictionary<string, object>
+        {
+            ["maxOutputTokens"] = Config.MaxOutputTokens,
+            ["temperature"] = Config.Temperature,
+            ["topP"] = Config.TopP
+        };
+
+        if (requireJsonResponse)
+        {
+            config["responseMimeType"] = "application/json";
+        }
+
+        if (!string.IsNullOrWhiteSpace(Config.ThinkingLevel))
+        {
+            config["thinkingConfig"] = new { thinkingLevel = Config.ThinkingLevel };
+        }
+
+        return config;
+    }
+
+    private object[]? BuildSafetySettings()
+    {
+        if (!Config.DisableAllSafetyRestrictions)
+            return null;
+
+        return new[]
+        {
+            new { category = "HARM_CATEGORY_HATE_SPEECH", threshold = "OFF" },
+            new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "OFF" },
+            new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "OFF" },
+            new { category = "HARM_CATEGORY_HARASSMENT", threshold = "OFF" }
+        };
+    }
+
     /// <summary>
     /// Calls Gemini with structured JSON output and queues an audit log entry.
     /// Does NOT call SaveChanges — caller's UoWBehavior handles persistence.
@@ -175,16 +263,25 @@ internal sealed class GeminiService(
     {
         var requestBody = new
         {
-            contents = new[] { new { role = "user", parts = new[] { new { text = prompt } } } },
-            generationConfig = new
-            {
-                responseMimeType = "application/json",
-                maxOutputTokens = Config.MaxTokens,
-                temperature = Config.Temperature
-            }
+            contents = new[] { new { role = "user", parts = new object[] { new { text = prompt } } } },
+            generationConfig = BuildGenerationConfig(),
+            safetySettings = BuildSafetySettings()
         };
 
-        var url = $"{GeminiBaseUrl}/{Config.ModelName}:generateContent";
+        return await ExecuteGeminiRequestAsync(requestType, requestBody, prompt, cancellationToken);
+    }
+
+    private async Task<(string Json, long LatencyMs, bool IsSuccess, string? Error)> ExecuteGeminiRequestAsync(
+        string requestType, object requestBody, string promptLog, CancellationToken cancellationToken)
+    {
+        var url = $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
+
+        // If the BaseUrl doesn't imply an API key header approach, or we want to support both:
+        if (url.Contains('?') == false && !string.IsNullOrWhiteSpace(Config.ApiKey))
+        {
+            url += $"?key={Config.ApiKey}";
+        }
+
         var content = new StringContent(JsonSerializer.Serialize(requestBody, JsonOptions), Encoding.UTF8, "application/json");
 
         var sw = Stopwatch.StartNew();
@@ -220,7 +317,7 @@ internal sealed class GeminiService(
         }
 
         // Queue audit log — saved by UoWBehavior at end of command pipeline
-        var log = AiRequestLog.Create(requestType, prompt, responseText, Config.ModelName, sw.ElapsedMilliseconds, isSuccess, errorMsg);
+        var log = AiRequestLog.Create(requestType, promptLog, responseText, Config.ModelName, sw.ElapsedMilliseconds, isSuccess, errorMsg);
         dbContext.AiRequestLogs.Add(log);
 
         logger.LogInformation("[Gemini] {RequestType} completed in {Ms}ms (success={Success})", requestType, sw.ElapsedMilliseconds, isSuccess);
@@ -235,6 +332,7 @@ internal sealed class GeminiService(
         public bool IsCorrect { get; set; }
         public string? SuggestedCorrection { get; set; }
         public string? Explanation { get; set; }
+        public string? Transcription { get; set; }
     }
 
     private sealed class GeneratedConversationJson

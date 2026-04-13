@@ -3,6 +3,7 @@ using EnglishPartner.Modules.Learning.Application.ItemMasteries.Queries.GetDueRe
 using EnglishPartner.Modules.Learning.Application.StudySessions.Commands.StartSession;
 using EnglishPartner.Modules.Learning.Application.StudySessions.Commands.SubmitSession;
 using EnglishPartner.Modules.Learning.Application.UserProfiles.Queries.GetDashboard;
+using EnglishPartner.Modules.Learning.Application.UserProfiles.Queries.GetLeaderboard;
 using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,13 @@ internal static class LearningEndpoints
             if (!Guid.TryParse(userIdStr, out var userId)) return Results.Unauthorized();
 
             var result = await sender.Send(new GetUserDashboardQuery(userId));
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        });
+
+        // ── Leaderboard ──
+        group.MapGet("leaderboard", async (ISender sender, int count = 50) =>
+        {
+            var result = await sender.Send(new GetLeaderboardQuery(count));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         });
 

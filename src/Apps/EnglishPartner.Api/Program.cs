@@ -2,9 +2,10 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using EnglishPartner.Api.Services;
+using EnglishPartner.Api.Endpoints;
 using EnglishPartner.Messaging;
-using EnglishPartner.Modules.Identity.Api;
 using EnglishPartner.Modules.Curriculum.Api;
+using EnglishPartner.Modules.Identity.Api;
 using EnglishPartner.Modules.Learning.Api;
 using EnglishPartner.Modules.AI.Api;
 using EnglishPartner.SharedKernel.Interceptors;
@@ -22,6 +23,7 @@ using EnglishPartner.Modules.Notifications.Api.Endpoints;
 using EnglishPartner.Modules.Notifications.Application.BackgroundJobs;
 using EnglishPartner.Modules.Notifications.Application.Settings;
 using EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
@@ -185,6 +187,40 @@ builder.Services.AddNotificationModule(builder.Configuration);
 
 var app = builder.Build();
 
+// ── Auto-Initialize Database (Development ONLY) ──
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    try
+    {
+        // Creates the database and all schemas/tables if they do not exist.
+        // Bypasses the need for manual EF Migrations during initial development.
+        var identityDb = services.GetRequiredService<EnglishPartner.Modules.Identity.Infrastructure.Persistence.IdentityDbContext>();
+        await identityDb.Database.EnsureCreatedAsync();
+
+        var aiDb = services.GetRequiredService<EnglishPartner.Modules.AI.Infrastructure.Persistence.AiDbContext>();
+        await aiDb.Database.EnsureCreatedAsync();
+
+        var curriculumDb = services.GetRequiredService<EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.CurriculumDbContext>();
+        await curriculumDb.Database.EnsureCreatedAsync();
+
+        var learningDb = services.GetRequiredService<EnglishPartner.Modules.Learning.Infrastructure.Persistence.LearningDbContext>();
+        await learningDb.Database.EnsureCreatedAsync();
+
+        var notificationDb = services.GetRequiredService<EnglishPartner.Modules.Notifications.Infrastructure.Persistence.NotificationDbContext>();
+        await notificationDb.Database.EnsureCreatedAsync();
+        
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Database initialized and missing schemas created.");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while initializing the database.");
+    }
+}
+
 // ── Middleware Pipeline ──
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -195,6 +231,9 @@ if (app.Environment.IsDevelopment())
     {
         options.WithTitle("EnglishPartner API");
         options.WithTheme(ScalarTheme.BluePlanet);
+        options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        // Scalar will automatically detect the Bearer scheme from the OpenAPI doc 
+        // and show the Authorization input box.
     });
 }
 
@@ -211,6 +250,7 @@ app.MapAiEndpoints();
 app.UseCurriculumModule();
 app.UseLearningModule();
 app.MapNotificationEndpoints();
+SystemEndpoints.Map(app);
 
 app.MapGet("/", () => Results.Ok(new
 {

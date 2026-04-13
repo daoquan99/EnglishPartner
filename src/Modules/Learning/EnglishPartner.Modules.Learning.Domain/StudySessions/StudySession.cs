@@ -1,4 +1,5 @@
 using EnglishPartner.SharedKernel.Domain;
+using EnglishPartner.Modules.Learning.Domain.StudySessions.Events;
 
 namespace EnglishPartner.Modules.Learning.Domain.StudySessions;
 
@@ -53,6 +54,8 @@ public sealed class StudySession : AggregateRoot
         Score = score;
         EndTime = DateTime.UtcNow;
         Status = SessionStatus.Completed;
+
+        RaiseDomainEvent(new StudySessionCompletedDomainEvent(Id, UserId, Score, TotalItems));
     }
 
     public void Abandon()

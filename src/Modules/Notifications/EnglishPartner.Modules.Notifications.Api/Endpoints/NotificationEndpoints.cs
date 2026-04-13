@@ -1,5 +1,6 @@
 using EnglishPartner.Modules.Notifications.Application.Notifications.Commands.MarkAsRead;
 using EnglishPartner.Modules.Notifications.Application.Notifications.Queries.GetMyNotifications;
+using EnglishPartner.Modules.Notifications.Api.Hubs;
 using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -13,6 +14,8 @@ public static class NotificationEndpoints
 {
     public static void MapNotificationEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapHub<NotificationHub>("/hubs/notifications");
+
         var group = app.MapGroup("api/v1/notifications")
             .RequireAuthorization()
             .WithTags("Notifications");

@@ -14,6 +14,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<EnglishPartner.Modules.Identity.Application.Auth.Settings.SocialAuthSettings>(
+            configuration.GetSection(EnglishPartner.Modules.Identity.Application.Auth.Settings.SocialAuthSettings.SectionName));
+
         services.AddDbContext<IdentityDbContext>((sp, options) =>
         {
             options.UseNpgsql(
@@ -34,6 +37,7 @@ public static class DependencyInjection
         // Services
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
+        services.AddScoped<ISocialAuthService, SocialAuthService>();
 
         return services;
     }

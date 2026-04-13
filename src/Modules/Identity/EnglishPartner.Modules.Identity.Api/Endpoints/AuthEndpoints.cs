@@ -3,6 +3,7 @@ using EnglishPartner.Modules.Identity.Application.Auth.Commands.Login;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.Logout;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.RefreshToken;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.Register;
+using EnglishPartner.Modules.Identity.Application.Auth.Commands.SocialLogin;
 using EnglishPartner.SharedKernel.Results;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -32,6 +33,14 @@ internal static class AuthEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : Results.Unauthorized();
+        }).AllowAnonymous();
+
+        group.MapPost("/social-login", async (SocialLoginRequest req, ISender sender) =>
+        {
+            var result = await sender.Send(new SocialLoginCommand(req.Provider, req.Token));
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : Results.BadRequest(result.Error);
         }).AllowAnonymous();
 
         group.MapPost("/refresh", async (RefreshRequest req, ISender sender) =>
@@ -70,5 +79,6 @@ internal static class AuthEndpoints
 
 internal sealed record RegisterRequest(string Email, string Password, string DisplayName);
 internal sealed record LoginRequest(string Email, string Password);
+internal sealed record SocialLoginRequest(string Provider, string Token);
 internal sealed record RefreshRequest(string RefreshToken);
 internal sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

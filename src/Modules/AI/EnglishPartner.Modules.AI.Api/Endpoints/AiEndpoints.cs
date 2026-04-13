@@ -36,7 +36,33 @@ internal static class AiEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("EvaluateInput")
-        .WithSummary("Evaluate user input using AI. Returns SM-2 quality score (0-5).");
+        .WithSummary("Evaluate user text input using AI. Returns SM-2 quality score (0-5).");
+
+        group.MapPost("/evaluate-audio", async (
+            IFormFile audioFile,
+            [Microsoft.AspNetCore.Mvc.FromForm] Guid? itemId,
+            [Microsoft.AspNetCore.Mvc.FromForm] CurriculumItemType? itemType,
+            [Microsoft.AspNetCore.Mvc.FromForm] string? itemContext,
+            ISender sender) =>
+        {
+            if (audioFile is null || audioFile.Length == 0)
+                return Results.BadRequest("Audio file is required.");
+
+            using var stream = audioFile.OpenReadStream();
+            var command = new EnglishPartner.Modules.AI.Application.Evaluation.Commands.EvaluateAudio.EvaluateAudioCommand(
+                stream,
+                audioFile.FileName,
+                audioFile.ContentType,
+                itemContext,
+                itemId,
+                itemType);
+
+            var result = await sender.Send(command);
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        })
+        .WithName("EvaluateAudio")
+        .WithSummary("Upload and evaluate an audio file using AI. Returns Transcription and SM-2 quality score (0-5).")
+        .DisableAntiforgery(); // Minimal API + IFormFile sometimes requires this if antiforgery is globally enforced.
 
         // ── Chat — Sessions ──
         group.MapGet("/chat/sessions", async (ISender sender, HttpContext ctx) =>

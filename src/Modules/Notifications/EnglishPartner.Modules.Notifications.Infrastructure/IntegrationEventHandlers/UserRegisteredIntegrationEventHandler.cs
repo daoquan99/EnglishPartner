@@ -1,5 +1,6 @@
 using EnglishPartner.Messaging;
 using EnglishPartner.Modules.Identity.Contracts.IntegrationEvents;
+using EnglishPartner.Modules.Notifications.Application.Abstractions;
 using EnglishPartner.Modules.Notifications.Domain.Notifications;
 using EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
 using Microsoft.Extensions.Logging;
@@ -15,14 +16,17 @@ internal sealed class UserRegisteredIntegrationEventHandler
     : IdempotentIntegrationEventHandler<UserRegisteredIntegrationEvent, NotificationDbContext>
 {
     private readonly NotificationDbContext _dbContext;
+    private readonly INotificationPusher _pusher;
     private readonly ILogger<UserRegisteredIntegrationEventHandler> _logger;
 
     public UserRegisteredIntegrationEventHandler(
         NotificationDbContext dbContext,
+        INotificationPusher pusher,
         ILogger<UserRegisteredIntegrationEventHandler> logger)
         : base(dbContext, logger)
     {
         _dbContext = dbContext;
+        _pusher = pusher;
         _logger = logger;
     }
     // The Inbox checks are automatically handled by the base class.
@@ -42,9 +46,7 @@ internal sealed class UserRegisteredIntegrationEventHandler
 
         _dbContext.Notifications.Add(welcomeNotification);
 
-        // Do NOT call SaveChangesAsync here.
-        // The base class (IdempotentIntegrationEventHandler) will call SaveChangesAsync 
-        // to commit BOTH this new notification AND the InboxMessage state atomically.
-        await Task.CompletedTask;
+        // Notify client via SignalR WebSocket immediately.
+        await _pusher.PushAsync(welcomeNotification, cancellationToken);
     }
 }

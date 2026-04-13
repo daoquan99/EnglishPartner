@@ -10,6 +10,7 @@ namespace EnglishPartner.Modules.Identity.Domain.Users;
 public sealed class User : AggregateRoot
 {
     private readonly List<UserRole> _userRoles = [];
+    private readonly List<UserExternalLogin> _externalLogins = [];
 
     private User() { }
 
@@ -33,6 +34,7 @@ public sealed class User : AggregateRoot
     public bool IsOnboardingCompleted { get; private set; }
 
     public IReadOnlyList<UserRole> UserRoles => _userRoles.AsReadOnly();
+    public IReadOnlyList<UserExternalLogin> ExternalLogins => _externalLogins.AsReadOnly();
 
     public void CompleteOnboarding()
     {
@@ -54,5 +56,11 @@ public sealed class User : AggregateRoot
     {
         var userRole = _userRoles.FirstOrDefault(ur => ur.RoleId == roleId);
         if (userRole is not null) _userRoles.Remove(userRole);
+    }
+
+    public void AddExternalLogin(string provider, string providerKey, string? displayName)
+    {
+        if (_externalLogins.Any(el => el.LoginProvider == provider && el.ProviderKey == providerKey)) return;
+        _externalLogins.Add(new UserExternalLogin(provider, providerKey, displayName));
     }
 }

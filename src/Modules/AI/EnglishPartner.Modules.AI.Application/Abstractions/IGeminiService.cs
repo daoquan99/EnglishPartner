@@ -12,6 +12,11 @@ public interface IGeminiService
     Task<EvaluationResult> EvaluateInputAsync(string itemContext, string userInput, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Evaluate a user's spoken audio answer and return a transcription alongside the quality score.
+    /// </summary>
+    Task<EvaluationResult> EvaluateAudioAsync(string itemContext, byte[] audioData, string mimeType, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Generate a conversation script from a topic name and level.
     /// </summary>
     Task<GeneratedConversation> GenerateConversationAsync(string topicName, string level, CancellationToken cancellationToken = default);
@@ -26,7 +31,8 @@ public sealed record EvaluationResult(
     int QualityScore,
     bool IsCorrect,
     string SuggestedCorrection,
-    string Explanation);
+    string Explanation,
+    string Transcription = "");
 
 public sealed record GeneratedConversation(
     string Title,

@@ -9,6 +9,7 @@ namespace EnglishPartner.Modules.Learning.Domain.UserProfiles;
 public sealed class UserLearningProfile : AggregateRoot
 {
     public Guid UserId { get; private set; }
+    public string DisplayName { get; private set; } = string.Empty;
     public string TargetLanguageCode { get; private set; } = "en";
     public string CurrentLevel { get; private set; } = "A1";
     public int TotalXp { get; private set; }
@@ -18,12 +19,13 @@ public sealed class UserLearningProfile : AggregateRoot
 
     private UserLearningProfile() { }
 
-    public static UserLearningProfile Create(Guid userId, string targetLanguageCode = "en")
+    public static UserLearningProfile Create(Guid userId, string displayName, string targetLanguageCode = "en")
     {
         return new UserLearningProfile
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            DisplayName = displayName,
             TargetLanguageCode = targetLanguageCode.ToLowerInvariant(),
             CurrentLevel = "A1",
             TotalXp = 0,

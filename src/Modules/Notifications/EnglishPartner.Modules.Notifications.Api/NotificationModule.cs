@@ -1,5 +1,7 @@
 using EnglishPartner.Modules.Notifications.Application;
+using EnglishPartner.Modules.Notifications.Application.Abstractions;
 using EnglishPartner.Modules.Notifications.Infrastructure;
+using EnglishPartner.Modules.Notifications.Api.Services;
 using EnglishPartner.Modules.Notifications.Api.Endpoints;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +16,8 @@ public static class NotificationModule
     {
         services.AddNotificationApplication(configuration);
         services.AddNotificationInfrastructure(configuration);
+
+        services.AddScoped<INotificationPusher, SignalRNotificationPusher>();
 
         return services;
     }
