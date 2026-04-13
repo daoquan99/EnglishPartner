@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishPartner.Modules.Identity.Application\EnglishPartner.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Identity.Infrastructure\EnglishPartner.Modules.Identity.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

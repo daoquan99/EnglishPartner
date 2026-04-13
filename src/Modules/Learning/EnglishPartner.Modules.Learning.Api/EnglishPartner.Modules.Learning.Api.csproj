@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishPartner.Modules.Learning.Application\EnglishPartner.Modules.Learning.Application.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Learning.Contracts\EnglishPartner.Modules.Learning.Contracts.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Learning.Infrastructure\EnglishPartner.Modules.Learning.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\EnglishPartner.Messaging\EnglishPartner.Messaging.csproj" />
+  </ItemGroup>
+</Project>

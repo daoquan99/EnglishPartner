@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishPartner.Modules.AI.Application\EnglishPartner.Modules.AI.Application.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.AI.Infrastructure\EnglishPartner.Modules.AI.Infrastructure.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.AI.Contracts\EnglishPartner.Modules.AI.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

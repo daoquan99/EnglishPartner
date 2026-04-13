@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishPartner.Modules.Notifications.Domain\EnglishPartner.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Notifications.Contracts\EnglishPartner.Modules.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishPartner.SharedKernel.Application\EnglishPartner.SharedKernel.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MediatR" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

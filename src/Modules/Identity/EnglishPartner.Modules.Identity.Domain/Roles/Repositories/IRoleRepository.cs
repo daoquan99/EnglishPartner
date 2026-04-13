@@ -1,0 +1,12 @@
+namespace EnglishPartner.Modules.Identity.Domain.Roles.Repositories;
+
+public interface IRoleRepository
+{
+    Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Role?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<List<Role>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<List<string>> GetRoleNamesByIdsAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
+    void Add(Role role);
+    void Update(Role role);
+}
