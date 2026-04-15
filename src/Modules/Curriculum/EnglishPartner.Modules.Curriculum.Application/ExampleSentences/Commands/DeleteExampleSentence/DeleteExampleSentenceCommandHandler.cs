@@ -1,3 +1,4 @@
+using EnglishPartner.Modules.Curriculum.Domain;
 using EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -10,7 +11,7 @@ internal sealed class DeleteExampleSentenceCommandHandler(
     public async Task<Result> Handle(DeleteExampleSentenceCommand request, CancellationToken cancellationToken)
     {
         var sentence = await repository.GetByIdAsync(request.Id, cancellationToken);
-        if (sentence is null) return Result.Failure(new Error("ExampleSentence.NotFound", $"ExampleSentence with ID '{request.Id}' was not found."));
+        if (sentence is null) return Result.Failure(CurriculumErrors.ExampleSentence.NotFound(request.Id));
 
         repository.Remove(sentence);
         return Result.Success();

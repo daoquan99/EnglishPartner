@@ -1,3 +1,4 @@
+using EnglishPartner.Modules.AI.Contracts.Services;
 using EnglishPartner.Modules.Learning.Domain.ItemMasteries;
 using EnglishPartner.Modules.Learning.Domain.ItemMasteries.Repositories;
 using EnglishPartner.Modules.Learning.Domain.StudySessions;
@@ -10,22 +11,32 @@ namespace EnglishPartner.Modules.Learning.Application.StudySessions.Commands.Sub
 internal sealed class SubmitAnswerCommandHandler(
     IStudySessionRepository sessionRepository,
     IItemMasteryRepository masteryRepository,
-    ILearningActivityLogRepository logRepository) : ICommandHandler<SubmitAnswerCommand, SubmitAnswerResponse>
+    ILearningActivityLogRepository logRepository,
+    IAiEvaluationService aiEvaluationService) : ICommandHandler<SubmitAnswerCommand, SubmitAnswerResponse>
 {
+    // Fallback score when AI evaluation is unavailable (degraded mode — SM-2 still runs)
+    private const int FallbackQualityScore = 0;
+
     public async Task<Result<SubmitAnswerResponse>> Handle(SubmitAnswerCommand request, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(request.SessionId, cancellationToken);
         if (session is null || session.UserId != request.UserId)
-            return Result.Failure<SubmitAnswerResponse>(new Error("StudySession.NotFound", "Session not found."));
+            return Result.Failure<SubmitAnswerResponse>(CommonErrors.NotFound("StudySession", request.SessionId));
 
         session.Ping(DateTime.UtcNow);
         sessionRepository.Update(session);
+
+        // ── AI Evaluation (server-side scoring) ──
+        var evaluation = await aiEvaluationService.EvaluateAsync(
+            request.ItemId, (int)request.ItemType, request.UserAnswer, cancellationToken);
+
+        var qualityScore = evaluation?.QualityScore ?? FallbackQualityScore;
 
         // ── SM-2: Find or create ItemMastery ──
         var existingMastery = await masteryRepository.GetAsync(request.UserId, request.ItemId, cancellationToken);
         var mastery = existingMastery ?? ItemMastery.Create(request.UserId, request.ItemId, request.ItemType);
 
-        mastery.Review(request.QualityScore, DateTime.UtcNow);
+        mastery.Review(qualityScore, DateTime.UtcNow);
 
         if (existingMastery is null) masteryRepository.Add(mastery);
         else masteryRepository.Update(mastery);
@@ -36,15 +47,17 @@ internal sealed class SubmitAnswerCommandHandler(
             request.SessionId,
             request.ItemId,
             request.UserAnswer,
-            isCorrect: request.QualityScore >= 3,
-            scoreGranted: request.QualityScore,
+            isCorrect: evaluation?.IsCorrect ?? false,
+            scoreGranted: qualityScore,
             request.TimeSpentSeconds);
 
         logRepository.Add(log);
 
         return new SubmitAnswerResponse(
-            request.QualityScore,
-            request.QualityScore >= 3,
+            qualityScore,
+            evaluation?.IsCorrect ?? false,
+            evaluation?.SuggestedCorrection,
+            evaluation?.Explanation,
             mastery.IntervalDays,
             mastery.EasinessFactor,
             mastery.NextReviewDate);

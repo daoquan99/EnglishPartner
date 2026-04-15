@@ -14,6 +14,8 @@ public sealed class Grammar : AggregateRoot
     public string? Explanation { get; private set; }
     public string? Formula { get; private set; }
     public Guid? TopicId { get; private set; }
+    /// <summary>True when this entry was created by AI generation, not manually entered.</summary>
+    public bool IsAiGenerated { get; private set; }
 
     private readonly List<Entities.GrammarExample> _examples = [];
     public IReadOnlyList<Entities.GrammarExample> Examples => _examples.AsReadOnly();
@@ -26,7 +28,8 @@ public sealed class Grammar : AggregateRoot
         string? level = null,
         string? explanation = null,
         string? formula = null,
-        Guid? topicId = null)
+        Guid? topicId = null,
+        bool isAiGenerated = false)
     {
         return new Grammar
         {
@@ -36,7 +39,8 @@ public sealed class Grammar : AggregateRoot
             Level = level,
             Explanation = explanation,
             Formula = formula,
-            TopicId = topicId
+            TopicId = topicId,
+            IsAiGenerated = isAiGenerated
         };
     }
 
@@ -49,9 +53,14 @@ public sealed class Grammar : AggregateRoot
         TopicId = topicId;
     }
 
-    public void AddExample(string sentence, string? translation, string? note)
+    /// <summary>
+    /// Adds a new example sentence. Use example.AddTranslation() to attach translations.
+    /// </summary>
+    public Entities.GrammarExample AddExample(string sentence, string? note)
     {
-        _examples.Add(Entities.GrammarExample.Create(Id, sentence, translation, note, _examples.Count));
+        var example = Entities.GrammarExample.Create(Id, sentence, note, _examples.Count);
+        _examples.Add(example);
+        return example;
     }
 
     public void ClearExamples() => _examples.Clear();

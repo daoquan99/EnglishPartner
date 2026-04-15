@@ -15,7 +15,7 @@ internal sealed class RoleRepository(IdentityDbContext context) : IRoleRepositor
         => await context.Roles.FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
 
     public async Task<List<Role>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await context.Roles.ToListAsync(cancellationToken);
+        => await context.Roles.AsNoTracking().ToListAsync(cancellationToken);
 
     public async Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default)
         => await context.Roles.AnyAsync(r => r.Name == name, cancellationToken);
@@ -26,7 +26,23 @@ internal sealed class RoleRepository(IdentityDbContext context) : IRoleRepositor
             .Select(r => r.Name)
             .ToListAsync(cancellationToken);
 
+    public async Task<List<string>> GetPermissionCodesByRoleIdsAsync(
+        IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
+    {
+        var ids = roleIds.ToList();
+        return await context.RolePermissions
+            .Where(rp => ids.Contains(rp.RoleId))
+            .Join(context.Permissions,
+                  rp => rp.PermissionId,
+                  p  => p.Id,
+                  (rp, p) => p.Code)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
     public void Add(Role role) => context.Roles.Add(role);
 
     public void Update(Role role) => context.Roles.Update(role);
 }
+
+

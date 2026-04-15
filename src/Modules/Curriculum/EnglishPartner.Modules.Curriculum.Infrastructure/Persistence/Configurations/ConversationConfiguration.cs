@@ -16,6 +16,7 @@ internal sealed class ConversationConfiguration : IEntityTypeConfiguration<Conve
         builder.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.Level).HasMaxLength(20);
         builder.Property(x => x.ImageUrl).HasMaxLength(500);
+        builder.Property(x => x.IsAiGenerated).HasDefaultValue(false);
 
         builder.HasIndex(x => x.LanguageCode);
         builder.HasIndex(x => x.TopicId);
@@ -37,7 +38,25 @@ internal sealed class ConversationLineConfiguration : IEntityTypeConfiguration<C
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Speaker).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Text).HasMaxLength(2000).IsRequired();
-        builder.Property(x => x.Translation).HasMaxLength(2000);
         builder.Property(x => x.AudioUrl).HasMaxLength(500);
+
+        builder.HasMany(x => x.Translations)
+            .WithOne()
+            .HasForeignKey(x => x.ConversationLineId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class ConversationLineTranslationConfiguration : IEntityTypeConfiguration<ConversationLineTranslation>
+{
+    public void Configure(EntityTypeBuilder<ConversationLineTranslation> builder)
+    {
+        builder.ToTable("conversation_line_translations");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
+        builder.Property(x => x.TranslatedText).HasMaxLength(2000).IsRequired();
+
+        // One translation per language per line
+        builder.HasIndex(x => new { x.ConversationLineId, x.LanguageCode }).IsUnique();
     }
 }

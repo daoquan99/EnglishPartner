@@ -22,12 +22,10 @@ internal sealed class GetVocabularyByIdQueryHandler(
             vocab.Pronunciation,
             vocab.PhoneticTranscription,
             vocab.PartOfSpeech,
-            vocab.ExampleSentence,
-            vocab.ExampleTranslation,
             vocab.ImageUrl,
             vocab.AudioUrl,
             vocab.Level,
             vocab.TopicId,
-            vocab.Synonyms.Select(s => s.SynonymWord).ToList());
+            vocab.Synonyms); // now List<string> directly
     }
 }

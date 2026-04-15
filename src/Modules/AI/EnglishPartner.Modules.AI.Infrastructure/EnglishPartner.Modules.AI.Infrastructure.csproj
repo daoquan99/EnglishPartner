@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishPartner.Modules.AI.Application\EnglishPartner.Modules.AI.Application.csproj" />
     <ProjectReference Include="..\..\..\Shared\EnglishPartner.SharedKernel.Application\EnglishPartner.SharedKernel.Application.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.AI.Contracts\EnglishPartner.Modules.AI.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

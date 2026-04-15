@@ -66,6 +66,9 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence.Migrat
                     b.Property<DateTime?>("ProcessedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");

@@ -12,8 +12,6 @@ public sealed record VocabularyDetailResponse(
     string? Pronunciation,
     string? PhoneticTranscription,
     string? PartOfSpeech,
-    string? ExampleSentence,
-    string? ExampleTranslation,
     string? ImageUrl,
     string? AudioUrl,
     string? Level,

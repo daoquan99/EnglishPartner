@@ -10,21 +10,24 @@ internal sealed class StudySessionRepository(LearningDbContext dbContext) : IStu
         => await dbContext.StudySessions.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<List<StudySession>> GetUserSessionsAsync(Guid userId, CancellationToken cancellationToken)
-        => await dbContext.StudySessions.Where(x => x.UserId == userId).OrderByDescending(x => x.StartTime).ToListAsync(cancellationToken);
+        => await dbContext.StudySessions
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.StartTime)
+            .Take(50)   // Cap: frontend paginates; keep most recent 50
+            .ToListAsync(cancellationToken);
 
     public async Task<int> AbandonStaleSessionsAsync(Guid userId, DateTime staleThreshold, CancellationToken cancellationToken)
     {
-        var staleSessions = await dbContext.StudySessions
-            .Where(x => x.UserId == userId && x.Status == SessionStatus.InProgress && x.LastActivityTime <= staleThreshold)
-            .ToListAsync(cancellationToken);
-
-        int count = 0;
-        foreach (var session in staleSessions)
-        {
-            session.Abandon();
-            count++;
-        }
-        return count;
+        // Bulk UPDATE in one SQL statement — avoids load-then-loop N+1 pattern
+        return await dbContext.StudySessions
+            .Where(x => x.UserId == userId
+                     && x.Status == SessionStatus.InProgress
+                     && x.LastActivityTime <= staleThreshold)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Status, SessionStatus.Abandoned)
+                .SetProperty(x => x.EndTime, DateTime.UtcNow),
+                cancellationToken);
     }
 
     public void Add(StudySession session) => dbContext.StudySessions.Add(session);

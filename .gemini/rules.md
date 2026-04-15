@@ -569,6 +569,49 @@ When users answer complex questions (e.g., Conversation, Writing, ExampleSentenc
 6. Apply **global query filters** for `IsDeleted == false` on all `AggregateRoot` entities.
 7. Use **`AuditableEntityInterceptor`** to auto-populate `CreatedAt/CreatedBy/UpdatedAt/UpdatedBy`.
 8. Soft-delete entities via `SoftDelete()` method — **never hard-delete AggregateRoot entities**.
+9. Each `DbContext` MUST configure `MigrationsHistoryTable` to its own schema — never let it default to `public`.
+
+```csharp
+// ✅ Correct — migration history stays in the module's own schema
+options.UseNpgsql(connectionString,
+    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", MyModuleDbContext.Schema));
+
+// ❌ Wrong — history leaks into public schema, breaking module isolation
+options.UseNpgsql(connectionString);
+```
+
+### 9.1 Migration File Rules
+
+> **⚠️ NEVER delete files inside any module's `Migrations/` folder.**
+
+- Migration files are the full audit trail of database schema changes.
+- To undo the latest unapplied migration use: `dotnet ef migrations remove` — never manually delete.
+- To regenerate all migrations: only as a deliberate team decision (requires dropping all module schemas in DB first).
+
+```
+# Protected folders — DO NOT delete files here:
+src/Modules/AI/.../Persistence/Migrations/
+src/Modules/Curriculum/.../Persistence/Migrations/
+src/Modules/Identity/.../Persistence/Migrations/
+src/Modules/Learning/.../Persistence/Migrations/
+src/Modules/Notifications/.../Persistence/Migrations/
+```
+
+### 9.2 Migration Commands (reference)
+
+```bash
+# Add a new migration for a module
+dotnet ef migrations add <Name> \
+  --project src/Modules/<Module>/...Infrastructure \
+  --startup-project src/Apps/EnglishPartner.Api \
+  --context <Module>DbContext
+
+# Apply pending migrations via CLI (production)
+dotnet ef database update \
+  --project src/Modules/<Module>/...Infrastructure \
+  --startup-project src/Apps/EnglishPartner.Api \
+  --context <Module>DbContext
+```
 
 ---
 

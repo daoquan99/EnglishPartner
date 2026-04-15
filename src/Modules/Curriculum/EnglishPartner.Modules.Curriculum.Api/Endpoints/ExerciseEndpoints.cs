@@ -1,4 +1,7 @@
+using EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.AddExerciseOption;
 using EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.CreateExercise;
+using EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.DeleteExercise;
+using EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.UpdateExercise;
 using EnglishPartner.Modules.Curriculum.Application.Exercises.Queries.GetExerciseById;
 using EnglishPartner.Modules.Curriculum.Application.Exercises.Queries.GetExercises;
 using EnglishPartner.SharedKernel.Extensions;
@@ -26,39 +29,67 @@ internal static class ExerciseEndpoints
         {
             var result = await sender.Send(new GetExercisesQuery(languageCode, topicId, vocabularyId, grammarId));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        });
+        })
+        .WithName("GetExercises")
+        .WithSummary("Get exercises filtered by language, topic, vocabulary, or grammar.");
 
         group.MapGet("{id:guid}", async (Guid id, ISender sender) =>
         {
             var result = await sender.Send(new GetExerciseByIdQuery(id));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        });
+        })
+        .WithName("GetExerciseById")
+        .WithSummary("Get a single exercise by ID including all answer options.");
 
         // ── Admin Endpoints ──
         adminGroup.MapPost("", async (CreateExerciseCommand command, ISender sender) =>
         {
             var result = await sender.Send(command);
-            return result.IsSuccess ? Results.Created($"/api/v1/curriculum/exercises/{result.Value}", result.Value) : result.ToProblemDetails();
-        });
+            return result.IsSuccess
+                ? Results.Created($"/api/v1/curriculum/exercises/{result.Value}", result.Value)
+                : result.ToProblemDetails();
+        })
+        .WithName("CreateExercise")
+        .WithSummary("Create a new exercise.")
+        .RequireAuthorization("curriculum.exercise.write");
 
-        adminGroup.MapPut("{id:guid}", async (Guid id, EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.UpdateExercise.UpdateExerciseCommand command, ISender sender) =>
+        adminGroup.MapPut("{id:guid}", async (Guid id, UpdateExerciseCommand command, ISender sender) =>
         {
-            if (id != command.Id) return Results.BadRequest();
+            if (id != command.Id) return Results.BadRequest("Route ID does not match body ID.");
             var result = await sender.Send(command);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        })
+        .WithName("UpdateExercise")
+        .WithSummary("Update an existing exercise.")
+        .RequireAuthorization("curriculum.exercise.write");
 
         adminGroup.MapDelete("{id:guid}", async (Guid id, ISender sender) =>
         {
-            var result = await sender.Send(new EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.DeleteExercise.DeleteExerciseCommand(id));
+            var result = await sender.Send(new DeleteExerciseCommand(id));
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        })
+        .WithName("DeleteExercise")
+        .WithSummary("Soft-delete an exercise.")
+        .RequireAuthorization("curriculum.exercise.write");
 
-        adminGroup.MapPost("{id:guid}/options", async (Guid id, EnglishPartner.Modules.Curriculum.Application.Exercises.Commands.AddExerciseOption.AddExerciseOptionCommand command, ISender sender) =>
-        {
-            if (id != command.ExerciseId) return Results.BadRequest();
-            var result = await sender.Send(command);
-            return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        // BUG-3 pattern: ExerciseId from route, not body
+        adminGroup.MapPost("{exerciseId:guid}/options",
+            async (Guid exerciseId, AddExerciseOptionRequest request, ISender sender) =>
+            {
+                var command = new AddExerciseOptionCommand(
+                    exerciseId,
+                    request.Text,
+                    request.IsCorrect);
+                var result = await sender.Send(command);
+                return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+            })
+        .WithName("AddExerciseOption")
+        .WithSummary("Add an answer option to an exercise.")
+        .RequireAuthorization("curriculum.exercise.write");
     }
 }
+
+/// <summary>Request body for adding an exercise option. ExerciseId comes from the route.</summary>
+public sealed record AddExerciseOptionRequest(
+    string Text,
+    bool IsCorrect);

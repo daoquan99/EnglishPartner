@@ -19,6 +19,8 @@ internal sealed class CurriculumQueryService(CurriculumDbContext dbContext) : IC
             CurriculumItemType.Exercise        => await GetExerciseContextAsync(itemId, cancellationToken),
             CurriculumItemType.ExampleSentence => await GetExampleSentenceContextAsync(itemId, cancellationToken),
             CurriculumItemType.Grammar         => await GetGrammarContextAsync(itemId, cancellationToken),
+            CurriculumItemType.Conversation    => await GetConversationContextAsync(itemId, cancellationToken),
+            CurriculumItemType.Topic           => await GetTopicContextAsync(itemId, cancellationToken),
             _                                  => null
         };
     }
@@ -29,17 +31,29 @@ internal sealed class CurriculumQueryService(CurriculumDbContext dbContext) : IC
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.Id == id, ct);
 
-        if (vocab is null) return null;
+        if (vocab is null) 
+            return null;
+
+        // Grab the first linked example sentence (if any)
+        var example = await dbContext.ExampleSentences
+            .AsNoTracking()
+            .Include(s => s.Translations)
+            .Where(s => s.VocabularyId == id)
+            .OrderBy(s => s.Id)
+            .FirstOrDefaultAsync(ct);
+
+        var exampleText = example?.Text;
+        var exampleTranslation = example?.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.TranslatedText;
 
         var question = $"Define the word \"{vocab.Word}\"" +
                        (vocab.PartOfSpeech is not null ? $" ({vocab.PartOfSpeech})" : "") +
-                       (vocab.ExampleSentence is not null ? $"\nExample: {vocab.ExampleSentence}" : "");
+                       (exampleText is not null ? $"\nExample: {exampleText}" : "");
 
         return new CurriculumItemContextDto(
             ItemType: CurriculumItemType.Vocabulary,
             Question: question,
             CorrectAnswer: vocab.Definition,
-            Hint: vocab.ExampleTranslation,
+            Hint: exampleTranslation,
             LanguageCode: vocab.LanguageCode);
     }
 
@@ -67,14 +81,18 @@ internal sealed class CurriculumQueryService(CurriculumDbContext dbContext) : IC
     {
         var sentence = await dbContext.ExampleSentences
             .AsNoTracking()
+            .Include(s => s.Translations)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
 
         if (sentence is null) return null;
 
+        var correctAnswer = sentence.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.TranslatedText
+                            ?? sentence.Text;
+
         return new CurriculumItemContextDto(
             ItemType: CurriculumItemType.ExampleSentence,
             Question: $"Translate this sentence to Vietnamese:\n\"{sentence.Text}\"",
-            CorrectAnswer: sentence.Translation ?? sentence.Text,
+            CorrectAnswer: correctAnswer,
             Hint: sentence.Note,
             LanguageCode: sentence.LanguageCode);
     }
@@ -97,5 +115,53 @@ internal sealed class CurriculumQueryService(CurriculumDbContext dbContext) : IC
             CorrectAnswer: grammar.Explanation ?? grammar.Title,
             Hint: grammar.Formula,
             LanguageCode: grammar.LanguageCode);
+    }
+
+    private async Task<CurriculumItemContextDto?> GetConversationContextAsync(Guid id, CancellationToken ct)
+    {
+        var conversation = await dbContext.Conversations
+            .AsNoTracking()
+            .Include(c => c.Lines)
+                .ThenInclude(l => l.Translations)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+
+        if (conversation is null) return null;
+
+        var firstLine = conversation.Lines.OrderBy(l => l.SortOrder).FirstOrDefault();
+        if (firstLine is null)
+            return new CurriculumItemContextDto(
+                ItemType: CurriculumItemType.Conversation,
+                Question: $"Practice this conversation: \"{conversation.Title}\"",
+                CorrectAnswer: conversation.Title,
+                Hint: conversation.Scenario,
+                LanguageCode: conversation.LanguageCode);
+
+        var translation = firstLine.Translations.FirstOrDefault(t => t.LanguageCode == "vi")?.TranslatedText;
+        return new CurriculumItemContextDto(
+            ItemType: CurriculumItemType.Conversation,
+            Question: $"Translate this line from the conversation \"{conversation.Title}\":\n\"{firstLine.Text}\"",
+            CorrectAnswer: translation ?? firstLine.Text,
+            Hint: $"Speaker: {firstLine.Speaker}",
+            LanguageCode: conversation.LanguageCode);
+    }
+
+    private async Task<CurriculumItemContextDto?> GetTopicContextAsync(Guid id, CancellationToken ct)
+    {
+        var topic = await dbContext.Topics
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id, ct);
+
+        if (topic is null) return null;
+
+        var description = topic.Description is not null
+            ? $"\nContext: {topic.Description}"
+            : string.Empty;
+
+        return new CurriculumItemContextDto(
+            ItemType: CurriculumItemType.Topic,
+            Question: $"Speak or write about the topic: \"{topic.Title}\"{description}",
+            CorrectAnswer: topic.Title,
+            Hint: topic.Description,
+            LanguageCode: topic.LanguageCode);
     }
 }

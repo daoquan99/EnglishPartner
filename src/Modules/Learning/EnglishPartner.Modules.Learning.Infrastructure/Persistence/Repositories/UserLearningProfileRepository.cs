@@ -21,3 +21,5 @@ internal sealed class UserLearningProfileRepository(LearningDbContext dbContext)
     public void Add(UserLearningProfile profile) => dbContext.UserLearningProfiles.Add(profile);
     public void Update(UserLearningProfile profile) => dbContext.UserLearningProfiles.Update(profile);
 }
+
+

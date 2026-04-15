@@ -10,7 +10,8 @@ internal sealed class SubmitStudySessionResultCommandHandler(
     public async Task<Result> Handle(SubmitStudySessionResultCommand request, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(request.SessionId, cancellationToken);
-        if (session is null) return Result.Failure(new Error("StudySession.NotFound", "Session not found."));
+        if (session is null || session.UserId != request.UserId)
+            return Result.Failure(CommonErrors.NotFound("StudySession", request.SessionId));
 
         session.Complete(request.Score);
         sessionRepository.Update(session);

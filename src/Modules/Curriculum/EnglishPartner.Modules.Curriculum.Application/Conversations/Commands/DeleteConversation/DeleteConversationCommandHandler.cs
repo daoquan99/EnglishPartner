@@ -1,3 +1,4 @@
+using EnglishPartner.Modules.Curriculum.Domain;
 using EnglishPartner.Modules.Curriculum.Domain.Conversations.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -10,7 +11,7 @@ internal sealed class DeleteConversationCommandHandler(
     public async Task<Result> Handle(DeleteConversationCommand request, CancellationToken cancellationToken)
     {
         var conversation = await conversationRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (conversation is null) return Result.Failure(new Error("Conversation.NotFound", "Conversation not found."));
+        if (conversation is null) return Result.Failure(CurriculumErrors.Conversation.NotFound(request.Id));
 
         conversationRepository.Remove(conversation);
         return Result.Success();

@@ -1,3 +1,4 @@
+using EnglishPartner.Modules.Curriculum.Domain;
 using EnglishPartner.Modules.Curriculum.Domain.Conversations.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -10,9 +11,11 @@ internal sealed class AddConversationLineCommandHandler(
     public async Task<Result> Handle(AddConversationLineCommand request, CancellationToken cancellationToken)
     {
         var conversation = await conversationRepository.GetByIdAsync(request.ConversationId, cancellationToken);
-        if (conversation is null) return Result.Failure(new Error("Conversation.NotFound", "Conversation not found."));
+        if (conversation is null) return Result.Failure(CurriculumErrors.Conversation.NotFound(request.ConversationId));
 
-        conversation.AddLine(request.Speaker, request.Text, request.Translation, request.AudioUrl);
+        var line = conversation.AddLine(request.Speaker, request.Text, request.AudioUrl);
+        if (!string.IsNullOrWhiteSpace(request.Translation))
+            line.AddTranslation("vi", request.Translation);
         
         conversationRepository.Update(conversation);
         return Result.Success();

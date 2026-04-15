@@ -48,4 +48,8 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnglishPartner.Application.Tests/EnglishPartner.Application.Tests.csproj" />
+    <Project Path="tests/EnglishPartner.Domain.Tests/EnglishPartner.Domain.Tests.csproj" />
+  </Folder>
 </Solution>

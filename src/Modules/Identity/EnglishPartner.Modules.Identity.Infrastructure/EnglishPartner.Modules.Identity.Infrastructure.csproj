@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishPartner.Modules.Identity.Domain\EnglishPartner.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="..\EnglishPartner.Modules.Identity.Application\EnglishPartner.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Identity.Contracts\EnglishPartner.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\EnglishPartner.Messaging\EnglishPartner.Messaging.csproj" />
   </ItemGroup>
   <ItemGroup>

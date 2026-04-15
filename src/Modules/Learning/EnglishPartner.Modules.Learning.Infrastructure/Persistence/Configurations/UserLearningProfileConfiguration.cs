@@ -10,8 +10,10 @@ internal sealed class UserLearningProfileConfiguration : IEntityTypeConfiguratio
     {
         builder.ToTable("user_learning_profiles");
         builder.HasKey(x => x.Id);
-        builder.HasIndex(x => x.UserId).IsUnique(); // One profile per user
-        
+
+        builder.HasQueryFilter(x => !x.IsDeleted);
+
+        builder.HasIndex(x => x.UserId).IsUnique();
         builder.Property(x => x.TargetLanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.CurrentLevel).HasMaxLength(20).IsRequired();
     }

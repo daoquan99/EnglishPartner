@@ -11,7 +11,7 @@ internal sealed class PingSessionCommandHandler(
     {
         var session = await sessionRepository.GetByIdAsync(request.SessionId, cancellationToken);
         if (session is null || session.UserId != request.UserId) 
-            return Result.Failure(new Error("StudySession.NotFound", "Session not found."));
+            return Result.Failure(CommonErrors.NotFound("StudySession", request.SessionId));
 
         session.Ping(DateTime.UtcNow);
         sessionRepository.Update(session);

@@ -43,4 +43,39 @@ internal sealed class NotificationRepository(NotificationDbContext dbContext) : 
     {
         dbContext.Notifications.Add(notification);
     }
+
+    // ── Admin methods ────────────────────────────────────────────────────────
+
+    public async Task<(IReadOnlyList<Notification> Items, int TotalCount)> GetAllPagedAsync(
+        Guid? userId, bool? isRead, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Notifications.AsNoTracking().AsQueryable();
+
+        if (userId.HasValue)    query = query.Where(x => x.UserId == userId.Value);
+        if (isRead.HasValue)    query = query.Where(x => x.IsRead == isRead.Value);
+
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
+    public async Task<int> DeleteByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await dbContext.Notifications
+            .Where(x => x.Id == id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+    public async Task<int> MarkAllAsReadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await dbContext.Notifications
+            .Where(x => x.UserId == userId && !x.IsRead)
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true), cancellationToken);
+
+    public async Task<int> DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        => await dbContext.Notifications
+            .Where(x => x.UserId == userId)
+            .ExecuteDeleteAsync(cancellationToken);
 }

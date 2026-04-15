@@ -4,6 +4,7 @@ using EnglishPartner.Modules.AI.Domain.ChatSessions;
 using EnglishPartner.Modules.AI.Domain.ChatSessions.Repositories;
 using Microsoft.EntityFrameworkCore;
 using EnglishPartner.SharedKernel.Application.Interceptors;
+using EnglishPartner.SharedKernel.Interceptors;
 using EnglishPartner.Messaging;
 
 namespace EnglishPartner.Modules.AI.Infrastructure.Persistence;
@@ -13,6 +14,7 @@ namespace EnglishPartner.Modules.AI.Infrastructure.Persistence;
 /// </summary>
 public sealed class AiDbContext(
     DbContextOptions<AiDbContext> options,
+    AuditableEntityInterceptor auditInterceptor,
     ConvertDomainEventsToOutboxMessagesInterceptor outboxInterceptor) : DbContext(options), IAiUnitOfWork
 {
     internal DbSet<ChatSession> ChatSessions => Set<ChatSession>();
@@ -23,7 +25,7 @@ public sealed class AiDbContext(
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.AddInterceptors(outboxInterceptor);
+        optionsBuilder.AddInterceptors(auditInterceptor, outboxInterceptor);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

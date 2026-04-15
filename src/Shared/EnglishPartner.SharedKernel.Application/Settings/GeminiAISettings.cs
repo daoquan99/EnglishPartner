@@ -21,4 +21,12 @@ public sealed class GeminiAISettings
     /// If true, disables all HARM categories (OFF).
     /// </summary>
     public bool DisableAllSafetyRestrictions { get; set; } = true;
+
+    /// <summary>
+    /// Timeout (in seconds) for a single Gemini API call.
+    /// - Evaluation / Chat: typically 15–30s
+    /// - Content Generation (grammar, vocabulary, conversation...): may need 60–120s
+    /// Default: 120s — safe for bulk generation. Reduce for eval-only workloads.
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 120;
 }

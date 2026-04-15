@@ -19,6 +19,8 @@ public sealed record ConversationLineDto(
     Guid Id,
     string Speaker,
     string Text,
-    string? Translation,
     string? AudioUrl,
-    int SortOrder);
+    int SortOrder,
+    List<ConversationLineTranslationDto> Translations);
+
+public sealed record ConversationLineTranslationDto(string LanguageCode, string TranslatedText);

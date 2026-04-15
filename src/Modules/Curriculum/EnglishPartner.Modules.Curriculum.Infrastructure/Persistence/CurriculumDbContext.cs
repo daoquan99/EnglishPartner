@@ -1,4 +1,8 @@
 using EnglishPartner.Modules.Curriculum.Application.Abstractions;
+using EnglishPartner.Modules.Curriculum.Domain.Conversations;
+using EnglishPartner.Modules.Curriculum.Domain.Conversations.Entities;
+using EnglishPartner.Modules.Curriculum.Domain.ExampleSentences;
+using EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.Entities;
 using EnglishPartner.Modules.Curriculum.Domain.Exercises;
 using EnglishPartner.Modules.Curriculum.Domain.Exercises.Entities;
 using EnglishPartner.Modules.Curriculum.Domain.Grammars;
@@ -6,7 +10,6 @@ using EnglishPartner.Modules.Curriculum.Domain.Grammars.Entities;
 using EnglishPartner.Modules.Curriculum.Domain.Languages;
 using EnglishPartner.Modules.Curriculum.Domain.Topics;
 using EnglishPartner.Modules.Curriculum.Domain.Vocabularies;
-using EnglishPartner.Modules.Curriculum.Domain.Vocabularies.Entities;
 using EnglishPartner.SharedKernel.Interceptors;
 using EnglishPartner.SharedKernel.Application.Interceptors;
 using Microsoft.EntityFrameworkCore;
@@ -28,14 +31,21 @@ public sealed class CurriculumDbContext(
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Topic> Topics => Set<Topic>();
     public DbSet<Vocabulary> Vocabularies => Set<Vocabulary>();
-    public DbSet<VocabularySynonym> VocabularySynonyms => Set<VocabularySynonym>();
+
     public DbSet<Grammar> Grammars => Set<Grammar>();
     public DbSet<GrammarExample> GrammarExamples => Set<GrammarExample>();
+    public DbSet<GrammarExampleTranslation> GrammarExampleTranslations => Set<GrammarExampleTranslation>();
+
+    public DbSet<ExampleSentence> ExampleSentences => Set<ExampleSentence>();
+    public DbSet<ExampleSentenceTranslation> ExampleSentenceTranslations => Set<ExampleSentenceTranslation>();
+
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<ExerciseOption> ExerciseOptions => Set<ExerciseOption>();
-    public DbSet<EnglishPartner.Modules.Curriculum.Domain.Conversations.Conversation> Conversations => Set<EnglishPartner.Modules.Curriculum.Domain.Conversations.Conversation>();
-    public DbSet<EnglishPartner.Modules.Curriculum.Domain.Conversations.Entities.ConversationLine> ConversationLines => Set<EnglishPartner.Modules.Curriculum.Domain.Conversations.Entities.ConversationLine>();
-    public DbSet<EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.ExampleSentence> ExampleSentences => Set<EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.ExampleSentence>();
+
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ConversationLine> ConversationLines => Set<ConversationLine>();
+    public DbSet<ConversationLineTranslation> ConversationLineTranslations => Set<ConversationLineTranslation>();
+
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 

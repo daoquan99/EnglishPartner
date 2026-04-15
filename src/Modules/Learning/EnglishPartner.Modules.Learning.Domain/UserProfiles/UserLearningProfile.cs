@@ -17,6 +17,17 @@ public sealed class UserLearningProfile : AggregateRoot
     public int LongestStreak { get; private set; }
     public DateTime? LastActivityDate { get; private set; }
 
+    /// <summary>CEFR level XP thresholds (ascending). Keeps domain rule centralised.</summary>
+    private static readonly (int MinXp, string Level)[] LevelThresholds =
+    [
+        (7500, "C2"),
+        (5000, "C1"),
+        (3000, "B2"),
+        (1500, "B1"),
+        (500,  "A2"),
+        (0,    "A1"),
+    ];
+
     private UserLearningProfile() { }
 
     public static UserLearningProfile Create(Guid userId, string displayName, string targetLanguageCode = "en")
@@ -39,6 +50,35 @@ public sealed class UserLearningProfile : AggregateRoot
     {
         if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
         TotalXp += amount;
+        UpdateLevel();
+    }
+
+    /// <summary>Admin: reduce XP, floored at 0.</summary>
+    public void SubtractXp(int amount)
+    {
+        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        TotalXp = Math.Max(0, TotalXp - amount);
+        UpdateLevel();
+    }
+
+    /// <summary>Admin: reset XP to 0 and level to A1.</summary>
+    public void ResetXp()
+    {
+        TotalXp = 0;
+        CurrentLevel = "A1";
+    }
+
+    /// <summary>Recalculates CurrentLevel based on TotalXp thresholds.</summary>
+    private void UpdateLevel()
+    {
+        foreach (var (minXp, level) in LevelThresholds)
+        {
+            if (TotalXp >= minXp)
+            {
+                CurrentLevel = level;
+                return;
+            }
+        }
     }
 
     public void RecordActivity(DateTime activityDate)

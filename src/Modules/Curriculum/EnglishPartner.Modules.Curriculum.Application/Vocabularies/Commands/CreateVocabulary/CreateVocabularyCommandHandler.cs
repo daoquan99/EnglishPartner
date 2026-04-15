@@ -17,10 +17,9 @@ internal sealed class CreateVocabularyCommandHandler(
             request.Pronunciation,
             request.PhoneticTranscription,
             request.PartOfSpeech,
-            request.ExampleSentence,
-            request.ExampleTranslation,
             request.Level,
-            request.TopicId);
+            request.TopicId,
+            request.Synonyms);
 
         vocabularyRepository.Add(vocabulary);
         return vocabulary.Id;

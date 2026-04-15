@@ -9,7 +9,6 @@ public sealed record CreateVocabularyCommand(
     string? Pronunciation,
     string? PhoneticTranscription,
     string? PartOfSpeech,
-    string? ExampleSentence,
-    string? ExampleTranslation,
     string? Level,
-    Guid? TopicId) : ICommand<Guid>;
+    Guid? TopicId,
+    List<string>? Synonyms = null) : ICommand<Guid>;

@@ -11,4 +11,9 @@ public sealed class OutboxMessage
     public DateTime OccurredOn { get; set; }
     public DateTime? ProcessedOn { get; set; }
     public string? Error { get; set; }
+
+    /// <summary>
+    /// Number of processing attempts. Messages are retried until RetryCount reaches MaxRetries.
+    /// </summary>
+    public int RetryCount { get; set; }
 }

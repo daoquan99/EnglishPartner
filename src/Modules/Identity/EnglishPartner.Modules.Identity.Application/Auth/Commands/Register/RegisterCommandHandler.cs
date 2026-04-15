@@ -28,11 +28,11 @@ internal sealed class RegisterCommandHandler(
             return Result.Failure<RegisterResponse>(IdentityErrors.User.EmailAlreadyExists);
 
         var passwordHash = passwordHasher.Hash(request.Password);
-        var user = User.Create(request.Email, passwordHash, request.DisplayName);
+        var user         = User.Create(request.Email, passwordHash, request.DisplayName);
+        var profile      = UserProfile.Create(user.Id);
+        var streak       = Streak.Create(user.Id);
 
-        var profile = UserProfile.Create(user.Id);
-        var streak = Streak.Create(user.Id);
-
+        // Assign Learner role by default
         var learnerRole = await roleRepository.GetByNameAsync("Learner", cancellationToken);
         if (learnerRole is not null)
             user.AssignRole(learnerRole.Id);
@@ -41,8 +41,10 @@ internal sealed class RegisterCommandHandler(
         profileRepository.Add(profile);
         streakRepository.Add(streak);
 
-        var roleNames = learnerRole is not null ? [learnerRole.Name] : new List<string>();
-        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, []);
+        // Learner has no permission claims — just the role name is enough for user endpoints
+        var roleNames   = learnerRole is not null ? new[] { learnerRole.Name } : Array.Empty<string>();
+        var permissions = Array.Empty<string>(); // Learner endpoints use RequireAuthorization() only
+        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
 
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,

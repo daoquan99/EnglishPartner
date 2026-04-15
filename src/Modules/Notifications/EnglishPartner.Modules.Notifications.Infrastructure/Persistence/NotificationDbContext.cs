@@ -1,6 +1,7 @@
 using EnglishPartner.Modules.Notifications.Application.Abstractions;
 using EnglishPartner.Modules.Notifications.Domain.Notifications;
 using EnglishPartner.SharedKernel.Application.Interceptors;
+using EnglishPartner.SharedKernel.Interceptors;
 using EnglishPartner.Messaging;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
 
 public sealed class NotificationDbContext(
     DbContextOptions<NotificationDbContext> options,
+    AuditableEntityInterceptor auditInterceptor,
     ConvertDomainEventsToOutboxMessagesInterceptor outboxInterceptor) : DbContext(options), INotificationUnitOfWork
 {
     internal const string Schema = "notifications";
@@ -18,7 +20,7 @@ public sealed class NotificationDbContext(
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.AddInterceptors(outboxInterceptor);
+        optionsBuilder.AddInterceptors(auditInterceptor, outboxInterceptor);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -11,7 +11,7 @@ internal sealed class TopicRepository(CurriculumDbContext dbContext) : ITopicRep
 
     public async Task<List<Topic>> GetByLanguageCodeAsync(string languageCode, string? searchTerm = null, CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Topics.Where(x => x.LanguageCode == languageCode);
+        var query = dbContext.Topics.AsNoTracking().Where(x => x.LanguageCode == languageCode);
         
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -26,3 +26,4 @@ internal sealed class TopicRepository(CurriculumDbContext dbContext) : ITopicRep
     public void Update(Topic topic) => dbContext.Topics.Update(topic);
     public void Remove(Topic topic) => topic.SoftDelete();
 }
+

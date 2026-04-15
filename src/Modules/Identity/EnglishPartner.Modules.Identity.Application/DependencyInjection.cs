@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddMediatR(config =>
         {
             config.RegisterServicesFromAssembly(assembly);
+            config.LicenseKey = Environment.GetEnvironmentVariable("MEDIATR_LICENSE") ?? string.Empty;
             config.AddOpenBehavior(typeof(LoggingBehavior<,>));
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
             config.AddOpenBehavior(typeof(IdentityUnitOfWorkBehavior<,>));

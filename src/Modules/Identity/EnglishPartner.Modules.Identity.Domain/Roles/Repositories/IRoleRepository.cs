@@ -7,6 +7,10 @@ public interface IRoleRepository
     Task<List<Role>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default);
     Task<List<string>> GetRoleNamesByIdsAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns permission codes for all given role IDs. Used to populate JWT permission claims.</summary>
+    Task<List<string>> GetPermissionCodesByRoleIdsAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
+
     void Add(Role role);
     void Update(Role role);
 }

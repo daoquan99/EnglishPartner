@@ -12,7 +12,7 @@ internal sealed class VocabularyRepository(CurriculumDbContext dbContext) : IVoc
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<List<Vocabulary>> GetByTopicIdAsync(Guid topicId, CancellationToken cancellationToken)
-        => await dbContext.Vocabularies.Where(x => x.TopicId == topicId).ToListAsync(cancellationToken);
+        => await dbContext.Vocabularies.AsNoTracking().Where(x => x.TopicId == topicId).ToListAsync(cancellationToken);
 
     public async Task<List<Vocabulary>> GetByLanguageCodeAsync(string languageCode, int page, int pageSize, CancellationToken cancellationToken)
         => await dbContext.Vocabularies
@@ -27,7 +27,9 @@ internal sealed class VocabularyRepository(CurriculumDbContext dbContext) : IVoc
 
     public async Task<List<Vocabulary>> SearchAsync(string query, string languageCode, CancellationToken cancellationToken)
         => await dbContext.Vocabularies
-            .Where(x => x.LanguageCode == languageCode && (x.Word.Contains(query) || x.Definition.Contains(query)))
+            .Where(x => x.LanguageCode == languageCode &&
+                        (EF.Functions.ILike(x.Word, $"%{query}%") ||
+                         EF.Functions.ILike(x.Definition, $"%{query}%")))
             .Take(50)
             .ToListAsync(cancellationToken);
 
@@ -35,3 +37,4 @@ internal sealed class VocabularyRepository(CurriculumDbContext dbContext) : IVoc
     public void Update(Vocabulary vocabulary) => dbContext.Vocabularies.Update(vocabulary);
     public void Remove(Vocabulary vocabulary) => vocabulary.SoftDelete();
 }
+

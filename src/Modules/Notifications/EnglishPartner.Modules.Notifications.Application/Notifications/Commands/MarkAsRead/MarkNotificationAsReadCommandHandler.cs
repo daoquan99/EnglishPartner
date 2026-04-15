@@ -5,22 +5,18 @@ using EnglishPartner.SharedKernel.Results;
 namespace EnglishPartner.Modules.Notifications.Application.Notifications.Commands.MarkAsRead;
 
 internal sealed class MarkNotificationAsReadCommandHandler(
-    INotificationRepository repository,
-    INotificationUnitOfWork unitOfWork) : ICommandHandler<MarkNotificationAsReadCommand>
+    INotificationRepository repository) : ICommandHandler<MarkNotificationAsReadCommand>
 {
     public async Task<Result> Handle(MarkNotificationAsReadCommand request, CancellationToken cancellationToken)
     {
         var notification = await repository.GetByIdAsync(request.NotificationId, cancellationToken);
 
         if (notification is null || notification.UserId != request.UserId)
-        {
-            return Result.Failure(new Error("Notification.NotFound", "Notification not found."));
-        }
+            return Result.Failure(CommonErrors.NotFound("Notification", request.NotificationId));
 
         notification.MarkAsRead();
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
+        // SaveChangesAsync is handled by NotificationUnitOfWorkBehavior in the pipeline.
         return Result.Success();
     }
 }

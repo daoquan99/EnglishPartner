@@ -3,7 +3,10 @@ using EnglishPartner.SharedKernel.Results;
 namespace EnglishPartner.Modules.Identity.Domain;
 
 /// <summary>
-/// All domain errors for the Identity module.
+/// Domain errors for the Identity module.
+/// Error codes use "Identity.X.Y" namespace format (e.g. "Identity.User.NotFound"),
+/// intentionally different from <see cref="CommonErrors"/> (e.g. "User.NotFound").
+/// Do NOT migrate to CommonErrors — changing codes would be a breaking change for clients.
 /// </summary>
 public static class IdentityErrors
 {
@@ -53,5 +56,11 @@ public static class IdentityErrors
 
         public static readonly Error NotFound =
             new("Identity.Streak.NotFound", "Streak record was not found.");
+    }
+
+    public static class Auth
+    {
+        public static readonly Error InvalidSocialToken =
+            new("Auth.SocialLogin.InvalidToken", "Invalid or expired social token.");
     }
 }

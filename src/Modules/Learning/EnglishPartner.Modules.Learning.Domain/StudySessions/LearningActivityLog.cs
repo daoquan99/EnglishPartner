@@ -5,8 +5,9 @@ namespace EnglishPartner.Modules.Learning.Domain.StudySessions;
 /// <summary>
 /// Tracks a user's specific interaction with a single curriculum item.
 /// Used to log what they answered, how long it took, and if it was correct.
+/// Immutable log record — extends Entity (not AggregateRoot) since it's never soft-deleted or updated.
 /// </summary>
-public sealed class LearningActivityLog : AggregateRoot
+public sealed class LearningActivityLog : Entity
 {
     public Guid UserId { get; private set; }
     public Guid SessionId { get; private set; }

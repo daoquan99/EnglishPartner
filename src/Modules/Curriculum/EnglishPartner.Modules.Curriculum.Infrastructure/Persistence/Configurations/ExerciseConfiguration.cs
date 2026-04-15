@@ -19,6 +19,7 @@ internal sealed class ExerciseConfiguration : IEntityTypeConfiguration<Exercise>
         builder.Property(x => x.Content).HasMaxLength(5000);
         builder.Property(x => x.CorrectAnswer).HasMaxLength(1000).IsRequired();
         builder.Property(x => x.Explanation).HasMaxLength(2000);
+        builder.Property(x => x.IsAiGenerated).HasDefaultValue(false);
 
         builder.HasIndex(x => x.LanguageCode);
         builder.HasIndex(x => x.TopicId);

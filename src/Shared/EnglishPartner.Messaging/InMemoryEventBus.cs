@@ -6,6 +6,8 @@ namespace EnglishPartner.Messaging;
 /// <summary>
 /// In-process event bus that resolves handlers from DI container.
 /// Suitable for modular monolith; replace with RabbitMQ/Kafka for microservices.
+/// Exceptions from handlers are NOT swallowed — they propagate to the outbox job
+/// so failed messages get an Error stamp and are retried on the next poll.
 /// </summary>
 public sealed class InMemoryEventBus(
     IServiceProvider serviceProvider,
@@ -20,6 +22,8 @@ public sealed class InMemoryEventBus(
 
         var handlerType = typeof(IIntegrationEventHandler<>).MakeGenericType(eventType);
         var handlers = serviceProvider.GetServices(handlerType);
+
+        var errors = new List<Exception>();
 
         foreach (var handler in handlers)
         {
@@ -36,7 +40,12 @@ public sealed class InMemoryEventBus(
             {
                 logger.LogError(ex, "Error handling integration event {EventType} in {HandlerType}",
                     eventType.Name, handler?.GetType().Name);
+                errors.Add(ex);
             }
         }
+
+        // Rethrow so the outbox job marks this message with Error and schedules a retry.
+        if (errors.Count == 1) throw errors[0];
+        if (errors.Count > 1) throw new AggregateException($"Multiple handlers failed for {eventType.Name}", errors);
     }
 }

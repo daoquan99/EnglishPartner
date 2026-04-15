@@ -15,4 +15,10 @@ public sealed class OutboxSettings
     /// Default: 20.
     /// </summary>
     public int BatchSize { get; set; } = 20;
+
+    /// <summary>
+    /// Maximum number of delivery attempts before a message is considered dead.
+    /// Default: 3.
+    /// </summary>
+    public int MaxRetries { get; set; } = 3;
 }

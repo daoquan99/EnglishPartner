@@ -8,4 +8,14 @@ public interface IUserRepository
     Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
     void Add(User user);
     void Update(User user);
+    void Delete(User user);
+
+    // Admin queries
+    Task<(IReadOnlyList<User> Items, int TotalCount)> GetPagedAsync(
+        string? search,
+        string? role,
+        bool? isActive,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
 }

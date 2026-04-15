@@ -10,8 +10,12 @@ internal sealed class ItemMasteryConfiguration : IEntityTypeConfiguration<ItemMa
     {
         builder.ToTable("item_masteries");
         builder.HasKey(x => x.Id);
-        
-        builder.HasIndex(x => new { x.UserId, x.ItemId }).IsUnique(); // A user has only one mastery record per item
-        builder.HasIndex(x => x.NextReviewDate); // Fast lookup for due reviews
+
+        builder.HasQueryFilter(x => !x.IsDeleted);
+
+        builder.HasIndex(x => new { x.UserId, x.ItemId }).IsUnique();
+        builder.HasIndex(x => x.NextReviewDate);
+        builder.HasIndex(x => new { x.UserId, x.NextReviewDate }); // GetDueReviewsAsync composite
+
     }
 }

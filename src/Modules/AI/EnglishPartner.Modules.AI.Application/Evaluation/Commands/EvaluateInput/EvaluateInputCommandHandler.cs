@@ -23,7 +23,7 @@ internal sealed class EvaluateInputCommandHandler(
 
             if (contextDto is null)
                 return Result.Failure<EvaluateInputResponse>(
-                    new Error("AI.Evaluate.ItemNotFound", $"Curriculum item {request.ItemId} of type {request.ItemType} not found."));
+                    AiErrors.Evaluation.ItemNotFound(request.ItemId, request.ItemType));
 
             itemContext = BuildContextString(contextDto);
         }
@@ -34,9 +34,7 @@ internal sealed class EvaluateInputCommandHandler(
         }
         else
         {
-            return Result.Failure<EvaluateInputResponse>(
-                new Error("AI.Evaluate.MissingContext",
-                    "Provide either (ItemId + ItemType) or ItemContext to evaluate."));
+            return Result.Failure<EvaluateInputResponse>(AiErrors.Evaluation.MissingContext);
         }
 
         // ── Evaluate via Gemini ──

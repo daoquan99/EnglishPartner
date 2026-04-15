@@ -27,7 +27,54 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
         => await context.Users.AnyAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
-    public void Add(User user) => context.Users.Add(user);
-
+    public void Add(User user)    => context.Users.Add(user);
     public void Update(User user) => context.Users.Update(user);
+    public void Delete(User user) => context.Users.Remove(user);
+
+    public async Task<(IReadOnlyList<User> Items, int TotalCount)> GetPagedAsync(
+        string? search,
+        string? role,
+        bool?   isActive,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = context.Users
+            .Include(u => u.UserRoles)
+            .Include(u => u.ExternalLogins)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.ToLowerInvariant();
+            query = query.Where(u =>
+                u.Email.Contains(term) ||
+                u.DisplayName.ToLower().Contains(term));
+        }
+
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            var roleId = await context.Roles
+                .Where(r => r.Name == role)
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (roleId == Guid.Empty)
+                return ([], 0); // role doesn't exist → no users match
+
+            query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }

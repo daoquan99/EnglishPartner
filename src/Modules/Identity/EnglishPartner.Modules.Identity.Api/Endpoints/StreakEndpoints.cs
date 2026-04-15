@@ -1,5 +1,6 @@
 using EnglishPartner.Modules.Identity.Application.Streaks.Commands.CheckIn;
 using EnglishPartner.Modules.Identity.Application.Streaks.Queries.GetStreak;
+using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -12,30 +13,26 @@ internal static class StreakEndpoints
 {
     public static void MapStreakEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/streaks").WithTags("Streaks").RequireAuthorization();
+        var group = app.MapGroup("/api/v1/streaks")
+            .WithTags("Streaks")
+            .RequireAuthorization();
 
         group.MapGet("/", async (ClaimsPrincipal user, ISender sender) =>
         {
-            var userId = GetUserId(user);
-            if (userId is null) return Results.Unauthorized();
-
-            var result = await sender.Send(new GetStreakQuery(userId.Value));
-            return result.IsSuccess ? Results.Ok(result.Value) : Results.NotFound(result.Error);
-        });
+            if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
+            var result = await sender.Send(new GetStreakQuery(userId));
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        })
+        .WithName("GetStreak")
+        .WithSummary("Get the current user's streak, including current count, longest, and freeze tokens.");
 
         group.MapPost("/check-in", async (ClaimsPrincipal user, ISender sender) =>
         {
-            var userId = GetUserId(user);
-            if (userId is null) return Results.Unauthorized();
-
-            var result = await sender.Send(new CheckInCommand(userId.Value));
-            return result.IsSuccess ? Results.Ok(result.Value) : Results.BadRequest(result.Error);
-        });
-    }
-
-    private static Guid? GetUserId(ClaimsPrincipal user)
-    {
-        var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(sub, out var id) ? id : null;
+            if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
+            var result = await sender.Send(new CheckInCommand(userId));
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        })
+        .WithName("CheckIn")
+        .WithSummary("Record today's check-in to maintain or extend the learning streak.");
     }
 }

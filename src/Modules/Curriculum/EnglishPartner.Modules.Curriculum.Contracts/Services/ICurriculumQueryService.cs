@@ -30,5 +30,6 @@ public enum CurriculumItemType
     Grammar = 2,
     Exercise = 3,
     ExampleSentence = 4,
-    Conversation = 5
+    Conversation = 5,
+    Topic = 6
 }

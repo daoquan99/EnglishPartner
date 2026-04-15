@@ -4,4 +4,5 @@ namespace EnglishPartner.Modules.Learning.Application.StudySessions.Commands.Sub
 
 public sealed record SubmitStudySessionResultCommand(
     Guid SessionId,
+    Guid UserId,
     int Score) : ICommand;

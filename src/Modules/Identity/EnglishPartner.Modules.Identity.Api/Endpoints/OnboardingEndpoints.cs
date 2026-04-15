@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.Identity.Application.Onboarding.Commands.CompleteOnboarding;
+using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -11,25 +12,22 @@ internal static class OnboardingEndpoints
 {
     public static void MapOnboardingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/onboarding").WithTags("Onboarding").RequireAuthorization();
+        var group = app.MapGroup("/api/v1/onboarding")
+            .WithTags("Onboarding")
+            .RequireAuthorization();
 
         group.MapPost("/complete", async (CompleteOnboardingRequest req, ClaimsPrincipal user, ISender sender) =>
         {
-            var userId = GetUserId(user);
-            if (userId is null) return Results.Unauthorized();
+            if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
 
             var result = await sender.Send(new CompleteOnboardingCommand(
-                userId.Value, req.NativeLanguage, req.TargetLanguage,
+                userId, req.NativeLanguage, req.TargetLanguage,
                 req.ProficiencyLevel, req.LearningGoal, req.DailyGoalMinutes));
 
-            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
-        });
-    }
-
-    private static Guid? GetUserId(ClaimsPrincipal user)
-    {
-        var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(sub, out var id) ? id : null;
+            return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+        })
+        .WithName("CompleteOnboarding")
+        .WithSummary("Complete the onboarding flow. Sets native/target language, level, goal, and daily target.");
     }
 }
 

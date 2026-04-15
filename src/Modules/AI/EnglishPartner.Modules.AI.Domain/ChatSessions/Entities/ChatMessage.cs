@@ -10,7 +10,6 @@ public sealed class ChatMessage : Entity
     public Guid SessionId { get; private set; }
     public ChatRole Role { get; private set; }
     public string Text { get; private set; } = string.Empty;
-    public DateTime Timestamp { get; private set; }
 
     private ChatMessage() { }
 
@@ -21,8 +20,8 @@ public sealed class ChatMessage : Entity
             Id = Guid.NewGuid(),
             SessionId = sessionId,
             Role = role,
-            Text = text,
-            Timestamp = DateTime.UtcNow
+            Text = text
+            // CreatedAt is auto-set by AuditableEntityInterceptor
         };
     }
 }

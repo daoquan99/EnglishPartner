@@ -12,6 +12,8 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
 
         builder.HasKey(x => x.Id);
 
+        builder.HasQueryFilter(x => !x.IsDeleted);
+
         builder.Property(x => x.Title)
             .HasMaxLength(200)
             .IsRequired();

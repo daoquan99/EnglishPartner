@@ -19,9 +19,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<LearningDbContext>((sp, options) =>
         {
-            var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-            options.UseNpgsql(configuration.GetConnectionString("Database"))
-                   .AddInterceptors(interceptor);
+            options.UseNpgsql(configuration.GetConnectionString("Database"),
+                       npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", LearningDbContext.Schema));
         });
 
         services.AddScoped<ILearningUnitOfWork>(sp => sp.GetRequiredService<LearningDbContext>());

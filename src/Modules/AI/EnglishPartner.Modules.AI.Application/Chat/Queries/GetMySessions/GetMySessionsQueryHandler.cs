@@ -9,15 +9,10 @@ internal sealed class GetMySessionsQueryHandler(
 {
     public async Task<Result<List<ChatSessionSummaryDto>>> Handle(GetMySessionsQuery request, CancellationToken cancellationToken)
     {
-        var sessions = await repository.GetUserSessionsAsync(request.UserId, cancellationToken);
+        var summaries = await repository.GetUserSessionSummariesAsync(request.UserId, cancellationToken);
 
-        var dtos = sessions
-            .Select(s => new ChatSessionSummaryDto(
-                s.Id,
-                s.Title,
-                s.Messages.Count,
-                s.CreatedAt,
-                s.UpdatedAt))
+        var dtos = summaries
+            .Select(s => new ChatSessionSummaryDto(s.Id, s.Title, s.MessageCount, s.CreatedAt, s.UpdatedAt))
             .ToList();
 
         return dtos;

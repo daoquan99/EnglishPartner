@@ -1,12 +1,15 @@
 using System.Text;
-using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using EnglishPartner.Api.Services;
 using EnglishPartner.Api.Endpoints;
 using EnglishPartner.Messaging;
 using EnglishPartner.Modules.Curriculum.Api;
 using EnglishPartner.Modules.Identity.Api;
+using EnglishPartner.Modules.Identity.Api.Endpoints;
+using EnglishPartner.Modules.Identity.Infrastructure.Persistence;
 using EnglishPartner.Modules.Learning.Api;
+using EnglishPartner.Modules.Learning.Api.Endpoints;
+using EnglishPartner.Modules.Learning.Infrastructure.Persistence;
 using EnglishPartner.Modules.AI.Api;
 using EnglishPartner.SharedKernel.Interceptors;
 using EnglishPartner.SharedKernel.Interfaces;
@@ -16,21 +19,25 @@ using EnglishPartner.SharedKernel.Application.Interceptors;
 using EnglishPartner.SharedKernel.Application.BackgroundJobs;
 using EnglishPartner.Modules.AI.Infrastructure.Persistence;
 using EnglishPartner.Modules.Curriculum.Infrastructure.Persistence;
-using EnglishPartner.Modules.Identity.Infrastructure.Persistence;
-using EnglishPartner.Modules.Learning.Infrastructure.Persistence;
 using EnglishPartner.Modules.Notifications.Api;
 using EnglishPartner.Modules.Notifications.Api.Endpoints;
 using EnglishPartner.Modules.Notifications.Application.BackgroundJobs;
 using EnglishPartner.Modules.Notifications.Application.Settings;
 using EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Quartz;
 using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── MediatR License (Lucky Penny Software) ──
+// Set env var BEFORE any AddMediatR calls – MediatR 14.x reads it globally.
+var mediatRLicense = builder.Configuration["MediatR:LicenseKey"];
+if (!string.IsNullOrWhiteSpace(mediatRLicense))
+    Environment.SetEnvironmentVariable("MEDIATR_LICENSE", mediatRLicense);
 
 // ── Serilog (reads full config from appsettings.json "Serilog" section) ──
 builder.Host.UseSerilog((context, config) =>
@@ -90,9 +97,42 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Role-based: Admin endpoint groups use RequireAuthorization("Admin")
+    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-// ── Redis Cache ──
+    // Permission-based: individual admin endpoints (only admin JWT has these claims)
+    void AddPermission(string code) =>
+        options.AddPolicy(code, policy => policy.RequireClaim("permission", code));
+
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.TopicsWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.VocabularyWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.GrammarWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.ExerciseWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.ConversationWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.SentenceWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Curriculum.Generate);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Learning.AdminView);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Learning.AdminWrite);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Identity.UsersManage);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Identity.RolesManage);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Ai.LogsRead);
+    AddPermission(EnglishPartner.Modules.Identity.Domain.Roles.Permissions.Notifications.Admin);
+});
+
+// ⭐ CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(
+                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
+
+// ⭐ Redis Cache ──
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
@@ -192,32 +232,39 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
+    var initLogger = services.GetRequiredService<ILogger<Program>>();
     try
     {
-        // Creates the database and all schemas/tables if they do not exist.
-        // Bypasses the need for manual EF Migrations during initial development.
+        // ── Migrate every module — safe to run multiple times ──
         var identityDb = services.GetRequiredService<EnglishPartner.Modules.Identity.Infrastructure.Persistence.IdentityDbContext>();
-        await identityDb.Database.EnsureCreatedAsync();
+        await identityDb.Database.MigrateAsync();
 
         var aiDb = services.GetRequiredService<EnglishPartner.Modules.AI.Infrastructure.Persistence.AiDbContext>();
-        await aiDb.Database.EnsureCreatedAsync();
+        await aiDb.Database.MigrateAsync();
 
         var curriculumDb = services.GetRequiredService<EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.CurriculumDbContext>();
-        await curriculumDb.Database.EnsureCreatedAsync();
+        await curriculumDb.Database.MigrateAsync();
 
         var learningDb = services.GetRequiredService<EnglishPartner.Modules.Learning.Infrastructure.Persistence.LearningDbContext>();
-        await learningDb.Database.EnsureCreatedAsync();
+        await learningDb.Database.MigrateAsync();
 
         var notificationDb = services.GetRequiredService<EnglishPartner.Modules.Notifications.Infrastructure.Persistence.NotificationDbContext>();
-        await notificationDb.Database.EnsureCreatedAsync();
-        
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Database initialized and missing schemas created.");
+        await notificationDb.Database.MigrateAsync();
+
+        initLogger.LogInformation("Database migrated successfully.");
+
+        // ⭐ Seed admin user (idempotent — skips if already exists)
+        var adminSeeder = services.GetRequiredService<EnglishPartner.Modules.Identity.Infrastructure.Services.AdminUserSeeder>();
+        await adminSeeder.SeedAsync(services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>());
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while initializing the database.");
+        initLogger.LogError(ex, "An error occurred while migrating the database.");
+
+        // In production, a failed migration should abort startup to avoid running
+        // against an inconsistent schema. In development, we allow lenient startup.
+        if (!app.Environment.IsDevelopment())
+            throw;
     }
 }
 
@@ -237,6 +284,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
@@ -251,6 +299,49 @@ app.UseCurriculumModule();
 app.UseLearningModule();
 app.MapNotificationEndpoints();
 SystemEndpoints.Map(app);
+
+// ── Admin Endpoints ──
+app.MapAdminUserEndpoints();
+app.MapAdminLearningEndpoints();
+app.MapAdminNotificationEndpoints();
+
+
+// ── Admin Dashboard ──
+app.MapGet("api/v1/admin/dashboard", async (
+    EnglishPartner.Modules.Identity.Infrastructure.Persistence.IdentityDbContext identityDb,
+    EnglishPartner.Modules.Learning.Infrastructure.Persistence.LearningDbContext  learningDb,
+    EnglishPartner.Modules.Notifications.Infrastructure.Persistence.NotificationDbContext notifDb,
+    CancellationToken cancellationToken) =>
+{
+    var now = DateTime.UtcNow;
+    var sevenDaysAgo = now.AddDays(-7);
+
+    var totalUsers              = await identityDb.Users.CountAsync(cancellationToken);
+    var activeUsersLast7Days    = await identityDb.Users.CountAsync(u => u.UpdatedAt >= sevenDaysAgo, cancellationToken);
+    var newRegistrationsLast7   = await identityDb.Users.CountAsync(u => u.CreatedAt >= sevenDaysAgo, cancellationToken);
+
+    var totalSessions           = await learningDb.StudySessions.CountAsync(cancellationToken);
+    var completedSessions       = await learningDb.StudySessions
+        .CountAsync(s => s.Status == EnglishPartner.Modules.Learning.Domain.StudySessions.SessionStatus.Completed, cancellationToken);
+    var avgScore                = await learningDb.StudySessions
+        .Where(s => s.Status == EnglishPartner.Modules.Learning.Domain.StudySessions.SessionStatus.Completed)
+        .AverageAsync(s => (double?)s.Score, cancellationToken) ?? 0;
+
+    var totalNotifications      = await notifDb.Notifications.CountAsync(cancellationToken);
+
+    return Results.Ok(new
+    {
+        totalUsers,
+        activeUsersLast7Days,
+        newRegistrationsLast7Days = newRegistrationsLast7,
+        totalSessions,
+        totalSessionsCompleted    = completedSessions,
+        averageSessionScore       = Math.Round(avgScore, 1),
+        totalNotificationsSent    = totalNotifications,
+    });
+})
+.RequireAuthorization("Admin")
+.WithTags("Admin — Dashboard");
 
 app.MapGet("/", () => Results.Ok(new
 {

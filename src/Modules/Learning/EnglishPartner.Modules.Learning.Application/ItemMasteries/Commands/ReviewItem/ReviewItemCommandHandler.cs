@@ -18,6 +18,10 @@ internal sealed class ReviewItemCommandHandler(
             mastery = ItemMastery.Create(request.UserId, request.ItemId, request.Type);
             masteryRepository.Add(mastery);
         }
+        else
+        {
+            masteryRepository.Update(mastery);
+        }
 
         mastery.Review(request.QualityRating, DateTime.UtcNow);
         

@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.AI.Application.Abstractions;
+using EnglishPartner.Modules.AI.Domain;
 using EnglishPartner.Modules.Curriculum.Contracts.Services;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Interfaces;
@@ -24,7 +25,7 @@ internal sealed class EvaluateAudioCommandHandler(
 
             if (contextDto is null)
                 return Result.Failure<EvaluateAudioResponse>(
-                    new Error("AI.EvaluateAudio.ItemNotFound", $"Curriculum item {request.ItemId} of type {request.ItemType} not found."));
+                    AiErrors.EvaluateAudio.ItemNotFound(request.ItemId, request.ItemType));
 
             itemContext = BuildContextString(contextDto);
         }
@@ -34,9 +35,7 @@ internal sealed class EvaluateAudioCommandHandler(
         }
         else
         {
-            return Result.Failure<EvaluateAudioResponse>(
-                new Error("AI.EvaluateAudio.MissingContext",
-                    "Provide either (ItemId + ItemType) or ItemContext to evaluate."));
+            return Result.Failure<EvaluateAudioResponse>(AiErrors.EvaluateAudio.MissingContext);
         }
 
         // 2. Read audio stream into byte array for Gemini
@@ -46,28 +45,25 @@ internal sealed class EvaluateAudioCommandHandler(
             using var memoryStream = new MemoryStream();
             await request.AudioStream.CopyToAsync(memoryStream, cancellationToken);
             audioBytes = memoryStream.ToArray();
-            
-            // Re-position stream to beginning for upload later
-            request.AudioStream.Position = 0;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to read audio stream.");
-            return Result.Failure<EvaluateAudioResponse>(
-                new Error("AI.EvaluateAudio.ReadFailed", "Could not read the uploaded audio file."));
+            return Result.Failure<EvaluateAudioResponse>(AiErrors.EvaluateAudio.ReadFailed);
         }
 
-        // 3. Upload file for permanent storage
+        // 3. Upload file for permanent storage using a new stream from the already-read bytes
+        // (original AudioStream from IFormFile is not seekable — cannot rewind)
         string relativePath;
         try
         {
-            relativePath = await fileStorageService.UploadAsync(request.AudioStream, request.FileName, "audio-submissions", cancellationToken);
+            using var uploadStream = new MemoryStream(audioBytes);
+            relativePath = await fileStorageService.UploadAsync(uploadStream, request.FileName, "audio-submissions", cancellationToken);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to upload audio file to storage.");
-            return Result.Failure<EvaluateAudioResponse>(
-                new Error("AI.EvaluateAudio.UploadFailed", "Could not save the uploaded audio file."));
+            return Result.Failure<EvaluateAudioResponse>(AiErrors.EvaluateAudio.UploadFailed);
         }
         
         var publicUrl = fileStorageService.GetPublicUrl(relativePath);

@@ -4,7 +4,7 @@ using EnglishPartner.Modules.Identity.Application.Auth.Commands.Logout;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.RefreshToken;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.Register;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.SocialLogin;
-using EnglishPartner.SharedKernel.Results;
+using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -24,56 +24,58 @@ internal static class AuthEndpoints
             var result = await sender.Send(new RegisterCommand(req.Email, req.Password, req.DisplayName));
             return result.IsSuccess
                 ? Results.Created($"/api/v1/auth/me", result.Value)
-                : Results.BadRequest(result.Error);
-        }).AllowAnonymous();
+                : result.ToProblemDetails();  // QUAL-3 fix: consistent error format
+        })
+        .WithName("Register")
+        .WithSummary("Register a new user account.")
+        .AllowAnonymous();
 
         group.MapPost("/login", async (LoginRequest req, ISender sender) =>
         {
             var result = await sender.Send(new LoginCommand(req.Email, req.Password));
-            return result.IsSuccess
-                ? Results.Ok(result.Value)
-                : Results.Unauthorized();
-        }).AllowAnonymous();
+            return result.IsSuccess ? Results.Ok(result.Value) : Results.Unauthorized();
+        })
+        .WithName("Login")
+        .WithSummary("Authenticate with email and password. Returns JWT access + refresh tokens.")
+        .AllowAnonymous();
 
         group.MapPost("/social-login", async (SocialLoginRequest req, ISender sender) =>
         {
             var result = await sender.Send(new SocialLoginCommand(req.Provider, req.Token));
-            return result.IsSuccess
-                ? Results.Ok(result.Value)
-                : Results.BadRequest(result.Error);
-        }).AllowAnonymous();
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        })
+        .WithName("SocialLogin")
+        .WithSummary("Authenticate with a social provider (e.g. Google). Returns JWT access + refresh tokens.")
+        .AllowAnonymous();
 
         group.MapPost("/refresh", async (RefreshRequest req, ISender sender) =>
         {
             var result = await sender.Send(new RefreshTokenCommand(req.RefreshToken));
-            return result.IsSuccess
-                ? Results.Ok(result.Value)
-                : Results.Unauthorized();
-        }).AllowAnonymous();
+            return result.IsSuccess ? Results.Ok(result.Value) : Results.Unauthorized();
+        })
+        .WithName("RefreshToken")
+        .WithSummary("Exchange a valid refresh token for a new JWT access token.")
+        .AllowAnonymous();
 
         group.MapPost("/logout", async (ClaimsPrincipal user, ISender sender) =>
         {
-            var userId = GetUserId(user);
-            if (userId is null) return Results.Unauthorized();
-
-            var result = await sender.Send(new LogoutCommand(userId.Value));
-            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
-        }).RequireAuthorization();
+            if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
+            var result = await sender.Send(new LogoutCommand(userId));
+            return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+        })
+        .WithName("Logout")
+        .WithSummary("Invalidate the current user's refresh token.")
+        .RequireAuthorization();
 
         group.MapPost("/change-password", async (ChangePasswordRequest req, ClaimsPrincipal user, ISender sender) =>
         {
-            var userId = GetUserId(user);
-            if (userId is null) return Results.Unauthorized();
-
-            var result = await sender.Send(new ChangePasswordCommand(userId.Value, req.CurrentPassword, req.NewPassword));
-            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
-        }).RequireAuthorization();
-    }
-
-    private static Guid? GetUserId(ClaimsPrincipal user)
-    {
-        var sub = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(sub, out var id) ? id : null;
+            if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
+            var result = await sender.Send(new ChangePasswordCommand(userId, req.CurrentPassword, req.NewPassword));
+            return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+        })
+        .WithName("ChangePassword")
+        .WithSummary("Change the current user's password.")
+        .RequireAuthorization();
     }
 }
 

@@ -5,6 +5,7 @@ namespace EnglishPartner.Modules.Curriculum.Domain.Vocabularies;
 /// <summary>
 /// A vocabulary word/phrase with definitions, examples, and pronunciation.
 /// Core content unit for language learning.
+/// Synonyms are stored as a flat string array (PostgreSQL array column) — no join table needed.
 /// </summary>
 public sealed class Vocabulary : AggregateRoot
 {
@@ -14,15 +15,18 @@ public sealed class Vocabulary : AggregateRoot
     public string? Pronunciation { get; private set; }
     public string? PhoneticTranscription { get; private set; }
     public string? PartOfSpeech { get; private set; }
-    public string? ExampleSentence { get; private set; }
-    public string? ExampleTranslation { get; private set; }
     public string? ImageUrl { get; private set; }
     public string? AudioUrl { get; private set; }
     public string? Level { get; private set; }
     public Guid? TopicId { get; private set; }
 
-    private readonly List<Entities.VocabularySynonym> _synonyms = [];
-    public IReadOnlyList<Entities.VocabularySynonym> Synonyms => _synonyms.AsReadOnly();
+    /// <summary>
+    /// Synonyms stored as a PostgreSQL text array — e.g. {"happy", "joyful", "glad"}.
+    /// No separate join table required.
+    /// </summary>
+    public List<string> Synonyms { get; private set; } = [];
+    /// <summary>True when this entry was created by AI generation, not manually entered.</summary>
+    public bool IsAiGenerated { get; private set; }
 
     private Vocabulary() { }
 
@@ -33,10 +37,10 @@ public sealed class Vocabulary : AggregateRoot
         string? pronunciation = null,
         string? phoneticTranscription = null,
         string? partOfSpeech = null,
-        string? exampleSentence = null,
-        string? exampleTranslation = null,
         string? level = null,
-        Guid? topicId = null)
+        Guid? topicId = null,
+        List<string>? synonyms = null,
+        bool isAiGenerated = false)
     {
         var entity = new Vocabulary
         {
@@ -47,10 +51,10 @@ public sealed class Vocabulary : AggregateRoot
             Pronunciation = pronunciation,
             PhoneticTranscription = phoneticTranscription,
             PartOfSpeech = partOfSpeech,
-            ExampleSentence = exampleSentence,
-            ExampleTranslation = exampleTranslation,
             Level = level,
-            TopicId = topicId
+            TopicId = topicId,
+            Synonyms = synonyms ?? [],
+            IsAiGenerated = isAiGenerated
         };
 
         entity.RaiseDomainEvent(new Events.VocabularyCreatedDomainEvent(entity.Id));
@@ -63,35 +67,29 @@ public sealed class Vocabulary : AggregateRoot
         string? pronunciation,
         string? phoneticTranscription,
         string? partOfSpeech,
-        string? exampleSentence,
-        string? exampleTranslation,
         string? imageUrl,
         string? audioUrl,
         string? level,
-        Guid? topicId)
+        Guid? topicId,
+        List<string>? synonyms = null)
     {
         Word = word.Trim();
         Definition = definition.Trim();
         Pronunciation = pronunciation;
         PhoneticTranscription = phoneticTranscription;
         PartOfSpeech = partOfSpeech;
-        ExampleSentence = exampleSentence;
-        ExampleTranslation = exampleTranslation;
         ImageUrl = imageUrl;
         AudioUrl = audioUrl;
         Level = level;
         TopicId = topicId;
+        Synonyms = synonyms ?? Synonyms;
     }
 
     public void AddSynonym(string word)
     {
-        if (_synonyms.All(s => s.SynonymWord != word))
-            _synonyms.Add(Entities.VocabularySynonym.Create(Id, word));
+        if (!Synonyms.Contains(word.Trim()))
+            Synonyms.Add(word.Trim());
     }
 
-    public void RemoveSynonym(Guid synonymId)
-    {
-        var synonym = _synonyms.FirstOrDefault(s => s.Id == synonymId);
-        if (synonym is not null) _synonyms.Remove(synonym);
-    }
+    public void RemoveSynonym(string word) => Synonyms.Remove(word.Trim());
 }

@@ -14,8 +14,17 @@ public sealed record PagedResult<T>(
         => new([], 0, page, pageSize);
 }
 
-public sealed record PaginationParams(int Page = 1, int PageSize = 20)
+public sealed class PaginationParams
 {
-    public int Skip => (Page - 1) * PageSize;
-    public int Take => PageSize;
+    public PaginationParams(int page = 1, int pageSize = 20)
+    {
+        Page     = Math.Max(1, page);
+        PageSize = Math.Clamp(pageSize, 1, 100);
+    }
+
+    public int Page     { get; }
+    public int PageSize { get; }
+    public int Skip     => (Page - 1) * PageSize;
+    public int Take     => PageSize;
 }
+

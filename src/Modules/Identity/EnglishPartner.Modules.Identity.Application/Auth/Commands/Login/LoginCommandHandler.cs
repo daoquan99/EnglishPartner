@@ -30,9 +30,11 @@ internal sealed class LoginCommandHandler(
         if (!passwordHasher.Verify(request.Password, user.PasswordHash))
             return Result.Failure<LoginResponse>(IdentityErrors.User.InvalidCredentials);
 
-        var roleIds = user.UserRoles.Select(ur => ur.RoleId);
-        var roleNames = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
-        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, []);
+        var roleIds     = user.UserRoles.Select(ur => ur.RoleId).ToList();
+        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
+        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+
+        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
 
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,

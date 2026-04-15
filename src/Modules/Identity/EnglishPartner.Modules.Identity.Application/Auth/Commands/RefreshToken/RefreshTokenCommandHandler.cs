@@ -29,9 +29,10 @@ internal sealed class RefreshTokenCommandHandler(
         if (user is null || !user.IsActive)
             return Result.Failure<RefreshTokenResponse>(IdentityErrors.User.Deactivated);
 
-        var roleIds = user.UserRoles.Select(ur => ur.RoleId);
-        var roleNames = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
-        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, []);
+        var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
+        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
+        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
 
         var newRefreshToken = RefreshTokenEntity.Create(
             user.Id,

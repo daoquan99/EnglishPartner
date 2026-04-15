@@ -66,6 +66,9 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ProcessedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -133,6 +136,8 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId", "ItemId")
                         .IsUnique();
 
+                    b.HasIndex("UserId", "NextReviewDate");
+
                     b.ToTable("item_masteries", "learning");
                 });
 
@@ -148,19 +153,7 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsCorrect")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("ItemId")
@@ -264,6 +257,10 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "StartTime");
+
+                    b.HasIndex("UserId", "Status");
+
                     b.ToTable("study_sessions", "learning");
                 });
 
@@ -292,6 +289,10 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");

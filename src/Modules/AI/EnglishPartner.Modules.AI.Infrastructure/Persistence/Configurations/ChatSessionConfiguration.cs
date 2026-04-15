@@ -36,7 +36,7 @@ internal sealed class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMe
         builder.Property(x => x.SessionId).IsRequired();
         builder.Property(x => x.Role).IsRequired().HasConversion<string>();
         builder.Property(x => x.Text).IsRequired();
-        builder.Property(x => x.Timestamp).IsRequired();
+        // Timestamp removed: CreatedAt from Entity base class serves this purpose
 
         builder.HasIndex(x => x.SessionId);
     }

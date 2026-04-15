@@ -20,6 +20,8 @@ public sealed class Exercise : AggregateRoot
     public string CorrectAnswer { get; private set; } = null!;
     public string? Explanation { get; private set; }
     public int XpReward { get; private set; } = 10;
+    /// <summary>True when this entry was created by AI generation, not manually entered.</summary>
+    public bool IsAiGenerated { get; private set; }
 
     private readonly List<Entities.ExerciseOption> _options = [];
     public IReadOnlyList<Entities.ExerciseOption> Options => _options.AsReadOnly();
@@ -38,7 +40,8 @@ public sealed class Exercise : AggregateRoot
         Guid? grammarId = null,
         string? content = null,
         string? explanation = null,
-        int xpReward = 10)
+        int xpReward = 10,
+        bool isAiGenerated = false)
     {
         return new Exercise
         {
@@ -54,7 +57,8 @@ public sealed class Exercise : AggregateRoot
             GrammarId = grammarId,
             Content = content,
             Explanation = explanation,
-            XpReward = xpReward
+            XpReward = xpReward,
+            IsAiGenerated = isAiGenerated
         };
     }
 

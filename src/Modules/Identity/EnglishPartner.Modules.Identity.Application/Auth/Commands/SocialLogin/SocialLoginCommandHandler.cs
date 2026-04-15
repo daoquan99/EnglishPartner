@@ -1,5 +1,7 @@
 using EnglishPartner.Modules.Identity.Application.Abstractions;
 using EnglishPartner.Modules.Identity.Application.Auth.Commands.Login;
+using EnglishPartner.Modules.Identity.Domain;
+using EnglishPartner.Modules.Identity.Domain.Roles.Repositories;
 using EnglishPartner.Modules.Identity.Domain.Users;
 using EnglishPartner.Modules.Identity.Domain.Users.Entities;
 using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
@@ -16,8 +18,8 @@ internal sealed class SocialLoginCommandHandler(
     ISocialAuthService socialAuthService,
     IUserRepository userRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    IRoleRepository roleRepository,
     ITokenService tokenService,
-    IIdentityUnitOfWork unitOfWork,
     IOptions<JwtSettings> jwtSettings,
     ILogger<SocialLoginCommandHandler> logger) : ICommandHandler<SocialLoginCommand, LoginResponse>
 {
@@ -25,61 +27,61 @@ internal sealed class SocialLoginCommandHandler(
     {
         // 1. Verify token with provider (e.g. Google)
         var socialUser = await socialAuthService.VerifyTokenAsync(request.Provider, request.Token, cancellationToken);
-        
         if (socialUser is null)
-        {
-            return Result.Failure<LoginResponse>(new Error("Auth.SocialLogin.InvalidToken", "Invalid or expired social token."));
-        }
+            return Result.Failure<LoginResponse>(IdentityErrors.Auth.InvalidSocialToken);
 
         // 2. Find user by ExternalLogin exact match
         var user = await userRepository.GetByExternalLoginAsync(socialUser.Provider, socialUser.ProviderUserId, cancellationToken);
 
         if (user is null)
         {
-            // 3. Fallback: Search by Email to link existing account
+            // 3. Fallback: link existing account by email
             user = await userRepository.GetByEmailAsync(socialUser.Email, cancellationToken);
 
             if (user is null)
             {
-                logger.LogInformation("Creating new auto-registered user for {Email} via {Provider}", socialUser.Email, socialUser.Provider);
-                
-                var placeholderHash = Guid.NewGuid().ToString("N");
-                var displayName = !string.IsNullOrWhiteSpace(socialUser.FirstName) 
-                    ? $"{socialUser.FirstName} {socialUser.LastName}".Trim() 
+                logger.LogInformation("Creating new user for {Email} via {Provider}", socialUser.Email, socialUser.Provider);
+
+                var displayName = !string.IsNullOrWhiteSpace(socialUser.FirstName)
+                    ? $"{socialUser.FirstName} {socialUser.LastName}".Trim()
                     : socialUser.Email.Split('@')[0];
 
-                user = User.Create(socialUser.Email, placeholderHash, displayName);
+                user = User.Create(socialUser.Email, Guid.NewGuid().ToString("N"), displayName);
+
+                // Assign Learner role to new social users
+                var learnerRole = await roleRepository.GetByNameAsync("Learner", cancellationToken);
+                if (learnerRole is not null)
+                    user.AssignRole(learnerRole.Id);
+
                 userRepository.Add(user);
             }
             else
             {
-                logger.LogInformation("Linking existing user {Email} with new provider {Provider}", user.Email, socialUser.Provider);
-                // The Update will be handled by UnitOfWork save, but we must ensure EF tracks the change.
-                userRepository.Update(user); // Mostly to ensure tracking, although usually EF tracks already retrieved entities.
+                logger.LogInformation("Linking existing user {Email} with {Provider}", user.Email, socialUser.Provider);
+                userRepository.Update(user);
             }
 
-            // Record the external login map
             user.AddExternalLogin(socialUser.Provider, socialUser.ProviderUserId, socialUser.Provider);
         }
 
-        // 4. Generate JWT & Refresh Tokens
-        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, [], []);
+        // 4. Load roles + permissions for JWT
+        // (IdentityUnitOfWorkBehavior will SaveChanges after this handler returns)
+        var roleIds     = user.UserRoles.Select(ur => ur.RoleId).ToList();
+        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
+        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+
+        var accessToken    = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
         var refreshTokenStr = tokenService.GenerateRefreshToken();
 
         var refreshToken = RefreshTokenEntity.Create(
-            user.Id, 
-            refreshTokenStr, 
+            user.Id,
+            refreshTokenStr,
             DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
-            
+
         refreshTokenRepository.Add(refreshToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // NOTE: SaveChangesAsync is handled by IdentityUnitOfWorkBehavior — do NOT call it here.
 
-        return new LoginResponse(
-            user.Id,
-            user.DisplayName,
-            accessToken,
-            refreshTokenStr,
-            user.IsOnboardingCompleted);
+        return new LoginResponse(user.Id, user.DisplayName, accessToken, refreshTokenStr, user.IsOnboardingCompleted);
     }
 }

@@ -14,6 +14,8 @@ public sealed class Conversation : AggregateRoot
     public string? ImageUrl { get; private set; }
     public Guid? TopicId { get; private set; }
     public Guid? GrammarId { get; private set; }
+    /// <summary>True when this entry was created by AI generation, not manually entered.</summary>
+    public bool IsAiGenerated { get; private set; }
 
     private readonly List<Entities.ConversationLine> _lines = [];
     public IReadOnlyList<Entities.ConversationLine> Lines => _lines.AsReadOnly();
@@ -27,7 +29,8 @@ public sealed class Conversation : AggregateRoot
         string? level = null,
         string? imageUrl = null,
         Guid? topicId = null,
-        Guid? grammarId = null)
+        Guid? grammarId = null,
+        bool isAiGenerated = false)
     {
         return new Conversation
         {
@@ -38,7 +41,8 @@ public sealed class Conversation : AggregateRoot
             Level = level,
             ImageUrl = imageUrl,
             TopicId = topicId,
-            GrammarId = grammarId
+            GrammarId = grammarId,
+            IsAiGenerated = isAiGenerated
         };
     }
 
@@ -58,9 +62,14 @@ public sealed class Conversation : AggregateRoot
         GrammarId = grammarId;
     }
 
-    public void AddLine(string speaker, string text, string? translation, string? audioUrl)
+    /// <summary>
+    /// Adds a new line to the conversation. Use line.AddTranslation() to attach translations.
+    /// </summary>
+    public Entities.ConversationLine AddLine(string speaker, string text, string? audioUrl)
     {
-        _lines.Add(Entities.ConversationLine.Create(Id, speaker, text, translation, audioUrl, _lines.Count));
+        var line = Entities.ConversationLine.Create(Id, speaker, text, audioUrl, _lines.Count);
+        _lines.Add(line);
+        return line;
     }
 
     public void ClearLines() => _lines.Clear();

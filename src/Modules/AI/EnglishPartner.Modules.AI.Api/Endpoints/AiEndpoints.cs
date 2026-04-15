@@ -4,7 +4,6 @@ using EnglishPartner.Modules.AI.Application.Chat.Commands.SendMessage;
 using EnglishPartner.Modules.AI.Application.Chat.Commands.StartChat;
 using EnglishPartner.Modules.AI.Application.Chat.Queries.GetChatHistory;
 using EnglishPartner.Modules.AI.Application.Chat.Queries.GetMySessions;
-using EnglishPartner.Modules.AI.Application.ContentGeneration.Commands.GenerateConversation;
 using EnglishPartner.Modules.AI.Application.Evaluation.Commands.EvaluateInput;
 using EnglishPartner.Modules.Curriculum.Contracts.Services;
 using EnglishPartner.SharedKernel.Extensions;
@@ -36,7 +35,8 @@ internal static class AiEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("EvaluateInput")
-        .WithSummary("Evaluate user text input using AI. Returns SM-2 quality score (0-5).");
+        .WithSummary("Evaluate user text input using AI. Returns SM-2 quality score (0-5).")
+        .RequireRateLimiting("ai-scoring");
 
         group.MapPost("/evaluate-audio", async (
             IFormFile audioFile,
@@ -47,6 +47,10 @@ internal static class AiEndpoints
         {
             if (audioFile is null || audioFile.Length == 0)
                 return Results.BadRequest("Audio file is required.");
+
+            const long MaxAudioBytes = 10 * 1024 * 1024; // 10 MB
+            if (audioFile.Length > MaxAudioBytes)
+                return Results.BadRequest("Audio file is too large. Maximum size is 10 MB.");
 
             using var stream = audioFile.OpenReadStream();
             var command = new EnglishPartner.Modules.AI.Application.Evaluation.Commands.EvaluateAudio.EvaluateAudioCommand(
@@ -62,7 +66,8 @@ internal static class AiEndpoints
         })
         .WithName("EvaluateAudio")
         .WithSummary("Upload and evaluate an audio file using AI. Returns Transcription and SM-2 quality score (0-5).")
-        .DisableAntiforgery(); // Minimal API + IFormFile sometimes requires this if antiforgery is globally enforced.
+        .DisableAntiforgery()
+        .RequireRateLimiting("ai-scoring");
 
         // ── Chat — Sessions ──
         group.MapGet("/chat/sessions", async (ISender sender, HttpContext ctx) =>
@@ -103,20 +108,13 @@ internal static class AiEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("SendChatMessage")
-        .WithSummary("Send a message to the AI Tutor and get a reply.");
+        .WithSummary("Send a message to the AI Tutor and get a reply.")
+        .RequireRateLimiting("ai-chat");
 
         // ── Admin group ──
         var admin = app.MapGroup("api/v1/admin/ai")
             .WithTags("AI Admin")
             .RequireAuthorization("Admin");
-
-        admin.MapPost("/generate-conversation", async (GenerateConversationCommand command, ISender sender) =>
-        {
-            var result = await sender.Send(command);
-            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        })
-        .WithName("GenerateConversation")
-        .WithSummary("Generate an AI conversation script for a curriculum topic.");
 
         admin.MapGet("/request-logs", async (
             [AsParameters] GetAiRequestLogsRequest request,
@@ -133,14 +131,12 @@ internal static class AiEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("GetAiRequestLogs")
-        .WithSummary("Get a paginated list of AI request logs.");
+        .WithSummary("Get a paginated list of AI request logs.")
+        .RequireAuthorization("ai.logs.read");
     }
 
     private static bool TryGetUserId(HttpContext ctx, out Guid userId)
-    {
-        var value = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(value, out userId);
-    }
+        => ctx.TryGetUserId(out userId);
 }
 
 // ── Request DTOs (only fields from body — UserId comes from JWT) ──

@@ -13,13 +13,15 @@ internal sealed class CreateExampleSentenceCommandHandler(
         var sentence = ExampleSentence.Create(
             request.Text,
             request.LanguageCode,
-            request.Translation,
             request.AudioUrl,
             request.Note,
             request.Level,
             request.TopicId,
             request.VocabularyId,
             request.GrammarId);
+
+        if (!string.IsNullOrWhiteSpace(request.Translation))
+            sentence.AddTranslation("vi", request.Translation);
 
         repository.Add(sentence);
         return sentence.Id;

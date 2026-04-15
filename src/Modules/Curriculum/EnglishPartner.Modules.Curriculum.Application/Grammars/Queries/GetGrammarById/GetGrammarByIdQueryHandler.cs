@@ -22,6 +22,11 @@ internal sealed class GetGrammarByIdQueryHandler(
             grammar.Formula,
             grammar.TopicId,
             grammar.Examples.Select(e => new GrammarExampleDto(
-                e.Id, e.Sentence, e.Translation, e.Note, e.SortOrder)).ToList());
+                e.Id,
+                e.Sentence,
+                e.Note,
+                e.SortOrder,
+                e.Translations.Select(t => new GrammarExampleTranslationDto(t.LanguageCode, t.TranslatedText)).ToList()
+            )).ToList());
     }
 }

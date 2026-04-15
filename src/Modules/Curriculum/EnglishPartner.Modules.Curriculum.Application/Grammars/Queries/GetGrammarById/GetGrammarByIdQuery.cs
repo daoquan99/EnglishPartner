@@ -17,6 +17,8 @@ public sealed record GrammarDetailResponse(
 public sealed record GrammarExampleDto(
     Guid Id,
     string Sentence,
-    string? Translation,
     string? Note,
-    int SortOrder);
+    int SortOrder,
+    List<GrammarExampleTranslationDto> Translations);
+
+public sealed record GrammarExampleTranslationDto(string LanguageCode, string TranslatedText);

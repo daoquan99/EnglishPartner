@@ -20,6 +20,12 @@ internal sealed class GetExampleSentencesQueryHandler(
             sentences = await repository.GetByTopicIdAsync(request.TopicId.Value, cancellationToken);
 
         return sentences.Select(s => new ExampleSentenceResponse(
-            s.Id, s.Text, s.Translation, s.AudioUrl, s.Note, s.Level)).ToList();
+            s.Id,
+            s.Text,
+            s.AudioUrl,
+            s.Note,
+            s.Level,
+            s.Translations.Select(t => new ExampleSentenceTranslationDto(t.LanguageCode, t.TranslatedText)).ToList()
+        )).ToList();
     }
 }

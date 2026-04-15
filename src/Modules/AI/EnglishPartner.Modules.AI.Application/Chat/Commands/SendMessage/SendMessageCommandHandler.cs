@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.AI.Application.Abstractions;
+using EnglishPartner.Modules.AI.Domain;
 using EnglishPartner.Modules.AI.Domain.ChatSessions;
 using EnglishPartner.Modules.AI.Domain.ChatSessions.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
@@ -14,7 +15,7 @@ internal sealed class SendMessageCommandHandler(
     {
         var session = await sessionRepository.GetByIdWithMessagesAsync(request.SessionId, cancellationToken);
         if (session is null || session.UserId != request.UserId)
-            return Result.Failure<SendMessageResponse>(new Error("ChatSession.NotFound", "Chat session not found."));
+            return Result.Failure<SendMessageResponse>(AiErrors.ChatSession.NotFound);
 
         session.AddUserMessage(request.Text);
 

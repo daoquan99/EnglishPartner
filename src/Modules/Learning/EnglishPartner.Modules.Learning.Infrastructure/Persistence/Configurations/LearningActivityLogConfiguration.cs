@@ -10,7 +10,9 @@ internal sealed class LearningActivityLogConfiguration : IEntityTypeConfiguratio
     {
         builder.ToTable("activity_logs");
         builder.HasKey(x => x.Id);
-        
+
+        // LearningActivityLog extends Entity (not AggregateRoot) — immutable log, no soft-delete
+
         builder.HasIndex(x => x.UserId);
         builder.HasIndex(x => x.SessionId);
         builder.HasIndex(x => x.ItemId);

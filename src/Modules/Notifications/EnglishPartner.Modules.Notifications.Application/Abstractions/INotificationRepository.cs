@@ -9,4 +9,11 @@ public interface INotificationRepository
     Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<int> BulkDeleteOldNotificationsAsync(DateTime cutoffDate, CancellationToken cancellationToken = default);
     void Add(Notification notification);
+
+    // Admin operations
+    Task<(IReadOnlyList<Notification> Items, int TotalCount)> GetAllPagedAsync(
+        Guid? userId, bool? isRead, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<int> DeleteByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<int> MarkAllAsReadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<int> DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }

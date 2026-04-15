@@ -21,12 +21,13 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
 {
     public async Task Execute(IJobExecutionContext context)
     {
-        var batchSize = outboxOptions.Value.BatchSize;
+        var settings  = outboxOptions.Value;
+        var maxRetries = settings.MaxRetries;
 
         var messages = await dbContext.Set<OutboxMessage>()
-            .Where(m => m.ProcessedOn == null && m.Error == null)
+            .Where(m => m.ProcessedOn == null && m.RetryCount < maxRetries)
             .OrderBy(m => m.OccurredOn)
-            .Take(batchSize)
+            .Take(settings.BatchSize)
             .ToListAsync(context.CancellationToken);
 
         if (messages.Count == 0)
@@ -36,6 +37,9 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
 
         foreach (var message in messages)
         {
+            // Clear previous transient error before retrying
+            message.Error = null;
+
             try
             {
                 var domainEvent = JsonConvert.DeserializeObject(
@@ -49,16 +53,15 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
                 {
                     logger.LogWarning("Outbox payload deserialized to null. ID: {Id}", message.Id);
                     message.Error = "Deserialized to null.";
+                    message.RetryCount = maxRetries; // Permanent failure — skip on next polls
                     continue;
                 }
 
                 // Publish through MediatR so handlers (like Domain -> Integration mappers) can pick it up
-                
                 if (domainEvent is IDomainEvent validDomainEvent)
                 {
-                    // Use reflection/dynamic to instantiate the generic DomainEventNotification<T> type
                     var notificationType = typeof(DomainEventNotification<>).MakeGenericType(domainEvent.GetType());
-                    var notification = Activator.CreateInstance(notificationType, domainEvent);
+                    var notification     = Activator.CreateInstance(notificationType, domainEvent);
                     if (notification != null)
                     {
                         await publisher.Publish(notification, context.CancellationToken);
@@ -73,8 +76,18 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to process outbox message {Id}", message.Id);
+                message.RetryCount++;
                 message.Error = ex.Message;
+                logger.LogError(ex,
+                    "Failed to process outbox message {Id} (attempt {Attempt}/{Max})",
+                    message.Id, message.RetryCount, maxRetries);
+
+                if (message.RetryCount >= maxRetries)
+                {
+                    logger.LogCritical(
+                        "Outbox message {Id} (type={Type}) exhausted all {Max} retries. Manual intervention required.",
+                        message.Id, message.Type, maxRetries);
+                }
             }
         }
 

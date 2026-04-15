@@ -19,8 +19,8 @@ internal sealed class GetChatHistoryQueryHandler(
             return Result.Failure<ChatHistoryResponse>(AiErrors.ChatSession.AccessDenied);
 
         var messages = session.Messages
-            .OrderBy(m => m.Timestamp)
-            .Select(m => new ChatMessageDto(m.Id, m.Role.ToString().ToLowerInvariant(), m.Text, m.Timestamp))
+            .OrderBy(m => m.CreatedAt)
+            .Select(m => new ChatMessageDto(m.Id, m.Role.ToString().ToLowerInvariant(), m.Text, m.CreatedAt))
             .ToList();
 
         return new ChatHistoryResponse(session.Id, session.Title, messages);

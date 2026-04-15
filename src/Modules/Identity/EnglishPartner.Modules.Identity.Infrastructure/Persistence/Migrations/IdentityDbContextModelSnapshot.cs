@@ -66,6 +66,9 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ProcessedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -118,6 +121,112 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("permissions", "identity");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000001"),
+                            Code = "curriculum.topics.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Topics"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000002"),
+                            Code = "curriculum.vocabulary.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Vocabulary"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000003"),
+                            Code = "curriculum.grammar.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Grammar"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000004"),
+                            Code = "curriculum.exercise.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Exercise"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000005"),
+                            Code = "curriculum.conversation.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Conversation"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000006"),
+                            Code = "curriculum.sentence.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "Write Sentence"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000007"),
+                            Code = "curriculum.generate",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "curriculum",
+                            Name = "curriculum.generate"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000008"),
+                            Code = "learning.admin.view",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "learning",
+                            Name = "View Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000009"),
+                            Code = "learning.admin.write",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "learning",
+                            Name = "Write Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000010"),
+                            Code = "identity.users.manage",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "identity",
+                            Name = "Manage Users"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000011"),
+                            Code = "identity.roles.manage",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "identity",
+                            Name = "Manage Roles"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000012"),
+                            Code = "ai.logs.read",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "ai",
+                            Name = "Read Logs"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000013"),
+                            Code = "notifications.admin",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "notifications",
+                            Name = "notifications.admin"
+                        });
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Roles.Entities.RolePermission", b =>
@@ -150,6 +259,99 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("role_permissions", "identity");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000001"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000001"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000002"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000002"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000003"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000003"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000004"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000004"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000005"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000005"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000006"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000006"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000007"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000007"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000008"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000008"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000009"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000009"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000010"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000010"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000011"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000011"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000012"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000012"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000013"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000013"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        });
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Roles.Role", b =>
@@ -343,6 +545,30 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("streaks", "identity");
                 });
 
+            modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.Entities.UserExternalLogin", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_external_logins", "identity");
+                });
+
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.Entities.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -485,8 +711,12 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("IsActive");
 
                     b.ToTable("users", "identity");
                 });
@@ -496,6 +726,15 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.HasOne("EnglishPartner.Modules.Identity.Domain.Roles.Role", null)
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.Entities.UserExternalLogin", b =>
+                {
+                    b.HasOne("EnglishPartner.Modules.Identity.Domain.Users.User", null)
+                        .WithMany("ExternalLogins")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -516,6 +755,8 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.User", b =>
                 {
+                    b.Navigation("ExternalLogins");
+
                     b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618

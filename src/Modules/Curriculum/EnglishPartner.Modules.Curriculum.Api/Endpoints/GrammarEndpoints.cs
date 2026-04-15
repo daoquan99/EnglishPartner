@@ -1,4 +1,6 @@
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.CreateGrammar;
+using EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.DeleteGrammar;
+using EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.UpdateGrammar;
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Queries.GetGrammarById;
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Queries.GetGrammars;
 using EnglishPartner.SharedKernel.Extensions;
@@ -26,32 +28,47 @@ internal static class GrammarEndpoints
         {
             var result = await sender.Send(new GetGrammarsQuery(languageCode));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        });
+        })
+        .WithName("GetGrammars")
+        .WithSummary("Get all grammar rules for a given language code.");
 
         group.MapGet("{id:guid}", async (Guid id, ISender sender) =>
         {
             var result = await sender.Send(new GetGrammarByIdQuery(id));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        });
+        })
+        .WithName("GetGrammarById")
+        .WithSummary("Get a grammar rule by ID, including examples and translations.");
 
         // ── Admin Endpoints ──
         adminGroup.MapPost("", async (CreateGrammarCommand command, ISender sender) =>
         {
             var result = await sender.Send(command);
-            return result.IsSuccess ? Results.Created($"/api/v1/curriculum/grammars/{result.Value}", result.Value) : result.ToProblemDetails();
-        });
+            return result.IsSuccess
+                ? Results.Created($"/api/v1/curriculum/grammars/{result.Value}", result.Value)
+                : result.ToProblemDetails();
+        })
+        .WithName("CreateGrammar")
+        .WithSummary("Create a new grammar rule.")
+        .RequireAuthorization("curriculum.grammar.write");
 
-        adminGroup.MapPut("{id:guid}", async (Guid id, EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.UpdateGrammar.UpdateGrammarCommand command, ISender sender) =>
+        adminGroup.MapPut("{id:guid}", async (Guid id, UpdateGrammarCommand command, ISender sender) =>
         {
-            if (id != command.Id) return Results.BadRequest("ID in path does not match ID in body.");
+            if (id != command.Id) return Results.BadRequest("Route ID does not match body ID.");
             var result = await sender.Send(command);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        })
+        .WithName("UpdateGrammar")
+        .WithSummary("Update an existing grammar rule.")
+        .RequireAuthorization("curriculum.grammar.write");
 
         adminGroup.MapDelete("{id:guid}", async (Guid id, ISender sender) =>
         {
-            var result = await sender.Send(new EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.DeleteGrammar.DeleteGrammarCommand(id));
+            var result = await sender.Send(new DeleteGrammarCommand(id));
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        })
+        .WithName("DeleteGrammar")
+        .WithSummary("Soft-delete a grammar rule.")
+        .RequireAuthorization("curriculum.grammar.write");
     }
 }

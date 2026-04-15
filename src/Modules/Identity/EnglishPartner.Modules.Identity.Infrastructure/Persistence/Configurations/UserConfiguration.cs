@@ -23,6 +23,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(ur => ur.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasIndex(u => u.IsActive);                    // Admin GetPagedAsync filter
+        builder.HasIndex(u => u.CreatedAt);                   // Admin GetPagedAsync ORDER BY
+
         builder.HasQueryFilter(u => !u.IsDeleted);
+
     }
 }

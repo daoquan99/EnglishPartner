@@ -1,3 +1,4 @@
+using EnglishPartner.Modules.Curriculum.Domain;
 using EnglishPartner.Modules.Curriculum.Domain.Conversations.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -10,7 +11,7 @@ internal sealed class GetConversationByIdQueryHandler(
     public async Task<Result<ConversationDetailResponse>> Handle(GetConversationByIdQuery request, CancellationToken cancellationToken)
     {
         var conversation = await conversationRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (conversation is null) return Result.Failure<ConversationDetailResponse>(new Error("Conversation.NotFound", "Conversation not found."));
+        if (conversation is null) return Result.Failure<ConversationDetailResponse>(CurriculumErrors.Conversation.NotFound(request.Id));
 
         return new ConversationDetailResponse(
             conversation.Id,
@@ -22,6 +23,12 @@ internal sealed class GetConversationByIdQueryHandler(
             conversation.TopicId,
             conversation.GrammarId,
             conversation.Lines.Select(l => new ConversationLineDto(
-                l.Id, l.Speaker, l.Text, l.Translation, l.AudioUrl, l.SortOrder)).ToList());
+                l.Id,
+                l.Speaker,
+                l.Text,
+                l.AudioUrl,
+                l.SortOrder,
+                l.Translations.Select(t => new ConversationLineTranslationDto(t.LanguageCode, t.TranslatedText)).ToList()
+            )).ToList());
     }
 }

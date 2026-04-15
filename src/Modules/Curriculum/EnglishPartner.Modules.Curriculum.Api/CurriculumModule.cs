@@ -24,6 +24,7 @@ public static class CurriculumModule
         Endpoints.ExerciseEndpoints.Map(app);
         Endpoints.ConversationEndpoints.Map(app);
         Endpoints.ExampleSentenceEndpoints.Map(app);
+        Endpoints.CurriculumGenerateEndpoints.Map(app);
         return app;
     }
 }

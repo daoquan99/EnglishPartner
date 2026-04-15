@@ -9,7 +9,7 @@ internal sealed class ChatSessionRepository(AiDbContext context) : IChatSessionR
     public async Task<ChatSession?> GetByIdWithMessagesAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.ChatSessions
-            .Include(s => s.Messages.OrderBy(m => m.Timestamp))
+            .Include(s => s.Messages.OrderBy(m => m.CreatedAt))
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
@@ -19,6 +19,24 @@ internal sealed class ChatSessionRepository(AiDbContext context) : IChatSessionR
             .Include(s => s.Messages)
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Lightweight projection for list view — counts messages in SQL, avoids loading entities.
+    /// </summary>
+    public async Task<List<ChatSessionSummary>> GetUserSessionSummariesAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await context.ChatSessions
+            .AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new ChatSessionSummary(
+                s.Id,
+                s.Title,
+                s.Messages.Count,   // Translated to COUNT(*) subquery in SQL
+                s.CreatedAt,
+                s.UpdatedAt))
             .ToListAsync(cancellationToken);
     }
 

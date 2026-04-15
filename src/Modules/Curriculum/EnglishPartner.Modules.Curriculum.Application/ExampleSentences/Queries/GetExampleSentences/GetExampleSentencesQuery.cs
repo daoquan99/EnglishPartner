@@ -11,7 +11,9 @@ public sealed record GetExampleSentencesQuery(
 public sealed record ExampleSentenceResponse(
     Guid Id,
     string Text,
-    string? Translation,
     string? AudioUrl,
     string? Note,
-    string? Level);
+    string? Level,
+    List<ExampleSentenceTranslationDto> Translations);
+
+public sealed record ExampleSentenceTranslationDto(string LanguageCode, string TranslatedText);

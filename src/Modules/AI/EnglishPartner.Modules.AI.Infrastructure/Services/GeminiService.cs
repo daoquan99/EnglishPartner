@@ -29,6 +29,9 @@ internal sealed class GeminiService(
 
     private GeminiAISettings Config => settings.Value;
 
+    private string BuildApiUrl() =>
+        $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
+
     public async Task<EvaluationResult> EvaluateInputAsync(string itemContext, string userInput, CancellationToken cancellationToken = default)
     {
         var prompt = $$"""
@@ -120,42 +123,7 @@ internal sealed class GeminiService(
         }
     }
 
-    public async Task<GeneratedConversation> GenerateConversationAsync(string topicName, string level, CancellationToken cancellationToken = default)
-    {
-        var prompt = $$"""
-            Generate an English conversation about the topic "{{topicName}}" at {{level}} level.
-            The conversation should have 6-10 turns between 2 speakers (A and B).
-            
-            Respond in this exact JSON format (no markdown):
-            {
-              "title": "<conversation title>",
-              "lines": [
-                {
-                  "speaker": "A",
-                  "text": "<English text>",
-                  "translation": "<Vietnamese translation>"
-                }
-              ]
-            }
-            """;
 
-        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateConversation", prompt, cancellationToken);
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<GeneratedConversationJson>(json, JsonOptions);
-            if (parsed is null)
-                return new GeneratedConversation(topicName, []);
-
-            var lines = parsed.Lines?.Select(l => new ConversationLine(l.Speaker ?? "A", l.Text ?? "", l.Translation ?? "")).ToList() ?? [];
-            return new GeneratedConversation(parsed.Title ?? topicName, lines);
-        }
-        catch (JsonException ex)
-        {
-            logger.LogWarning(ex, "[Gemini] Failed to parse conversation response: {Json}", json);
-            return new GeneratedConversation(topicName, []);
-        }
-    }
 
     public async Task<string> ChatAsync(string systemPrompt, IReadOnlyList<ChatTurn> history, string userMessage, CancellationToken cancellationToken = default)
     {
@@ -179,12 +147,7 @@ internal sealed class GeminiService(
 
         try
         {
-            logger.LogInformation("[Gemini] Calling Chat on model {Model}", Config.ModelName);
-            var url = $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
-            if (url.Contains('?') == false && !string.IsNullOrWhiteSpace(Config.ApiKey))
-            {
-                url += $"?key={Config.ApiKey}";
-            }
+            var url = BuildApiUrl();
             var content = new StringContent(JsonSerializer.Serialize(requestBody, JsonOptions), Encoding.UTF8, "application/json");
             var response = await httpClient.PostAsync(url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -217,6 +180,301 @@ internal sealed class GeminiService(
         logger.LogInformation("[Gemini] Chat completed in {Ms}ms (success={Success})", sw.ElapsedMilliseconds, isSuccess);
         return responseText;
     }
+
+    // ── Content Generation Methods ──────────────────────────────────────────
+
+    private const string SystemIntro =
+        "You are an AI assistant powering an English learning app. " +
+        "Generate accurate, pedagogically sound, and learner-friendly educational content for English learners. " +
+        "Follow the output format exactly. Output only valid JSON, no markdown.";
+
+    private static string BuildTranslationsInstruction(List<string>? targetLanguageCodes)
+    {
+        if (targetLanguageCodes is null or { Count: 0 })
+            return "\"translations\": {}";
+        var langs = string.Join(", ", targetLanguageCodes.Select(c => $"\"{c}\": \"<translation in {c}>\""));
+        return $"\"translations\": {{ {langs} }}";
+    }
+
+    public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(
+        string wordHint, int count = 1, CancellationToken cancellationToken = default)
+    {
+        count = Math.Clamp(count, 1, 20);
+        var scope = count == 1
+            ? $"Generate vocabulary data for the word \"{wordHint}\"."
+            : $"Generate {count} English vocabulary words related to the topic: \"{wordHint}\". Pick diverse, useful words.";
+
+        var prompt = $$"""
+            {{SystemIntro}}
+
+            {{scope}}
+
+            Respond ONLY with this exact JSON array wrapped in an object:
+            {
+              "items": [
+                {
+                  "word": "<the English word>",
+                  "definition": "<clear English definition>",
+                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER'>",
+                  "phoneticTranscription": "<IPA notation, e.g. /pəˌsɪˈvɪər/>",
+                  "partOfSpeech": "<noun|verb|adjective|adverb|preposition|conjunction|interjection>",
+                  "level": "<A1|A2|B1|B2|C1|C2>",
+                  "synonyms": ["<synonym1>", "<synonym2>", "<synonym3>"]
+                }
+              ]
+            }
+            """;
+
+        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateVocabulary", prompt, cancellationToken);
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<ItemsWrapper<VocabularyJson>>(json, JsonOptions);
+            return (wrapper?.Items ?? [])
+                .Select(v => new GeminiGeneratedVocabulary(
+                    v.Word ?? wordHint, v.Definition ?? "", v.Pronunciation,
+                    v.PhoneticTranscription, v.PartOfSpeech, v.Level, v.Synonyms ?? []))
+                .ToList();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse vocabulary response: {Json}", json);
+            return count == 1 ? [new GeminiGeneratedVocabulary(wordHint, "", null, null, null, null, [])] : [];
+        }
+    }
+
+    public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(
+        string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null,
+        int count = 1, CancellationToken cancellationToken = default)
+    {
+        count = Math.Clamp(count, 1, 10);
+        var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the CEFR level yourself.";
+        var scope = count == 1
+            ? $"Generate a grammar lesson for: \"{title}\"."
+            : $"Generate {count} related grammar lessons, starting from \"{title}\".";
+        var translationsInstruction = BuildTranslationsInstruction(targetLanguageCodes);
+
+        var prompt = $$"""
+            {{SystemIntro}}
+
+            {{scope}} {{levelHint}}
+            Include exactly {{exampleCount}} example sentences per grammar rule.
+
+            Respond ONLY with this exact JSON object:
+            {
+              "items": [
+                {
+                  "title": "<grammar rule title>",
+                  "explanation": "<clear English explanation>",
+                  "formula": "<structure formula, e.g. 'Subject + have/has + past participle'>",
+                  "level": "<A1|A2|B1|B2|C1|C2>",
+                  "examples": [
+                    {
+                      "sentence": "<English example sentence>",
+                      "note": "<short note explaining why this example illustrates the rule>",
+                      {{translationsInstruction}}
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateGrammar", prompt, cancellationToken);
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<ItemsWrapper<GrammarJson>>(json, JsonOptions);
+            return (wrapper?.Items ?? []).Select(g =>
+            {
+                var examples = (g.Examples ?? [])
+                    .Select(e => new GeminiGrammarExample(
+                        e.Sentence ?? "",
+                        e.Note,
+                        e.Translations ?? []))
+                    .ToList();
+                return new GeminiGeneratedGrammar(g.Title ?? title, g.Explanation, g.Formula, g.Level ?? level, examples);
+            }).ToList();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse grammar response: {Json}", json);
+            return count == 1 ? [new GeminiGeneratedGrammar(title, null, null, level, [])] : [];
+        }
+    }
+
+    public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(
+        string topicName, string? level, string? scenario, int lineCount,
+        List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
+    {
+        count = Math.Clamp(count, 1, 10);
+        var levelHint = level is not null ? $"Language difficulty: CEFR {level}." : "";
+        var scenarioHint = scenario is not null ? $"Scenario: {scenario}." : "";
+        var scope = count == 1
+            ? $"Create a realistic English dialogue about: \"{topicName}\"."
+            : $"Create {count} different realistic English dialogues about: \"{topicName}\".";
+        var translationsInstruction = BuildTranslationsInstruction(targetLanguageCodes);
+
+        var prompt = $$"""
+            {{SystemIntro}}
+
+            {{scope}} {{levelHint}} {{scenarioHint}}
+            Each dialogue must have exactly {{lineCount}} lines.
+
+            Respond ONLY with this exact JSON object:
+            {
+              "items": [
+                {
+                  "title": "<descriptive title for this conversation>",
+                  "lines": [
+                    {
+                      "speaker": "<Speaker name, e.g. 'Alex' or 'Barista'>",
+                      "text": "<English dialogue line>",
+                      {{translationsInstruction}}
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateFullConversation", prompt, cancellationToken);
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<ItemsWrapper<FullConversationJson>>(json, JsonOptions);
+            return (wrapper?.Items ?? []).Select(c =>
+            {
+                var lines = (c.Lines ?? [])
+                    .Select(l => new GeminiConversationLine(
+                        l.Speaker ?? "Speaker",
+                        l.Text ?? "",
+                        l.Translations ?? []))
+                    .ToList();
+                return new GeminiGeneratedConversation(c.Title ?? topicName, lines);
+            }).ToList();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse full conversation response: {Json}", json);
+            return count == 1 ? [new GeminiGeneratedConversation(topicName, [])] : [];
+        }
+    }
+
+    public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(
+        string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
+    {
+        count = Math.Clamp(count, 1, 20);
+        var levelHint = level is not null ? $"Difficulty: CEFR {level}." : "";
+
+        // Type-specific options instruction so Gemini knows exact option count and format
+        var optionsNote = exerciseType switch
+        {
+            0 => // MultipleChoice: exactly 4 options, exactly 1 correct
+                "\"options\": [{ \"text\": \"<option>\", \"isCorrect\": true/false }] // provide exactly 4 options, 1 must be correct",
+            2 => // TrueFalse: exactly 2 options
+                "\"options\": [{ \"text\": \"True\", \"isCorrect\": true/false }, { \"text\": \"False\", \"isCorrect\": true/false }]",
+            14 => // TrueFalseNotGiven: exactly 3 options, exactly 1 correct
+                "\"options\": [{ \"text\": \"True\", \"isCorrect\": true/false }, { \"text\": \"False\", \"isCorrect\": false }, { \"text\": \"Not Given\", \"isCorrect\": false }] // set isCorrect=true on the single correct option",
+            _ =>
+                "\"options\": []"
+        };
+
+        var scope = count == 1
+            ? "Generate 1 exercise"
+            : $"Generate {count} different exercises (use the same context but vary the question/angle)";
+
+        // All AI-supported types with their numeric IDs
+        var typeNames =
+            "0=MultipleChoice, 1=FillInTheBlank, 2=TrueFalse, 4=Translation, " +
+            "9=SentenceCompletion, 10=WordForm, 11=VerbTense, 14=TrueFalseNotGiven, " +
+            "18=Paraphrasing, 19=GapFilling, 22=ReorderingWords, 23=RewritingSentences, " +
+            "24=DialogueCompletion, 27=ShortAnswerQuestions";
+
+        var prompt = $$"""
+            {{SystemIntro}}
+
+            {{scope}} for English learners.
+            Context / topic: {{context}}
+            Exercise type: {{exerciseType}} ({{typeNames}})
+            {{levelHint}}
+
+            Respond ONLY with this exact JSON object:
+            {
+              "items": [
+                {
+                  "title": "<short descriptive title>",
+                  "instruction": "<clear learner instruction, e.g. 'Choose the correct answer'>",
+                  "content": "<question or passage text, or null>",
+                  "correctAnswer": "<exact correct answer text>",
+                  "explanation": "<brief explanation why this is correct, can be in Vietnamese>",
+                  {{optionsNote}}
+                }
+              ]
+            }
+            """;
+
+        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateExercise", prompt, cancellationToken);
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<ItemsWrapper<ExerciseJson>>(json, JsonOptions);
+            return (wrapper?.Items ?? []).Select(e =>
+            {
+                var options = (e.Options ?? [])
+                    .Select(o => new GeminiExerciseOption(o.Text ?? "", o.IsCorrect))
+                    .ToList();
+                return new GeminiGeneratedExercise(
+                    e.Title ?? "Exercise", e.Instruction ?? "",
+                    e.Content, e.CorrectAnswer ?? "", e.Explanation, options);
+            }).ToList();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse exercise response: {Json}", json);
+            return count == 1 ? [new GeminiGeneratedExercise("Exercise", "", null, "", null, [])] : [];
+        }
+    }
+
+
+    public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(
+        string context, int count, string? level, List<string>? targetLanguageCodes = null,
+        CancellationToken cancellationToken = default)
+    {
+        count = Math.Clamp(count, 1, 20);
+        var levelHint = level is not null ? $"CEFR level: {level}." : "";
+        var translationsInstruction = BuildTranslationsInstruction(targetLanguageCodes);
+
+        var prompt = $$"""
+            {{SystemIntro}}
+
+            Generate {{count}} natural English example sentences illustrating:
+            {{context}}
+            {{levelHint}}
+
+            Respond ONLY with this exact JSON object:
+            {
+              "items": [
+                {
+                  "text": "<English example sentence>",
+                  "note": "<short note explaining how this illustrates the concept>",
+                  {{translationsInstruction}}
+                }
+              ]
+            }
+            """;
+
+        var (json, _, _, _) = await CallGeminiWithLoggingAsync("GenerateExampleSentences", prompt, cancellationToken);
+        try
+        {
+            var wrapper = JsonSerializer.Deserialize<ItemsWrapper<ExampleSentenceJson>>(json, JsonOptions);
+            return (wrapper?.Items ?? [])
+                .Select(s => new GeminiGeneratedExampleSentence(s.Text ?? "", s.Note, s.Translations ?? []))
+                .ToList();
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "[Gemini] Failed to parse example sentences response: {Json}", json);
+            return [];
+        }
+    }
+
 
     private object BuildGenerationConfig(bool requireJsonResponse = true)
     {
@@ -274,13 +532,7 @@ internal sealed class GeminiService(
     private async Task<(string Json, long LatencyMs, bool IsSuccess, string? Error)> ExecuteGeminiRequestAsync(
         string requestType, object requestBody, string promptLog, CancellationToken cancellationToken)
     {
-        var url = $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
-
-        // If the BaseUrl doesn't imply an API key header approach, or we want to support both:
-        if (url.Contains('?') == false && !string.IsNullOrWhiteSpace(Config.ApiKey))
-        {
-            url += $"?key={Config.ApiKey}";
-        }
+        var url = BuildApiUrl();
 
         var content = new StringContent(JsonSerializer.Serialize(requestBody, JsonOptions), Encoding.UTF8, "application/json");
 
@@ -335,16 +587,75 @@ internal sealed class GeminiService(
         public string? Transcription { get; set; }
     }
 
-    private sealed class GeneratedConversationJson
+
+    // ── Content Generation Internal DTOs ──
+
+    private sealed class VocabularyJson
     {
-        public string? Title { get; set; }
-        public List<ConversationLineJson>? Lines { get; set; }
+        public string? Word { get; set; }
+        public string? Definition { get; set; }
+        public string? Pronunciation { get; set; }
+        public string? PhoneticTranscription { get; set; }
+        public string? PartOfSpeech { get; set; }
+        public string? Level { get; set; }
+        public List<string>? Synonyms { get; set; }
     }
 
-    private sealed class ConversationLineJson
+    private sealed class GrammarJson
+    {
+        public string? Title { get; set; }
+        public string? Explanation { get; set; }
+        public string? Formula { get; set; }
+        public string? Level { get; set; }
+        public List<GrammarExampleJson>? Examples { get; set; }
+    }
+
+    private sealed class GrammarExampleJson
+    {
+        public string? Sentence { get; set; }
+        public string? Note { get; set; }
+        public Dictionary<string, string>? Translations { get; set; }
+    }
+
+    private sealed class FullConversationJson
+    {
+        public string? Title { get; set; }
+        public List<FullConversationLineJson>? Lines { get; set; }
+    }
+
+    private sealed class FullConversationLineJson
     {
         public string? Speaker { get; set; }
         public string? Text { get; set; }
-        public string? Translation { get; set; }
+        public Dictionary<string, string>? Translations { get; set; }
+    }
+
+    private sealed class ExerciseJson
+    {
+        public string? Title { get; set; }
+        public string? Instruction { get; set; }
+        public string? Content { get; set; }
+        public string? CorrectAnswer { get; set; }
+        public string? Explanation { get; set; }
+        public List<ExerciseOptionJson>? Options { get; set; }
+    }
+
+    private sealed class ExerciseOptionJson
+    {
+        public string? Text { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
+    private sealed class ExampleSentenceJson
+    {
+        public string? Text { get; set; }
+        public string? Note { get; set; }
+        public Dictionary<string, string>? Translations { get; set; }
+    }
+
+    private sealed class ItemsWrapper<T>
+    {
+        public List<T>? Items { get; set; }
     }
 }
+

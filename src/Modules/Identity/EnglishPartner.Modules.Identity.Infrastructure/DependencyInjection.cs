@@ -39,6 +39,9 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ISocialAuthService, SocialAuthService>();
 
+        // Startup seeder — called from Program.cs after migrations
+        services.AddScoped<AdminUserSeeder>();
+
         return services;
     }
 }

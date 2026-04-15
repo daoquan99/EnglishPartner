@@ -15,15 +15,18 @@ public static class DependencyInjection
     {
         services.AddDbContext<NotificationDbContext>((sp, options) =>
         {
-            var interceptor = sp.GetRequiredService<EnglishPartner.SharedKernel.Application.Interceptors.ConvertDomainEventsToOutboxMessagesInterceptor>();
-            options.UseNpgsql(configuration.GetConnectionString("Database"))
-                   .AddInterceptors(interceptor);
+            options.UseNpgsql(configuration.GetConnectionString("Database"),
+                       npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", NotificationDbContext.Schema));
         });
 
         services.AddScoped<INotificationUnitOfWork>(sp => sp.GetRequiredService<NotificationDbContext>());
         services.AddScoped<INotificationRepository, NotificationRepository>();
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+            cfg.LicenseKey = Environment.GetEnvironmentVariable("MEDIATR_LICENSE") ?? string.Empty;
+        });
 
         return services;
     }
