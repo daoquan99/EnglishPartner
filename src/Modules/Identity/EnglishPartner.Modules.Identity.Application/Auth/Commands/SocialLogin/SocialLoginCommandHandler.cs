@@ -64,13 +64,13 @@ internal sealed class SocialLoginCommandHandler(
             user.AddExternalLogin(socialUser.Provider, socialUser.ProviderUserId, socialUser.Provider);
         }
 
-        // 4. Load roles + permissions for JWT
+        // 4. Load roles + permissions for JWT — single DB call (was 2 sequential queries)
         // (IdentityUnitOfWorkBehavior will SaveChanges after this handler returns)
-        var roleIds     = user.UserRoles.Select(ur => ur.RoleId).ToList();
-        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
-        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+        var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
+        var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
         var accessToken    = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
+
         var refreshTokenStr = tokenService.GenerateRefreshToken();
 
         var refreshToken = RefreshTokenEntity.Create(

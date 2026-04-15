@@ -29,10 +29,11 @@ internal sealed class RefreshTokenCommandHandler(
         if (user is null || !user.IsActive)
             return Result.Failure<RefreshTokenResponse>(IdentityErrors.User.Deactivated);
 
+        // Single DB call: role names + permissions combined (was 2 sequential queries)
         var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
-        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
-        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+        var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
         var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
+
 
         var newRefreshToken = RefreshTokenEntity.Create(
             user.Id,

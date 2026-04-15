@@ -35,7 +35,8 @@ namespace EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.Migration
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("OccurredOn")
                         .HasColumnType("timestamp with time zone");
@@ -45,7 +46,9 @@ namespace EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.Migration
 
                     b.HasKey("Id");
 
-                    b.ToTable("InboxMessages", "curriculum");
+                    b.HasIndex("OccurredOn");
+
+                    b.ToTable("inbox_messages", "curriculum");
                 });
 
             modelBuilder.Entity("EnglishPartner.Messaging.OutboxMessage", b =>
@@ -72,11 +75,18 @@ namespace EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.Migration
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("OutboxMessages", "curriculum");
+                    b.HasIndex("OccurredOn");
+
+                    b.HasIndex("ProcessedOn");
+
+                    b.HasIndex("ProcessedOn", "RetryCount");
+
+                    b.ToTable("outbox_messages", "curriculum");
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Curriculum.Domain.Conversations.Conversation", b =>

@@ -23,6 +23,8 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
             .IsRequired();
 
         builder.HasIndex(x => x.UserId);
-        builder.HasIndex(x => new { x.UserId, x.IsRead });
+        builder.HasIndex(x => new { x.UserId, x.IsRead });  // GetByUserIdPagedAsync ORDER BY
+        builder.HasIndex(x => x.CreatedAt);                  // NotificationCleanupJob + GetAllPagedAsync ORDER BY
+
     }
 }

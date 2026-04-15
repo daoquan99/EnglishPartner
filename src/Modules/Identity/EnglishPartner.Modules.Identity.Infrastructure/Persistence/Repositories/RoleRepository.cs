@@ -40,6 +40,32 @@ internal sealed class RoleRepository(IdentityDbContext context) : IRoleRepositor
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<(List<string> RoleNames, List<string> Permissions)> GetRolesAndPermissionsAsync(
+        IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
+    {
+        var ids = roleIds.ToList();
+
+        // Query 1 of 1: role names (simple, fast — roles table is tiny)
+        var roleNames = await context.Roles
+            .AsNoTracking()
+            .Where(r => ids.Contains(r.Id))
+            .Select(r => r.Name)
+            .ToListAsync(cancellationToken);
+
+        // Query 2 of 1: permissions via JOIN (replaces GetPermissionCodesByRoleIdsAsync)
+        var permissions = await context.RolePermissions
+            .AsNoTracking()
+            .Where(rp => ids.Contains(rp.RoleId))
+            .Join(context.Permissions,
+                  rp => rp.PermissionId,
+                  p  => p.Id,
+                  (rp, p) => p.Code)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return (roleNames, permissions);
+    }
+
     public void Add(Role role) => context.Roles.Add(role);
 
     public void Update(Role role) => context.Roles.Update(role);

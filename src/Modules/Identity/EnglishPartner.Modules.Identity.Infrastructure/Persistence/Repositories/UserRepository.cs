@@ -18,6 +18,12 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
             .Include(u => u.ExternalLogins)
             .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
+    /// <summary>Lean auth variant — only loads UserRoles, no ExternalLogins join.</summary>
+    public async Task<User?> GetByEmailForAuthAsync(string email, CancellationToken cancellationToken = default)
+        => await context.Users
+            .Include(u => u.UserRoles)
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
+
     public async Task<User?> GetByExternalLoginAsync(string provider, string providerKey, CancellationToken cancellationToken = default)
         => await context.Users
             .Include(u => u.UserRoles)
@@ -40,16 +46,18 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
         CancellationToken cancellationToken = default)
     {
         var query = context.Users
+            .AsNoTracking()                  // read-only admin list — no tracking needed
             .Include(u => u.UserRoles)
             .Include(u => u.ExternalLogins)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = search.ToLowerInvariant();
+            var term = $"%{search.Trim()}%";
+            // ILike = case-insensitive LIKE in PostgreSQL (sargable with pg_trgm index)
             query = query.Where(u =>
-                u.Email.Contains(term) ||
-                u.DisplayName.ToLower().Contains(term));
+                EF.Functions.ILike(u.Email, term) ||
+                EF.Functions.ILike(u.DisplayName, term));
         }
 
         if (isActive.HasValue)
@@ -77,4 +85,5 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
 
         return (items, totalCount);
     }
+
 }

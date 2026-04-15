@@ -20,7 +20,9 @@ internal sealed class LoginCommandHandler(
 {
     public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        // Lean query: no ExternalLogins join needed for password login path
+        var user = await userRepository.GetByEmailForAuthAsync(request.Email, cancellationToken);
+
         if (user is null)
             return Result.Failure<LoginResponse>(IdentityErrors.User.InvalidCredentials);
 
@@ -30,9 +32,9 @@ internal sealed class LoginCommandHandler(
         if (!passwordHasher.Verify(request.Password, user.PasswordHash))
             return Result.Failure<LoginResponse>(IdentityErrors.User.InvalidCredentials);
 
-        var roleIds     = user.UserRoles.Select(ur => ur.RoleId).ToList();
-        var roleNames   = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
-        var permissions = await roleRepository.GetPermissionCodesByRoleIdsAsync(roleIds, cancellationToken);
+        // Single DB call: role names + permissions combined (was 2 sequential queries)
+        var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
+        var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
         var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
 

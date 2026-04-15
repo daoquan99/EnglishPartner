@@ -15,11 +15,9 @@ internal sealed class RefreshTokenRepository(IdentityDbContext context) : IRefre
 
     public async Task RevokeAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var tokens = await context.RefreshTokens
+        // Single SQL UPDATE — avoids load-then-loop N+1 pattern
+        await context.RefreshTokens
             .Where(t => t.UserId == userId && !t.IsRevoked)
-            .ToListAsync(cancellationToken);
-
-        foreach (var token in tokens)
-            token.Revoke();
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsRevoked, true), cancellationToken);
     }
 }

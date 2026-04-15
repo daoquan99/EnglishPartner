@@ -34,7 +34,8 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence.Migrat
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("OccurredOn")
                         .HasColumnType("timestamp with time zone");
@@ -44,7 +45,9 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence.Migrat
 
                     b.HasKey("Id");
 
-                    b.ToTable("InboxMessages", "notifications");
+                    b.HasIndex("OccurredOn");
+
+                    b.ToTable("inbox_messages", "notifications");
                 });
 
             modelBuilder.Entity("EnglishPartner.Messaging.OutboxMessage", b =>
@@ -71,11 +74,18 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence.Migrat
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("OutboxMessages", "notifications");
+                    b.HasIndex("OccurredOn");
+
+                    b.HasIndex("ProcessedOn");
+
+                    b.HasIndex("ProcessedOn", "RetryCount");
+
+                    b.ToTable("outbox_messages", "notifications");
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Notifications.Domain.Notifications.Notification", b =>
@@ -128,6 +138,8 @@ namespace EnglishPartner.Modules.Notifications.Infrastructure.Persistence.Migrat
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("UserId");
 

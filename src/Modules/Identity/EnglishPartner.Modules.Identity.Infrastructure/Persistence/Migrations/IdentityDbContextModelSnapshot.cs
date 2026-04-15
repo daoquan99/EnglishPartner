@@ -34,7 +34,8 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("OccurredOn")
                         .HasColumnType("timestamp with time zone");
@@ -44,7 +45,9 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("InboxMessages", "identity");
+                    b.HasIndex("OccurredOn");
+
+                    b.ToTable("inbox_messages", "identity");
                 });
 
             modelBuilder.Entity("EnglishPartner.Messaging.OutboxMessage", b =>
@@ -71,11 +74,18 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("OutboxMessages", "identity");
+                    b.HasIndex("OccurredOn");
+
+                    b.HasIndex("ProcessedOn");
+
+                    b.HasIndex("ProcessedOn", "RetryCount");
+
+                    b.ToTable("outbox_messages", "identity");
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Roles.Entities.Permission", b =>

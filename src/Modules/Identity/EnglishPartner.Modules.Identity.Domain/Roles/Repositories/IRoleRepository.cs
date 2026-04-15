@@ -11,6 +11,13 @@ public interface IRoleRepository
     /// <summary>Returns permission codes for all given role IDs. Used to populate JWT permission claims.</summary>
     Task<List<string>> GetPermissionCodesByRoleIdsAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Returns role names AND permission codes in a single round-trip.
+    /// Use on login/refresh to avoid 2 sequential DB queries on the hot auth path.
+    /// </summary>
+    Task<(List<string> RoleNames, List<string> Permissions)> GetRolesAndPermissionsAsync(
+        IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
+
     void Add(Role role);
     void Update(Role role);
 }

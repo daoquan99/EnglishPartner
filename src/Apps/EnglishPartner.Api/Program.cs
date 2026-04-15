@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.AspNetCore.RateLimiting;
 using EnglishPartner.Api.Services;
 using EnglishPartner.Api.Endpoints;
@@ -311,37 +312,60 @@ app.MapGet("api/v1/admin/dashboard", async (
     EnglishPartner.Modules.Identity.Infrastructure.Persistence.IdentityDbContext identityDb,
     EnglishPartner.Modules.Learning.Infrastructure.Persistence.LearningDbContext  learningDb,
     EnglishPartner.Modules.Notifications.Infrastructure.Persistence.NotificationDbContext notifDb,
+    Microsoft.Extensions.Caching.Distributed.IDistributedCache cache,
     CancellationToken cancellationToken) =>
 {
-    var now = DateTime.UtcNow;
+    const string CacheKey = "admin:dashboard";
+
+    // Serve from cache if fresh (60s TTL) — admin refreshes shouldn't hammer 7 COUNT queries
+    var cached = await cache.GetStringAsync(CacheKey, cancellationToken);
+    if (cached is not null)
+        return Results.Ok(System.Text.Json.JsonSerializer.Deserialize<object>(cached));
+
+    var now          = DateTime.UtcNow;
     var sevenDaysAgo = now.AddDays(-7);
+    var completedStatus = EnglishPartner.Modules.Learning.Domain.StudySessions.SessionStatus.Completed;
 
-    var totalUsers              = await identityDb.Users.CountAsync(cancellationToken);
-    var activeUsersLast7Days    = await identityDb.Users.CountAsync(u => u.UpdatedAt >= sevenDaysAgo, cancellationToken);
-    var newRegistrationsLast7   = await identityDb.Users.CountAsync(u => u.CreatedAt >= sevenDaysAgo, cancellationToken);
+    // Run all queries in parallel — each uses a separate DbContext instance (scoped), safe to parallelize
+    var totalUsersTask           = identityDb.Users.CountAsync(cancellationToken);
+    var activeUsersTask          = identityDb.Users.CountAsync(u => u.UpdatedAt >= sevenDaysAgo, cancellationToken);
+    var newRegistrationsTask     = identityDb.Users.CountAsync(u => u.CreatedAt >= sevenDaysAgo, cancellationToken);
+    var totalSessionsTask        = learningDb.StudySessions.CountAsync(cancellationToken);
+    var completedSessionsTask    = learningDb.StudySessions.CountAsync(s => s.Status == completedStatus, cancellationToken);
+    var avgScoreTask             = learningDb.StudySessions
+        .Where(s => s.Status == completedStatus)
+        .AverageAsync(s => (double?)s.Score, cancellationToken);
+    var totalNotificationsTask   = notifDb.Notifications.CountAsync(cancellationToken);
 
-    var totalSessions           = await learningDb.StudySessions.CountAsync(cancellationToken);
-    var completedSessions       = await learningDb.StudySessions
-        .CountAsync(s => s.Status == EnglishPartner.Modules.Learning.Domain.StudySessions.SessionStatus.Completed, cancellationToken);
-    var avgScore                = await learningDb.StudySessions
-        .Where(s => s.Status == EnglishPartner.Modules.Learning.Domain.StudySessions.SessionStatus.Completed)
-        .AverageAsync(s => (double?)s.Score, cancellationToken) ?? 0;
+    await Task.WhenAll(
+        totalUsersTask, activeUsersTask, newRegistrationsTask,
+        totalSessionsTask, completedSessionsTask, avgScoreTask,
+        totalNotificationsTask);
 
-    var totalNotifications      = await notifDb.Notifications.CountAsync(cancellationToken);
-
-    return Results.Ok(new
+    var result = new
     {
-        totalUsers,
-        activeUsersLast7Days,
-        newRegistrationsLast7Days = newRegistrationsLast7,
-        totalSessions,
-        totalSessionsCompleted    = completedSessions,
-        averageSessionScore       = Math.Round(avgScore, 1),
-        totalNotificationsSent    = totalNotifications,
-    });
+        totalUsers                = totalUsersTask.Result,
+        activeUsersLast7Days      = activeUsersTask.Result,
+        newRegistrationsLast7Days = newRegistrationsTask.Result,
+        totalSessions             = totalSessionsTask.Result,
+        totalSessionsCompleted    = completedSessionsTask.Result,
+        averageSessionScore       = Math.Round(avgScoreTask.Result ?? 0, 1),
+        totalNotificationsSent    = totalNotificationsTask.Result,
+        generatedAt               = now,
+    };
+
+    // Cache result for 60 seconds
+    var cacheOptions = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
+    };
+    await cache.SetStringAsync(CacheKey, System.Text.Json.JsonSerializer.Serialize(result), cacheOptions, cancellationToken);
+
+    return Results.Ok(result);
 })
 .RequireAuthorization("Admin")
 .WithTags("Admin — Dashboard");
+
 
 app.MapGet("/", () => Results.Ok(new
 {
