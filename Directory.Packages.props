@@ -29,6 +29,10 @@
     <!-- AI -->
     <PackageVersion Include="Mscc.GenerativeAI" Version="3.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
+    <PackageVersion Include="Google.Cloud.TextToSpeech.V1" Version="3.18.0" />
+    <PackageVersion Include="Google.Cloud.Speech.V1" Version="3.9.0" />
+    <PackageVersion Include="Google.Cloud.AIPlatform.V1" Version="3.70.0" />
+    <PackageVersion Include="Google.GenAI" Version="1.6.1" />
     <!-- API -->
     <PackageVersion Include="Asp.Versioning.Http" Version="8.1.1" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.13.22" />

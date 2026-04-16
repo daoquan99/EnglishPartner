@@ -29,8 +29,7 @@ internal sealed class GeminiService(
 
     private GeminiAISettings Config => settings.Value;
 
-    private string BuildApiUrl() =>
-        $"{Config.BaseUrl}/{Config.ModelName}:{Config.GenerateContentApi}";
+    private string BuildApiUrl() => Config.BuildApiUrl();
 
     public async Task<EvaluationResult> EvaluateInputAsync(string itemContext, string userInput, CancellationToken cancellationToken = default)
     {
@@ -139,7 +138,6 @@ internal sealed class GeminiService(
             generationConfig = BuildGenerationConfig(requireJsonResponse: false),
             safetySettings = BuildSafetySettings()
         };
-
         var sw = Stopwatch.StartNew();
         string responseText;
         bool isSuccess = true;
@@ -544,6 +542,7 @@ internal sealed class GeminiService(
         try
         {
             logger.LogInformation("[Gemini] Calling {RequestType} on model {Model}", requestType, Config.ModelName);
+
             var response = await httpClient.PostAsync(url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 

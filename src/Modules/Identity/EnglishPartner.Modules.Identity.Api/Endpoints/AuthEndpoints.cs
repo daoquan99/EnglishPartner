@@ -24,7 +24,7 @@ internal static class AuthEndpoints
             var result = await sender.Send(new RegisterCommand(req.Email, req.Password, req.DisplayName));
             return result.IsSuccess
                 ? Results.Created($"/api/v1/auth/me", result.Value)
-                : result.ToProblemDetails();  // QUAL-3 fix: consistent error format
+                : result.ToProblemDetails();
         })
         .WithName("Register")
         .WithSummary("Register a new user account.")
@@ -36,7 +36,7 @@ internal static class AuthEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : Results.Unauthorized();
         })
         .WithName("Login")
-        .WithSummary("Authenticate with email and password. Returns JWT access + refresh tokens.")
+        .WithSummary("Authenticate with email and password. Sets httpOnly refresh token cookie.")
         .AllowAnonymous();
 
         group.MapPost("/social-login", async (SocialLoginRequest req, ISender sender) =>
@@ -45,16 +45,21 @@ internal static class AuthEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("SocialLogin")
-        .WithSummary("Authenticate with a social provider (e.g. Google). Returns JWT access + refresh tokens.")
+        .WithSummary("Authenticate with a social provider (e.g. Google). Sets httpOnly refresh token cookie.")
         .AllowAnonymous();
 
-        group.MapPost("/refresh", async (RefreshRequest req, ISender sender) =>
+        group.MapPost("/refresh", async (HttpContext ctx, ISender sender) =>
         {
-            var result = await sender.Send(new RefreshTokenCommand(req.RefreshToken));
+            // Refresh token comes from httpOnly cookie — never from request body
+            var refreshToken = ctx.Request.Cookies["__Secure-ep-refresh"];
+            if (string.IsNullOrEmpty(refreshToken))
+                return Results.Unauthorized();
+
+            var result = await sender.Send(new RefreshTokenCommand(refreshToken));
             return result.IsSuccess ? Results.Ok(result.Value) : Results.Unauthorized();
         })
         .WithName("RefreshToken")
-        .WithSummary("Exchange a valid refresh token for a new JWT access token.")
+        .WithSummary("Exchange the httpOnly refresh token cookie for a new access token. No request body needed.")
         .AllowAnonymous();
 
         group.MapPost("/logout", async (ClaimsPrincipal user, ISender sender) =>
@@ -64,7 +69,7 @@ internal static class AuthEndpoints
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
         })
         .WithName("Logout")
-        .WithSummary("Invalidate the current user's refresh token.")
+        .WithSummary("Revokes refresh token, deletes Redis session (access token immediately invalid), clears cookie.")
         .RequireAuthorization();
 
         group.MapPost("/change-password", async (ChangePasswordRequest req, ClaimsPrincipal user, ISender sender) =>
@@ -82,5 +87,5 @@ internal static class AuthEndpoints
 internal sealed record RegisterRequest(string Email, string Password, string DisplayName);
 internal sealed record LoginRequest(string Email, string Password);
 internal sealed record SocialLoginRequest(string Provider, string Token);
-internal sealed record RefreshRequest(string RefreshToken);
+// RefreshRequest REMOVED — refresh token now comes from httpOnly cookie, not request body
 internal sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

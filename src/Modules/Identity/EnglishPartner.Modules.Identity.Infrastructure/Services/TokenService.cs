@@ -14,7 +14,7 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Services;
 /// </summary>
 internal sealed class TokenService(IOptions<JwtSettings> jwtSettings) : ITokenService
 {
-    public string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<string> permissions)
+    public string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<string> permissions, string sessionId)
     {
         var settings = jwtSettings.Value;
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Secret));
@@ -24,7 +24,8 @@ internal sealed class TokenService(IOptions<JwtSettings> jwtSettings) : ITokenSe
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("sid", sessionId),  // Redis session key — checked on every request by SessionValidationMiddleware
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

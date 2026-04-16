@@ -7,6 +7,7 @@ using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
 using EnglishPartner.SharedKernel.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using RefreshTokenEntity = EnglishPartner.Modules.Identity.Domain.Users.Entities.RefreshToken;
 
@@ -20,6 +21,8 @@ internal sealed class RegisterCommandHandler(
     IRoleRepository roleRepository,
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
+    ISessionService sessionService,
+    IHttpContextAccessor httpContextAccessor,
     IOptions<JwtSettings> jwtSettings) : ICommandHandler<RegisterCommand, RegisterResponse>
 {
     public async Task<Result<RegisterResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -41,18 +44,31 @@ internal sealed class RegisterCommandHandler(
         profileRepository.Add(profile);
         streakRepository.Add(streak);
 
-        // Learner has no permission claims — just the role name is enough for user endpoints
+        // Learner has no permissions — session still needed for immediate revocation on logout
         var roleNames   = learnerRole is not null ? new[] { learnerRole.Name } : Array.Empty<string>();
-        var permissions = Array.Empty<string>(); // Learner endpoints use RequireAuthorization() only
-        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
+        var permissions = Array.Empty<string>();
 
+        var sessionTtl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpirationMinutes + 2);
+        var sessionId  = await sessionService.CreateSessionAsync(user.Id, sessionTtl, cancellationToken);
+
+        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions, sessionId);
+
+        // Refresh token in DB + httpOnly cookie
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,
             tokenService.GenerateRefreshToken(),
             DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
-
         refreshTokenRepository.Add(refreshToken);
 
-        return new RegisterResponse(user.Id, accessToken, refreshToken.Token);
+        httpContextAccessor.HttpContext!.Response.Cookies.Append("__Secure-ep-refresh", refreshToken.Token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/api/v1/auth",
+            Expires = DateTimeOffset.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays),
+        });
+
+        return new RegisterResponse(user.Id, accessToken);
     }
 }

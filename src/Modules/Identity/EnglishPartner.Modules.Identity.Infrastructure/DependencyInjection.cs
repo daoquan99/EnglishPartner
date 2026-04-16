@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ISocialAuthService, SocialAuthService>();
+        services.AddScoped<ISessionService, SessionService>();  // Redis session store for JWT invalidation
+
 
         // Startup seeder — called from Program.cs after migrations
         services.AddScoped<AdminUserSeeder>();

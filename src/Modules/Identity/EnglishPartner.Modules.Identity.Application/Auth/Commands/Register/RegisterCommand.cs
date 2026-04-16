@@ -10,5 +10,5 @@ public sealed record RegisterCommand(
 
 public sealed record RegisterResponse(
     Guid UserId,
-    string AccessToken,
-    string RefreshToken);
+    string AccessToken);  // RefreshToken: NOT in body — set as httpOnly __Secure-ep-refresh cookie
+

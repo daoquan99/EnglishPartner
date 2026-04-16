@@ -32,23 +32,42 @@ public static class DependencyInjection
         services.AddScoped<IAiEvaluationService, AiEvaluationService>();
         services.AddScoped<ICurriculumContentGenerationService, CurriculumContentGenerationService>();
 
-        // Gemini HTTP Client — API key injected as header, timeout from config
-        // Configurable via "GeminiAI:TimeoutSeconds" — default 120s for content generation
+        // Vertex AI Express Mode — HTTP Client
+        // Auth: x-goog-api-key header (API key from GCP Console)
+        // Endpoint: https://aiplatform.googleapis.com/v1/publishers/google/models/{model}:generateContent
         //
         // Why no resilience handler?
-        //   - Standard handler requires SamplingDuration >= 2×AttemptTimeout (30s >= 240s → OptionsValidationException)
         //   - Retrying AI timeouts wastes quota and doubles latency
         //   - Circuit breaker adds no value for a single external AI provider
         //   → HttpClient.Timeout is the correct and sufficient control here
         var geminiTimeoutSeconds = configuration.GetValue<int>("GeminiAI:TimeoutSeconds", defaultValue: 120);
 
-        services.AddHttpClient<IGeminiService, GeminiService>((sp, client) =>
-        {
-            var config = sp.GetRequiredService<IOptions<GeminiAISettings>>().Value;
-            client.Timeout = TimeSpan.FromSeconds(geminiTimeoutSeconds);
-            client.DefaultRequestHeaders.Add("x-goog-api-key", config.ApiKey);
-        });
+        //services.AddHttpClient<IGeminiService, GeminiService>((sp, client) =>
+        //{
+        //    var config = sp.GetRequiredService<IOptions<GeminiAISettings>>().Value;
+        //    client.Timeout = TimeSpan.FromSeconds(geminiTimeoutSeconds);
+        //    client.DefaultRequestHeaders.Add("x-goog-api-key", config.ApiKey);
+        //});
+
+        //services.AddScoped<IGeminiService, GoogleCloudGeminiService>();
+        //services.AddScoped<IGeminiService, GoogleGenAIGeminiService>();
+        services.AddScoped<IGeminiService, MsccGeminiService>();
+
+        // Google Cloud TTS + STT via official SDK (Google.Cloud.TextToSpeech.V1 / Google.Cloud.Speech.V1)
+        // Auth: ADC — SDK picks up credentials automatically (gcloud auth application-default login)
+        // No HttpClient needed — SDK uses gRPC transport internally
+        services.AddScoped<ISpeechService, SpeechService>();
+
+        // Native Audio Live API
+        services.AddTransient<ILiveAudioSession, GoogleGenAILiveAudioSession>();
+        services.AddSingleton<LiveAudioSessionManager>();
+
+        // Gemini native TTS via HTTP REST (v1beta1)
+        services.AddHttpClient("GeminiTTS");
+        services.AddScoped<IGeminiTtsService, GeminiTtsService>();
 
         return services;
     }
 }
+
+

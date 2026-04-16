@@ -8,6 +8,7 @@ using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
 using EnglishPartner.SharedKernel.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RefreshTokenEntity = EnglishPartner.Modules.Identity.Domain.Users.Entities.RefreshToken;
@@ -20,6 +21,8 @@ internal sealed class SocialLoginCommandHandler(
     IRefreshTokenRepository refreshTokenRepository,
     IRoleRepository roleRepository,
     ITokenService tokenService,
+    ISessionService sessionService,
+    IHttpContextAccessor httpContextAccessor,
     IOptions<JwtSettings> jwtSettings,
     ILogger<SocialLoginCommandHandler> logger) : ICommandHandler<SocialLoginCommand, LoginResponse>
 {
@@ -48,7 +51,6 @@ internal sealed class SocialLoginCommandHandler(
 
                 user = User.Create(socialUser.Email, Guid.NewGuid().ToString("N"), displayName);
 
-                // Assign Learner role to new social users
                 var learnerRole = await roleRepository.GetByNameAsync("Learner", cancellationToken);
                 if (learnerRole is not null)
                     user.AssignRole(learnerRole.Id);
@@ -64,24 +66,46 @@ internal sealed class SocialLoginCommandHandler(
             user.AddExternalLogin(socialUser.Provider, socialUser.ProviderUserId, socialUser.Provider);
         }
 
-        // 4. Load roles + permissions for JWT — single DB call (was 2 sequential queries)
-        // (IdentityUnitOfWorkBehavior will SaveChanges after this handler returns)
+        // 4. Load roles + permissions — single DB call
         var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
         var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
-        var accessToken    = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions);
+        // 5. Create Redis session — TTL = AccessToken lifetime + 2 min buffer
+        var sessionTtl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpirationMinutes + 2);
+        var sessionId = await sessionService.CreateSessionAsync(user.Id, sessionTtl, cancellationToken);
 
-        var refreshTokenStr = tokenService.GenerateRefreshToken();
+        var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions, sessionId);
 
+        // 6. Refresh token in DB + httpOnly cookie (NOT in response body)
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,
-            refreshTokenStr,
+            tokenService.GenerateRefreshToken(),
             DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
-
         refreshTokenRepository.Add(refreshToken);
+        SetRefreshTokenCookie(refreshToken.Token, jwtSettings.Value.RefreshTokenExpirationDays);
 
         // NOTE: SaveChangesAsync is handled by IdentityUnitOfWorkBehavior — do NOT call it here.
 
-        return new LoginResponse(user.Id, user.DisplayName, accessToken, refreshTokenStr, user.IsOnboardingCompleted);
+        var responsePermissions = permissions.Any() ? permissions.ToArray() : null;
+
+        return new LoginResponse(
+            user.Id,
+            user.DisplayName,
+            accessToken,
+            user.IsOnboardingCompleted,
+            responsePermissions);
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken, int expirationDays)
+    {
+        var context = httpContextAccessor.HttpContext!;
+        context.Response.Cookies.Append("__Secure-ep-refresh", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/api/v1/auth",
+            Expires = DateTimeOffset.UtcNow.AddDays(expirationDays),
+        });
     }
 }

@@ -76,8 +76,22 @@ var notificationSettings = builder.Configuration
     .GetSection(NotificationSettings.SectionName)
     .Get<NotificationSettings>() ?? new NotificationSettings();
 
+// ── JSON Serialization ──
+// Omit null fields from responses — Learner gets no "permissions" field at all
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    // Serialize responses as camelCase (REST API standard)
+    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    // Accept both camelCase and PascalCase from clients (fixes binding of TtsRequest.SpeakingRate etc.)
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+    // Omit null fields from responses
+    options.SerializerOptions.DefaultIgnoreCondition =
+        System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+});
+
 // ── OpenAPI ──
 builder.Services.AddOpenApi();
+
 
 // ── Authentication (JWT) ──
 builder.Services
@@ -278,7 +292,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(options =>
     {
         options.WithTitle("EnglishPartner API");
-        options.WithTheme(ScalarTheme.BluePlanet);
+        options.WithTheme(ScalarTheme.Purple);
         options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
         // Scalar will automatically detect the Bearer scheme from the OpenAPI doc 
         // and show the Authorization input box.
@@ -288,8 +302,10 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<EnglishPartner.Modules.Identity.Infrastructure.Middleware.SessionValidationMiddleware>(); // must be after UseAuthorization
 app.UseRateLimiter();
 app.UseStaticFiles();
+
 
 app.MapHealthChecks("/health");
 
@@ -300,6 +316,7 @@ app.UseCurriculumModule();
 app.UseLearningModule();
 app.MapNotificationEndpoints();
 SystemEndpoints.Map(app);
+app.MapHub<EnglishPartner.Api.Endpoints.Hubs.AiLiveAvatarHub>("/hubs/ai-live-avatar");
 
 // ── Admin Endpoints ──
 app.MapAdminUserEndpoints();

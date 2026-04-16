@@ -5,6 +5,12 @@ namespace EnglishPartner.Modules.Identity.Application.Abstractions;
 /// </summary>
 public interface ITokenService
 {
-    string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<string> permissions);
+    /// <param name="sessionId">
+    /// Redis session ID embedded as 'sid' claim.
+    /// SessionValidationMiddleware checks this on every authenticated request
+    /// to immediately invalidate tokens when the session is deleted (logout).
+    /// </param>
+    string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<string> permissions, string sessionId);
+
     string GenerateRefreshToken();
 }

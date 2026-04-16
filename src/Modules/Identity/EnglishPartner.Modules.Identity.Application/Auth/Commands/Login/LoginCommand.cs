@@ -11,5 +11,7 @@ public sealed record LoginResponse(
     Guid UserId,
     string DisplayName,
     string AccessToken,
-    string RefreshToken,
-    bool IsOnboardingCompleted);
+    bool IsOnboardingCompleted,
+    string[]? Permissions);  // null = Learner (omitted in JSON), non-null = admin-type user
+                              // Roles: NOT returned — only in JWT for BE authorization
+                              // RefreshToken: NOT in body — stored as httpOnly __Secure-ep-refresh cookie

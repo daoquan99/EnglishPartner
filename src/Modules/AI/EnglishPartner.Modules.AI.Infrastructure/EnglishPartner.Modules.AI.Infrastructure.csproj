@@ -7,6 +7,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Cloud.TextToSpeech.V1" />
+    <PackageReference Include="Google.Cloud.Speech.V1" />
+    <PackageReference Include="Google.Cloud.AIPlatform.V1" />
+    <PackageReference Include="Google.GenAI" />
+    <PackageReference Include="Mscc.GenerativeAI" />
     <PackageReference Include="Scrutor" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
