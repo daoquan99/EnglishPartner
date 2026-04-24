@@ -6,7 +6,7 @@ namespace EnglishPartner.Domain.Tests.Learning;
 public sealed class StudySessionTests
 {
     private static StudySession StartNew() =>
-        StudySession.Start(Guid.NewGuid(), "Morning Review", totalItems: 10);
+        StudySession.Start(Guid.NewGuid(), "Morning Review", 10, DateTime.UtcNow);
 
     // ── Start ─────────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ public sealed class StudySessionTests
     {
         var session = StartNew();
 
-        session.Complete(85);
+        session.Complete(85, DateTime.UtcNow);
 
         session.Status.Should().Be(SessionStatus.Completed);
         session.Score.Should().Be(85);
@@ -48,7 +48,7 @@ public sealed class StudySessionTests
     {
         var session = StartNew();
 
-        session.Complete(90);
+        session.Complete(90, DateTime.UtcNow);
 
         session.DomainEvents.Should().ContainSingle(e =>
             e is StudySessionCompletedDomainEvent);
@@ -63,9 +63,9 @@ public sealed class StudySessionTests
     public void Complete_WhenAlreadyCompleted_ShouldBeIdempotent()
     {
         var session = StartNew();
-        session.Complete(80);
+        session.Complete(80, DateTime.UtcNow);
 
-        session.Complete(100); // second call — should be ignored
+        session.Complete(100, DateTime.UtcNow); // second call — should be ignored
 
         session.Score.Should().Be(80, because: "second Complete() should be ignored");
         session.DomainEvents.Should().HaveCount(1, because: "event raised only once");
@@ -78,7 +78,7 @@ public sealed class StudySessionTests
     {
         var session = StartNew();
 
-        session.Abandon();
+        session.Abandon(DateTime.UtcNow);
 
         session.Status.Should().Be(SessionStatus.Abandoned);
         session.EndTime.Should().NotBeNull();
@@ -88,9 +88,9 @@ public sealed class StudySessionTests
     public void Abandon_WhenAlreadyCompleted_ShouldBeIdempotent()
     {
         var session = StartNew();
-        session.Complete(70);
+        session.Complete(70, DateTime.UtcNow);
 
-        session.Abandon(); // should do nothing
+        session.Abandon(DateTime.UtcNow); // should do nothing
 
         session.Status.Should().Be(SessionStatus.Completed,
             because: "Abandon() after Complete() should be ignored");
@@ -113,7 +113,7 @@ public sealed class StudySessionTests
     public void Ping_WhenCompleted_ShouldNotUpdateLastActivityTime()
     {
         var session = StartNew();
-        session.Complete(80);
+        session.Complete(80, DateTime.UtcNow);
         var activityBefore = session.LastActivityTime;
 
         session.Ping(DateTime.UtcNow.AddMinutes(5));

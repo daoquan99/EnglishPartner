@@ -36,7 +36,8 @@ public sealed class Topic : AggregateRoot
             SortOrder = sortOrder
         };
 
-        topic.RaiseDomainEvent(new Events.TopicCreatedDomainEvent(topic.Id));
+        // TODO: Restore when a consumer is implemented (e.g. notify Learning module of new topic).
+        // topic.RaiseDomainEvent(new Events.TopicCreatedDomainEvent(topic.Id));
         return topic;
     }
 

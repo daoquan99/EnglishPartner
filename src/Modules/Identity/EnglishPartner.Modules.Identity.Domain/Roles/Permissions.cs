@@ -43,6 +43,11 @@ public static class Permissions
         public const string LogsRead = "ai.logs.read";
     }
 
+    public static class System
+    {
+        public const string Admin = "admin";
+    }
+
     /// <summary>
     /// All permissions granted to the Admin role.
     /// These become "permission" claims in the Admin's JWT.
@@ -62,6 +67,6 @@ public static class Permissions
         Identity.RolesManage,
         Ai.LogsRead,
         Notifications.Admin,
+        System.Admin,
     ];
 }
-

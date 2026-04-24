@@ -37,6 +37,7 @@ internal sealed class ExampleSentenceTranslationConfiguration : IEntityTypeConfi
     {
         builder.ToTable("example_sentence_translations");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.TranslatedText).HasMaxLength(2000).IsRequired();
 

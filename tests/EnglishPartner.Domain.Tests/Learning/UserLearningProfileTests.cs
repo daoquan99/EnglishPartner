@@ -5,7 +5,7 @@ namespace EnglishPartner.Domain.Tests.Learning;
 public sealed class UserLearningProfileTests
 {
     private static UserLearningProfile CreateProfile() =>
-        UserLearningProfile.Create(Guid.NewGuid(), "Test User");
+        UserLearningProfile.Create(Guid.NewGuid(), "test@example.com", "Test User");
 
     // ── Initial state ──────────────────────────────────────────────────────
 

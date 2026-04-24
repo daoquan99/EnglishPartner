@@ -24,6 +24,7 @@ internal sealed class TopicRepository(CurriculumDbContext dbContext) : ITopicRep
 
     public void Add(Topic topic) => dbContext.Topics.Add(topic);
     public void Update(Topic topic) => dbContext.Topics.Update(topic);
-    public void Remove(Topic topic) => topic.SoftDelete();
+    public void Remove(Topic topic, Guid? deletedBy = null, DateTime? deletedAt = null)
+        => topic.SoftDelete(deletedBy, deletedAt);
 }
 

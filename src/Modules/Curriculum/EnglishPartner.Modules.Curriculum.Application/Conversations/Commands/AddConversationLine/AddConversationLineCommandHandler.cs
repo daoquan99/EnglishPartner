@@ -14,9 +14,11 @@ internal sealed class AddConversationLineCommandHandler(
         if (conversation is null) return Result.Failure(CurriculumErrors.Conversation.NotFound(request.ConversationId));
 
         var line = conversation.AddLine(request.Speaker, request.Text, request.AudioUrl);
-        if (!string.IsNullOrWhiteSpace(request.Translation))
-            line.AddTranslation("vi", request.Translation);
-        
+        if (request.Translations is { Count: > 0 })
+        {
+            foreach (var (langCode, text) in request.Translations)
+                line.AddTranslation(langCode, text);
+        }
         conversationRepository.Update(conversation);
         return Result.Success();
     }

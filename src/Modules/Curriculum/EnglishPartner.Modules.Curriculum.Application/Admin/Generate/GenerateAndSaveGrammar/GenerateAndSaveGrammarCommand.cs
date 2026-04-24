@@ -6,6 +6,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.Admin.Generate.GenerateA
 /// Admin command: Ask AI to generate grammar rules with examples in multiple target languages.
 /// </summary>
 public sealed record GenerateAndSaveGrammarCommand(
+    string TargetLanguage,
     string Title,
     string? Level = null,
     Guid? TopicId = null,

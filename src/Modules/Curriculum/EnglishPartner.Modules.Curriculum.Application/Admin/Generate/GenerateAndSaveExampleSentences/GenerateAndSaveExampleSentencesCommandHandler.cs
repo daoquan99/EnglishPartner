@@ -16,7 +16,7 @@ internal sealed class GenerateAndSaveExampleSentencesCommandHandler(
         var count = Math.Clamp(request.Count, 1, 20);
 
         var generated = await generationService.GenerateExampleSentencesAsync(
-            request.Context, count, request.Level, request.TargetLanguageCodes, cancellationToken);
+            request.TargetLanguage, request.Context, count, request.Level, request.TargetLanguageCodes, cancellationToken);
 
         var savedItems = new List<GeneratedExampleSentenceItem>();
 
@@ -24,7 +24,7 @@ internal sealed class GenerateAndSaveExampleSentencesCommandHandler(
         {
             var sentence = ExampleSentence.Create(
                 dto.Text,
-                languageCode: "en",
+                languageCode: request.TargetLanguage,
                 audioUrl: null,
                 dto.Note,
                 request.Level,

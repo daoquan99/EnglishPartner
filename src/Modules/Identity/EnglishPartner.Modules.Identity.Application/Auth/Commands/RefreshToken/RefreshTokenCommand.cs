@@ -11,5 +11,5 @@ public sealed record RefreshTokenCommand(string RefreshToken) : ICommand<Refresh
 
 public sealed record RefreshTokenResponse(
     string AccessToken,
+    DateTime ExpiresAt,      // UTC. Client converts to local for display.
     string[]? Permissions);  // null = Learner, non-null = admin-type
-                              // RefreshToken: NOT returned — rotated via new httpOnly cookie set by LogoutCommand.cs

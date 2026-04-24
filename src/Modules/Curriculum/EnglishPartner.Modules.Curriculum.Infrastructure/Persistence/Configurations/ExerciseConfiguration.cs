@@ -40,6 +40,7 @@ internal sealed class ExerciseOptionConfiguration : IEntityTypeConfiguration<Exe
     {
         builder.ToTable("exercise_options");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Text).HasMaxLength(500).IsRequired();
     }
 }

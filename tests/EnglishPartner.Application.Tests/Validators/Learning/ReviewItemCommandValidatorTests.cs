@@ -9,7 +9,6 @@ public sealed class ReviewItemCommandValidatorTests
     private readonly ReviewItemCommandValidator _sut = new();
 
     private static ReviewItemCommand Valid() => new(
-        UserId: Guid.NewGuid(),
         ItemId: Guid.NewGuid(),
         Type: ItemType.Vocabulary,
         QualityRating: 4);
@@ -48,12 +47,6 @@ public sealed class ReviewItemCommandValidatorTests
 
     // ── Required GUIDs ────────────────────────────────────────────────────
 
-    [Fact]
-    public void Should_Fail_WhenUserIdIsEmpty()
-    {
-        _sut.TestValidate(Valid() with { UserId = Guid.Empty })
-            .ShouldHaveValidationErrorFor(x => x.UserId);
-    }
 
     [Fact]
     public void Should_Fail_WhenItemIdIsEmpty()

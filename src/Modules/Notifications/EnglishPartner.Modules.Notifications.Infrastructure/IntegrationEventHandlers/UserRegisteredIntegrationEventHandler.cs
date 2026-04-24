@@ -3,6 +3,7 @@ using EnglishPartner.Modules.Identity.Contracts.IntegrationEvents;
 using EnglishPartner.Modules.Notifications.Application.Abstractions;
 using EnglishPartner.Modules.Notifications.Domain.Notifications;
 using EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
+using EnglishPartner.SharedKernel.Email;
 using Microsoft.Extensions.Logging;
 
 namespace EnglishPartner.Modules.Notifications.Infrastructure.IntegrationEventHandlers;
@@ -17,20 +18,23 @@ internal sealed class UserRegisteredIntegrationEventHandler
 {
     private readonly NotificationDbContext _dbContext;
     private readonly INotificationPusher _pusher;
+    private readonly IEmailSender _emailSender;
     private readonly ILogger<UserRegisteredIntegrationEventHandler> _logger;
 
     public UserRegisteredIntegrationEventHandler(
         NotificationDbContext dbContext,
         INotificationPusher pusher,
+        IEmailSender emailSender,
+        TimeProvider timeProvider,
         ILogger<UserRegisteredIntegrationEventHandler> logger)
-        : base(dbContext, logger)
+        : base(dbContext, timeProvider, logger)
     {
         _dbContext = dbContext;
         _pusher = pusher;
+        _emailSender = emailSender;
         _logger = logger;
     }
-    // The Inbox checks are automatically handled by the base class.
-    // This HandleInternalAsync is ONLY called if the event hasn't been processed yet.
+
     protected override async Task HandleInternalAsync(UserRegisteredIntegrationEvent notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating welcome notification for new user {UserId}", notification.UserId);
@@ -38,6 +42,7 @@ internal sealed class UserRegisteredIntegrationEventHandler
         var title = "Welcome to EnglishPartner!";
         var message = $"Hello {notification.DisplayName}, we're excited to have you onboard! Start your learning journey today.";
 
+        // 1. In-app notification (SignalR push)
         var welcomeNotification = Notification.Create(
             notification.UserId,
             title,
@@ -45,8 +50,27 @@ internal sealed class UserRegisteredIntegrationEventHandler
             NotificationType.System);
 
         _dbContext.Notifications.Add(welcomeNotification);
-
-        // Notify client via SignalR WebSocket immediately.
         await _pusher.PushAsync(welcomeNotification, cancellationToken);
+
+        // 2. Welcome email
+        var html = $"""
+            <h2>Welcome to EnglishPartner! 🎉</h2>
+            <p>Hi {notification.DisplayName},</p>
+            <p>We're excited to have you onboard! Here's how to get started:</p>
+            <ul>
+                <li>Complete your onboarding to set your daily study goal</li>
+                <li>Start your first conversation practice</li>
+                <li>Track your streak and earn XP</li>
+            </ul>
+            <p>Consistency is key — even 10 minutes a day makes a huge difference!</p>
+            <p style="color:#888;font-size:12px;">— The EnglishPartner Team</p>
+            """;
+
+        await _emailSender.SendAsync(new EmailMessage(
+            To: notification.Email,
+            Subject: title,
+            HtmlBody: html,
+            PlainTextBody: message
+        ), cancellationToken);
     }
 }

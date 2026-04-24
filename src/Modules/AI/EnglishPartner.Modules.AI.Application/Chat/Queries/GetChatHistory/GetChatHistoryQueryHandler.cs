@@ -1,12 +1,14 @@
 using EnglishPartner.Modules.AI.Domain;
 using EnglishPartner.Modules.AI.Domain.ChatSessions.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
+using EnglishPartner.SharedKernel.Interfaces;
 using EnglishPartner.SharedKernel.Results;
 
 namespace EnglishPartner.Modules.AI.Application.Chat.Queries.GetChatHistory;
 
 internal sealed class GetChatHistoryQueryHandler(
-    IChatSessionRepository repository) : IQueryHandler<GetChatHistoryQuery, ChatHistoryResponse>
+    IChatSessionRepository repository,
+    ICurrentUserService currentUser) : IQueryHandler<GetChatHistoryQuery, ChatHistoryResponse>
 {
     public async Task<Result<ChatHistoryResponse>> Handle(GetChatHistoryQuery request, CancellationToken cancellationToken)
     {
@@ -15,7 +17,7 @@ internal sealed class GetChatHistoryQueryHandler(
         if (session is null)
             return Result.Failure<ChatHistoryResponse>(AiErrors.ChatSession.NotFound);
 
-        if (session.UserId != request.UserId)
+        if (session.UserId != currentUser.UserId!.Value)
             return Result.Failure<ChatHistoryResponse>(AiErrors.ChatSession.AccessDenied);
 
         var messages = session.Messages

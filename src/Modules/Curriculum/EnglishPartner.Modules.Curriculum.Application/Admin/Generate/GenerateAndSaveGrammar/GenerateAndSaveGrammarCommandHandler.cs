@@ -15,7 +15,7 @@ internal sealed class GenerateAndSaveGrammarCommandHandler(
     {
         var count = Math.Clamp(request.Count, 1, 10);
         var generated = await generationService.GenerateGrammarAsync(
-            request.Title, request.Level, request.ExampleCount,
+            request.TargetLanguage, request.Title, request.Level, request.ExampleCount,
             request.TargetLanguageCodes, count, cancellationToken);
 
         var items = new List<GeneratedGrammarItem>();
@@ -24,7 +24,7 @@ internal sealed class GenerateAndSaveGrammarCommandHandler(
         {
             var grammar = Grammar.Create(
                 dto.Title,
-                languageCode: "en",
+                languageCode: request.TargetLanguage,
                 dto.Level ?? request.Level,
                 dto.Explanation,
                 dto.Formula,

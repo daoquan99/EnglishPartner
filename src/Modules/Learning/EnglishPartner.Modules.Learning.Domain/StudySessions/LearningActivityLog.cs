@@ -27,7 +27,8 @@ public sealed class LearningActivityLog : Entity
         string userAnswer, 
         bool isCorrect, 
         int scoreGranted, 
-        int timeSpentSeconds)
+        int timeSpentSeconds,
+        DateTime utcNow)
     {
         return new LearningActivityLog
         {
@@ -39,7 +40,7 @@ public sealed class LearningActivityLog : Entity
             IsCorrect = isCorrect,
             ScoreGranted = scoreGranted,
             TimeSpentSeconds = timeSpentSeconds,
-            Timestamp = DateTime.UtcNow
+            Timestamp = utcNow
         };
     }
 }

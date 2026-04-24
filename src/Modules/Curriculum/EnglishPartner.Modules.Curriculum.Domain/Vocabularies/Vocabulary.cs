@@ -57,7 +57,8 @@ public sealed class Vocabulary : AggregateRoot
             IsAiGenerated = isAiGenerated
         };
 
-        entity.RaiseDomainEvent(new Events.VocabularyCreatedDomainEvent(entity.Id));
+        // TODO: Restore when a consumer is implemented (e.g. add to user review queue).
+        // entity.RaiseDomainEvent(new Events.VocabularyCreatedDomainEvent(entity.Id));
         return entity;
     }
 

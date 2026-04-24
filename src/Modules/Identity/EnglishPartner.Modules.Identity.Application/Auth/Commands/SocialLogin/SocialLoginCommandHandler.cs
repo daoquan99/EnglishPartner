@@ -23,6 +23,7 @@ internal sealed class SocialLoginCommandHandler(
     ITokenService tokenService,
     ISessionService sessionService,
     IHttpContextAccessor httpContextAccessor,
+    TimeProvider timeProvider,
     IOptions<JwtSettings> jwtSettings,
     ILogger<SocialLoginCommandHandler> logger) : ICommandHandler<SocialLoginCommand, LoginResponse>
 {
@@ -70,17 +71,19 @@ internal sealed class SocialLoginCommandHandler(
         var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
         var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
-        // 5. Create Redis session — TTL = AccessToken lifetime + 2 min buffer
-        var sessionTtl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpirationMinutes + 2);
+        // Session TTL = Refresh Token lifetime — session outlives many access tokens
+        var sessionTtl = TimeSpan.FromDays(jwtSettings.Value.RefreshTokenExpirationDays);
         var sessionId = await sessionService.CreateSessionAsync(user.Id, sessionTtl, cancellationToken);
 
         var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions, sessionId);
+        var utcNow = timeProvider.GetUtcNow();
+        var expiresAt = utcNow.UtcDateTime.AddMinutes(jwtSettings.Value.AccessTokenExpirationMinutes);
 
         // 6. Refresh token in DB + httpOnly cookie (NOT in response body)
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,
             tokenService.GenerateRefreshToken(),
-            DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
+            utcNow.UtcDateTime.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
         refreshTokenRepository.Add(refreshToken);
         SetRefreshTokenCookie(refreshToken.Token, jwtSettings.Value.RefreshTokenExpirationDays);
 
@@ -90,8 +93,10 @@ internal sealed class SocialLoginCommandHandler(
 
         return new LoginResponse(
             user.Id,
+            user.Email,
             user.DisplayName,
             accessToken,
+            expiresAt,
             user.IsOnboardingCompleted,
             responsePermissions);
     }
@@ -105,7 +110,7 @@ internal sealed class SocialLoginCommandHandler(
             Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/api/v1/auth",
-            Expires = DateTimeOffset.UtcNow.AddDays(expirationDays),
+            Expires = timeProvider.GetUtcNow().AddDays(expirationDays),
         });
     }
 }

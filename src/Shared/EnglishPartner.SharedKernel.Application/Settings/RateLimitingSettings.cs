@@ -6,6 +6,7 @@ public sealed class RateLimitingSettings
 
     public RateLimitPolicy AIChat { get; set; } = new();
     public RateLimitPolicy AIScoring { get; set; } = new();
+    public RateLimitPolicy AIGenerate { get; set; } = new();
 }
 
 public sealed class RateLimitPolicy

@@ -39,7 +39,7 @@ internal sealed class GenerateAndSaveExerciseCommandHandler(
 
         var count = Math.Clamp(request.Count, 1, 20);
         var generated = await generationService.GenerateExerciseAsync(
-            request.Context, (int)request.ExerciseType, request.Level, count, cancellationToken);
+            request.TargetLanguage, request.Context, (int)request.ExerciseType, request.Level, count, cancellationToken);
 
         var items = new List<GeneratedExerciseItem>();
 
@@ -50,7 +50,7 @@ internal sealed class GenerateAndSaveExerciseCommandHandler(
                 dto.Instruction,
                 request.ExerciseType,
                 dto.CorrectAnswer,
-                languageCode: "en",
+                languageCode: request.TargetLanguage,
                 request.Level,
                 request.TopicId,
                 request.VocabularyId,

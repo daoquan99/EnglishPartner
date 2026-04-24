@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace EnglishPartner.SharedKernel.Application.Interceptors;
 
-public sealed class ConvertDomainEventsToOutboxMessagesInterceptor : SaveChangesInterceptor
+public sealed class ConvertDomainEventsToOutboxMessagesInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
@@ -19,6 +19,8 @@ public sealed class ConvertDomainEventsToOutboxMessagesInterceptor : SaveChanges
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var outboxMessages = dbContext.ChangeTracker
             .Entries<AggregateRoot>()
             .Select(x => x.Entity)
@@ -31,7 +33,7 @@ public sealed class ConvertDomainEventsToOutboxMessagesInterceptor : SaveChanges
             .Select(domainEvent => new OutboxMessage
             {
                 Id = Guid.NewGuid(),
-                OccurredOn = DateTime.UtcNow,
+                OccurredOn = utcNow,
                 Type = domainEvent.GetType().AssemblyQualifiedName ?? domainEvent.GetType().Name,
                 Payload = JsonConvert.SerializeObject(domainEvent, new JsonSerializerSettings
                 {

@@ -37,7 +37,7 @@ internal sealed class GetUsersQueryHandler(
             u.DisplayName,
             u.IsActive,
             u.IsOnboardingCompleted,
-            u.UserRoles.Select(ur => roleLookup.GetValueOrDefault(ur.RoleId, "Unknown")).ToArray(),
+            u.UserRoles.Select(ur => new RoleSummaryDto(ur.RoleId, roleLookup.GetValueOrDefault(ur.RoleId, "Unknown"))).ToArray(),
             u.CreatedAt)).ToList();
 
         return new GetUsersResponse(dtos, total, request.Page, request.PageSize);

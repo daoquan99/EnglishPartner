@@ -2,4 +2,4 @@ using EnglishPartner.SharedKernel.CQRS;
 
 namespace EnglishPartner.Modules.Learning.Application.StudySessions.Commands.PingSession;
 
-public sealed record PingSessionCommand(Guid SessionId, Guid UserId) : ICommand;
+public sealed record PingSessionCommand(Guid SessionId) : ICommand;

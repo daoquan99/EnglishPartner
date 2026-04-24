@@ -36,6 +36,7 @@ internal sealed class ConversationLineConfiguration : IEntityTypeConfiguration<C
     {
         builder.ToTable("conversation_lines");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Speaker).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Text).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.AudioUrl).HasMaxLength(500);
@@ -52,7 +53,8 @@ internal sealed class ConversationLineTranslationConfiguration : IEntityTypeConf
     public void Configure(EntityTypeBuilder<ConversationLineTranslation> builder)
     {
         builder.ToTable("conversation_line_translations");
-        builder.HasKey(x => x.Id);
+        builder.HasKey(x => x.Id); 
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.TranslatedText).HasMaxLength(2000).IsRequired();
 

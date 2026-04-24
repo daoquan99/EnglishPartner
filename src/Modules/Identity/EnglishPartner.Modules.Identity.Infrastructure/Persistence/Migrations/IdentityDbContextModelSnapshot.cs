@@ -236,13 +236,20 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Module = "notifications",
                             Name = "notifications.admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0001-000000000014"),
+                            Code = "admin",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Module = "admin",
+                            Name = "admin"
                         });
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Roles.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -264,6 +271,8 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
 
                     b.HasIndex("RoleId", "PermissionId")
                         .IsUnique();
@@ -360,6 +369,13 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                             Id = new Guid("00000000-0000-0000-0003-000000000013"),
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             PermissionId = new Guid("00000000-0000-0000-0001-000000000013"),
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0003-000000000014"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            PermissionId = new Guid("00000000-0000-0000-0001-000000000014"),
                             RoleId = new Guid("00000000-0000-0000-0000-000000000002")
                         });
                 });
@@ -601,9 +617,15 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("EveningReminderHour")
+                        .HasColumnType("integer");
+
                     b.Property<string>("LearningGoal")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("MorningReminderHour")
+                        .HasColumnType("integer");
 
                     b.Property<string>("NativeLanguage")
                         .HasMaxLength(10)
@@ -629,6 +651,9 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("UtcOffsetHours")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UserId")
@@ -640,7 +665,6 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -733,11 +757,19 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Roles.Entities.RolePermission", b =>
                 {
+                    b.HasOne("EnglishPartner.Modules.Identity.Domain.Roles.Entities.Permission", "Permission")
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("EnglishPartner.Modules.Identity.Domain.Roles.Role", null)
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Permission");
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Identity.Domain.Users.Entities.UserExternalLogin", b =>

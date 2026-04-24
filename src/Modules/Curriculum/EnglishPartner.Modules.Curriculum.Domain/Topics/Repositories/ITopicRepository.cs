@@ -6,5 +6,5 @@ public interface ITopicRepository
     Task<List<Topic>> GetByLanguageCodeAsync(string languageCode, string? searchTerm = null, CancellationToken cancellationToken = default);
     void Add(Topic topic);
     void Update(Topic topic);
-    void Remove(Topic topic);
+    void Remove(Topic topic, Guid? deletedBy = null, DateTime? deletedAt = null);
 }

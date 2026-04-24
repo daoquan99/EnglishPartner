@@ -12,7 +12,7 @@ internal sealed class GetStreakQueryHandler(
     {
         var streak = await streakRepository.GetByUserIdAsync(request.UserId, cancellationToken);
         if (streak is null)
-            return Result.Failure<StreakResponse>(IdentityErrors.Streak.NotFound);
+            return new StreakResponse(0, 0, null, 2);
 
         return new StreakResponse(streak.CurrentStreak, streak.LongestStreak, streak.LastActivityDate, streak.StreakFreezes);
     }

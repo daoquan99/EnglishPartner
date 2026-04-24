@@ -19,9 +19,13 @@ internal sealed class AddConversationLineCommandValidator : AbstractValidator<Ad
             .MaximumLength(2000)
             .WithMessage("Line text is required and must be ≤ 2000 characters.");
 
-        RuleFor(x => x.Translation)
-            .MaximumLength(2000)
-            .When(x => x.Translation is not null);
+        RuleForEach(x => x.Translations)
+            .ChildRules(entry =>
+            {
+                entry.RuleFor(e => e.Key).NotEmpty().MaximumLength(10);
+                entry.RuleFor(e => e.Value).NotEmpty().MaximumLength(2000);
+            })
+            .When(x => x.Translations is not null);
 
         RuleFor(x => x.AudioUrl)
             .MaximumLength(500)

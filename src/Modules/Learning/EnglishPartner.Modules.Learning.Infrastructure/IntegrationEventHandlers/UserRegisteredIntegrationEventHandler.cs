@@ -16,8 +16,9 @@ internal sealed class UserRegisteredIntegrationEventHandler
     public UserRegisteredIntegrationEventHandler(
         LearningDbContext dbContext,
         ISender sender,
+        TimeProvider timeProvider,
         ILogger<UserRegisteredIntegrationEventHandler> logger)
-        : base(dbContext, logger)
+        : base(dbContext, timeProvider, logger)
     {
         _sender = sender;
         _logger = logger;
@@ -29,6 +30,7 @@ internal sealed class UserRegisteredIntegrationEventHandler
 
         var command = new InitializeUserLearningProfileCommand(
             notification.UserId,
+            notification.Email,
             string.IsNullOrWhiteSpace(notification.DisplayName) ? "Anonymous" : notification.DisplayName,
             "en");
 

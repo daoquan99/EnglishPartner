@@ -9,6 +9,7 @@ namespace EnglishPartner.Messaging;
 /// </summary>
 public abstract class IdempotentIntegrationEventHandler<TEvent, TDbContext>(
     TDbContext dbContext,
+    TimeProvider timeProvider,
     ILogger logger) : IIntegrationEventHandler<TEvent>
     where TEvent : IntegrationEvent
     where TDbContext : DbContext
@@ -44,7 +45,7 @@ public abstract class IdempotentIntegrationEventHandler<TEvent, TDbContext>(
             Id = @event.EventId,
             Name = @event.GetType().Name,
             OccurredOn = @event.OccurredAt,
-            ProcessedOn = DateTime.UtcNow
+            ProcessedOn = timeProvider.GetUtcNow().UtcDateTime
         };
 
         dbContext.Set<InboxMessage>().Add(inboxMessage);

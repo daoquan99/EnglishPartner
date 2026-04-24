@@ -19,15 +19,17 @@ internal sealed class AiEvaluationService(
     {
         try
         {
-            // Map Learning.ItemType numeric values → CurriculumItemType
-            // Learning: Vocabulary=1, Grammar=2, Exercise=3, Conversation=4
-            // Note: Conversation=4 in Learning maps to CurriculumItemType.Conversation=5
+            // Map Learning.ItemType (0-based) → CurriculumItemType (1-based, different order)
+            // Learning:   Vocabulary=0, Grammar=1, ExampleSentence=2, Topic=3, Conversation=4, Exercise=5
+            // Curriculum: Vocabulary=1, Grammar=2, Exercise=3, ExampleSentence=4, Conversation=5, Topic=6
             var curriculumType = itemType switch
             {
-                1 => CurriculumItemType.Vocabulary,
-                2 => CurriculumItemType.Grammar,
-                3 => CurriculumItemType.Exercise,
+                0 => CurriculumItemType.Vocabulary,
+                1 => CurriculumItemType.Grammar,
+                2 => CurriculumItemType.ExampleSentence,
+                3 => CurriculumItemType.Topic,
                 4 => CurriculumItemType.Conversation,
+                5 => CurriculumItemType.Exercise,
                 _ => (CurriculumItemType)itemType
             };
 

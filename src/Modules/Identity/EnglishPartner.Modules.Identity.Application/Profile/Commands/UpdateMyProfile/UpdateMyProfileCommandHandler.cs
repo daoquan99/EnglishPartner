@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.Identity.Domain;
+using EnglishPartner.Modules.Identity.Domain.Users.Entities;
 using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -19,20 +20,34 @@ internal sealed class UpdateMyProfileCommandHandler(
             user.UpdateProfile(request.DisplayName);
 
         var profile = await profileRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-        if (profile is null)
-            return Result.Failure(IdentityErrors.User.NotFoundById(request.UserId));
+        var isNew = profile is null;
 
-        profile.Update(
+        if (isNew)
+            profile = UserProfile.Create(request.UserId);
+
+        profile!.Update(
             nativeLanguage: request.NativeLanguage,
             targetLanguage: request.TargetLanguage,
             proficiencyLevel: request.ProficiencyLevel,
             learningGoal: request.LearningGoal,
             dailyGoalMinutes: request.DailyGoalMinutes,
             avatarUrl: request.AvatarUrl,
-            dateOfBirth: request.DateOfBirth);
+            dateOfBirth: request.DateOfBirth,
+            morningReminderHour: request.MorningReminderHour,
+            eveningReminderHour: request.EveningReminderHour,
+            utcOffsetHours: request.UtcOffsetHours);
 
-        userRepository.Update(user);
-        profileRepository.Update(profile);
+        // Raise domain event via User (AggregateRoot) — UserProfile is an Entity and cannot raise events.
+        user.RaiseProfileUpdated(
+            profile.DailyGoalMinutes,
+            profile.MorningReminderHour,
+            profile.EveningReminderHour,
+            profile.UtcOffsetHours);
+
+        if (isNew)
+            profileRepository.Add(profile);
+        else
+            profileRepository.Update(profile);
 
         return Result.Success();
     }

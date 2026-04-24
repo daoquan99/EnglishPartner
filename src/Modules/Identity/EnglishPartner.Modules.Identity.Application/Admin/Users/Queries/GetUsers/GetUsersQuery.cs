@@ -15,11 +15,13 @@ public sealed record GetUsersResponse(
     int Page,
     int PageSize);
 
+public sealed record RoleSummaryDto(Guid Id, string Name);
+
 public sealed record UserSummaryDto(
     Guid     Id,
     string   Email,
     string   DisplayName,
     bool     IsActive,
     bool     IsOnboardingCompleted,
-    string[] Roles,
+    RoleSummaryDto[] Roles,
     DateTime CreatedAt);

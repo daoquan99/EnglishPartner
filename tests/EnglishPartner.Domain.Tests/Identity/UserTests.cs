@@ -33,7 +33,7 @@ public sealed class UserTests
     {
         var user = CreateUser();
 
-        user.CompleteOnboarding();
+        user.CompleteOnboarding("beginner", "fluency", "en", 15, null, null, 0);
 
         user.IsOnboardingCompleted.Should().BeTrue();
     }

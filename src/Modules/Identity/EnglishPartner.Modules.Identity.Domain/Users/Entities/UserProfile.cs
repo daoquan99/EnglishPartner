@@ -25,10 +25,14 @@ public sealed class UserProfile : Entity
     public int DailyGoalMinutes { get; private set; } = 15;
     public string? AvatarUrl { get; private set; }
     public DateTime? DateOfBirth { get; private set; }
+    public int? MorningReminderHour { get; private set; }
+    public int? EveningReminderHour { get; private set; }
+    public int UtcOffsetHours { get; private set; } = 0;
 
     public void Update(
         string? nativeLanguage, string? targetLanguage, string? proficiencyLevel,
-        string? learningGoal, int? dailyGoalMinutes, string? avatarUrl, DateTime? dateOfBirth)
+        string? learningGoal, int? dailyGoalMinutes, string? avatarUrl, DateTime? dateOfBirth,
+        int? morningReminderHour = null, int? eveningReminderHour = null, int? utcOffsetHours = null)
     {
         if (nativeLanguage is not null) NativeLanguage = nativeLanguage;
         if (targetLanguage is not null) TargetLanguage = targetLanguage;
@@ -37,5 +41,14 @@ public sealed class UserProfile : Entity
         if (dailyGoalMinutes.HasValue) DailyGoalMinutes = dailyGoalMinutes.Value;
         if (avatarUrl is not null) AvatarUrl = avatarUrl;
         if (dateOfBirth.HasValue) DateOfBirth = dateOfBirth.Value;
+        if (morningReminderHour.HasValue) MorningReminderHour = morningReminderHour.Value;
+        if (eveningReminderHour.HasValue) EveningReminderHour = eveningReminderHour.Value;
+        if (utcOffsetHours.HasValue) UtcOffsetHours = utcOffsetHours.Value;
+    }
+
+    /// <summary>Update timezone only (called on login/register from X-Timezone-Offset header).</summary>
+    public void UpdateTimezone(int utcOffsetHours)
+    {
+        UtcOffsetHours = utcOffsetHours;
     }
 }

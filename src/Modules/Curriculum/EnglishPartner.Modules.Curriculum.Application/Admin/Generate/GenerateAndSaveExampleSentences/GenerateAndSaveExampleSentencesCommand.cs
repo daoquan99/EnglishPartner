@@ -6,6 +6,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.Admin.Generate.GenerateA
 /// Admin command: Ask AI to generate N example sentences with translations in multiple languages.
 /// </summary>
 public sealed record GenerateAndSaveExampleSentencesCommand(
+    string TargetLanguage,
     string Context,
     int Count = 3,
     string? Level = null,

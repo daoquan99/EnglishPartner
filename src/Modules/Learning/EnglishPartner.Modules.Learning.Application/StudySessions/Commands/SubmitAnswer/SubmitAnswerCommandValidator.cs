@@ -6,7 +6,6 @@ internal sealed class SubmitAnswerCommandValidator : AbstractValidator<SubmitAns
 {
     public SubmitAnswerCommandValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.SessionId).NotEmpty();
         RuleFor(x => x.ItemId).NotEmpty();
         RuleFor(x => x.UserAnswer).NotNull().MaximumLength(2000);

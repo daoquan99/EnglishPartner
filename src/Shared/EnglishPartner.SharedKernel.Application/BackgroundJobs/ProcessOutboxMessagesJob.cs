@@ -16,6 +16,7 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
     TDbContext dbContext,
     IPublisher publisher,
     IOptions<OutboxSettings> outboxOptions,
+    TimeProvider timeProvider,
     ILogger<ProcessOutboxMessagesJob<TDbContext>> logger) : IJob
     where TDbContext : DbContext
 {
@@ -72,7 +73,7 @@ public sealed class ProcessOutboxMessagesJob<TDbContext>(
                     await publisher.Publish(domainEvent, context.CancellationToken);
                 }
 
-                message.ProcessedOn = DateTime.UtcNow;
+                message.ProcessedOn = timeProvider.GetUtcNow().UtcDateTime;
             }
             catch (Exception ex)
             {

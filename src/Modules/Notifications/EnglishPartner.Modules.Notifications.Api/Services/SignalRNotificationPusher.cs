@@ -20,6 +20,6 @@ internal sealed class SignalRNotificationPusher(IHubContext<NotificationHub> hub
         };
 
         await hubContext.Clients.Group(notification.UserId.ToString())
-            .SendAsync("ReceiveNotification", payload, cancellationToken);
+            .SendAsync("NotificationReceived", payload, cancellationToken);
     }
 }

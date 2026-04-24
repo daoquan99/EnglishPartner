@@ -4,5 +4,6 @@ namespace EnglishPartner.Modules.Learning.Application.UserProfiles.Commands.Init
 
 public sealed record InitializeUserLearningProfileCommand(
     Guid UserId,
+    string Email,
     string DisplayName,
     string TargetLanguageCode) : ICommand;

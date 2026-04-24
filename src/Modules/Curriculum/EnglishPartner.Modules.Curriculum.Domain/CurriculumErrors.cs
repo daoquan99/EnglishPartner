@@ -28,6 +28,7 @@ public static class CurriculumErrors
     public static class Conversation
     {
         public static Error NotFound(Guid id) => CommonErrors.NotFound("Conversation", id);
+        public static Error LineNotFound(Guid id) => CommonErrors.NotFound("ConversationLine", id);
     }
 
     public static class ExampleSentence

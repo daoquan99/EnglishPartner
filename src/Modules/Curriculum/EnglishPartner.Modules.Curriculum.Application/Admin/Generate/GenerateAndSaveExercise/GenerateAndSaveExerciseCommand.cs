@@ -11,6 +11,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.Admin.Generate.GenerateA
 /// Unsupported (require media): ListeningComprehension, Speaking, Dictation, PictureDescription.
 /// </summary>
 public sealed record GenerateAndSaveExerciseCommand(
+    string TargetLanguage,
     string Context,
     ExerciseType ExerciseType = ExerciseType.MultipleChoice,
     string? Level = null,

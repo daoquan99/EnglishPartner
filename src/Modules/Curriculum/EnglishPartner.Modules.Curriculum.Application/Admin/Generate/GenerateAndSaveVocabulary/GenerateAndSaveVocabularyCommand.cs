@@ -8,6 +8,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.Admin.Generate.GenerateA
 /// If AutoGenerateExamples=true, example sentences are also generated and saved per vocabulary.
 /// </summary>
 public sealed record GenerateAndSaveVocabularyCommand(
+    string TargetLanguage,
     string WordHint,
     int Count = 1,
     string? Level = null,

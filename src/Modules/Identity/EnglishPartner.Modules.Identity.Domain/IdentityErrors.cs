@@ -47,6 +47,21 @@ public static class IdentityErrors
 
         public static readonly Error NameAlreadyExists =
             new("Identity.Role.NameAlreadyExists", "A role with this name already exists.");
+
+        public static readonly Error HasUsers =
+            new("Identity.Role.HasUsers", "Cannot delete a role that is still assigned to users.");
+
+        public static readonly Error PermissionAlreadyAssigned =
+            new("Identity.Role.PermissionAlreadyAssigned", "This permission is already assigned to the role.");
+
+        public static readonly Error PermissionNotAssigned =
+            new("Identity.Role.PermissionNotAssigned", "This permission is not assigned to the role.");
+    }
+
+    public static class Permission
+    {
+        public static Error NotFoundById(Guid id) =>
+            new("Identity.Permission.NotFound", $"Permission with Id '{id}' was not found.");
     }
 
     public static class Streak
@@ -62,5 +77,11 @@ public static class IdentityErrors
     {
         public static readonly Error InvalidSocialToken =
             new("Auth.SocialLogin.InvalidToken", "Invalid or expired social token.");
+    }
+
+    public static class PasswordReset
+    {
+        public static readonly Error InvalidToken =
+            new("Identity.PasswordReset.InvalidToken", "The password reset token is invalid or expired.");
     }
 }

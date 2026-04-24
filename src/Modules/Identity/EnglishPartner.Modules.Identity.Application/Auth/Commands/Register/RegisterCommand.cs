@@ -6,9 +6,14 @@ namespace EnglishPartner.Modules.Identity.Application.Auth.Commands.Register;
 public sealed record RegisterCommand(
     string Email,
     string Password,
-    string DisplayName) : ICommand<RegisterResponse>;
+    string DisplayName,
+    int? UtcOffsetHours = null) : ICommand<RegisterResponse>;
 
 public sealed record RegisterResponse(
     Guid UserId,
-    string AccessToken);  // RefreshToken: NOT in body — set as httpOnly __Secure-ep-refresh cookie
+    string Email,
+    string DisplayName,
+    string AccessToken,
+    DateTime ExpiresAt,
+    bool IsOnboardingCompleted);  // UTC. All DateTime values are UTC — client converts to local for display.
 

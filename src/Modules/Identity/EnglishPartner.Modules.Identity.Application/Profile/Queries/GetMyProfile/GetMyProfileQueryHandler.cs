@@ -1,5 +1,4 @@
 using EnglishPartner.Modules.Identity.Domain;
-using EnglishPartner.Modules.Identity.Domain.Roles.Repositories;
 using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
 using EnglishPartner.SharedKernel.Results;
@@ -8,8 +7,7 @@ namespace EnglishPartner.Modules.Identity.Application.Profile.Queries.GetMyProfi
 
 internal sealed class GetMyProfileQueryHandler(
     IUserRepository userRepository,
-    IUserProfileRepository profileRepository,
-    IRoleRepository roleRepository) : IQueryHandler<GetMyProfileQuery, MyProfileResponse>
+    IUserProfileRepository profileRepository) : IQueryHandler<GetMyProfileQuery, MyProfileResponse>
 {
     public async Task<Result<MyProfileResponse>> Handle(GetMyProfileQuery request, CancellationToken cancellationToken)
     {
@@ -18,9 +16,6 @@ internal sealed class GetMyProfileQueryHandler(
             return Result.Failure<MyProfileResponse>(IdentityErrors.User.NotFoundById(request.UserId));
 
         var profile = await profileRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-
-        var roleIds = user.UserRoles.Select(ur => ur.RoleId);
-        var roleNames = await roleRepository.GetRoleNamesByIdsAsync(roleIds, cancellationToken);
 
         return new MyProfileResponse(
             user.Id,
@@ -33,7 +28,9 @@ internal sealed class GetMyProfileQueryHandler(
             profile?.DailyGoalMinutes ?? 15,
             profile?.AvatarUrl,
             profile?.DateOfBirth,
-            user.IsOnboardingCompleted,
-            roleNames);
+            profile?.MorningReminderHour,
+            profile?.EveningReminderHour,
+            profile?.UtcOffsetHours ?? 0,
+            user.IsOnboardingCompleted);
     }
 }

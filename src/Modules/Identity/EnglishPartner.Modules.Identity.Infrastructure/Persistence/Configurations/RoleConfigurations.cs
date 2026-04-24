@@ -26,6 +26,19 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     }
 }
 
+
+internal sealed class RoleClaimConfiguration : IEntityTypeConfiguration<RolePermission>
+{
+    public void Configure(EntityTypeBuilder<RolePermission> builder)
+    {
+        builder.ToTable("role_permissions");
+        builder.HasKey(rp => rp.Id);
+        builder.Property(rp => rp.Id).ValueGeneratedNever();
+        builder.HasIndex(rp => new { rp.RoleId, rp.PermissionId }).IsUnique();
+    }
+}
+
+
 internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 {
     public void Configure(EntityTypeBuilder<Permission> builder)

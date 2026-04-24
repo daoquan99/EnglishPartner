@@ -9,5 +9,5 @@ public interface IExerciseRepository
     Task<List<Exercise>> GetByLanguageAndLevelAsync(string languageCode, string? level, int count, CancellationToken cancellationToken = default);
     void Add(Exercise exercise);
     void Update(Exercise exercise);
-    void Remove(Exercise exercise);
+    void Remove(Exercise exercise, Guid? deletedBy = null, DateTime? deletedAt = null);
 }

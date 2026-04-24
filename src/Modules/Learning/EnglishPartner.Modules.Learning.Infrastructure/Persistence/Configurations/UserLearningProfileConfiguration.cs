@@ -14,7 +14,26 @@ internal sealed class UserLearningProfileConfiguration : IEntityTypeConfiguratio
         builder.HasQueryFilter(x => !x.IsDeleted);
 
         builder.HasIndex(x => x.UserId).IsUnique();
+        builder.Property(x => x.Email).HasMaxLength(256).IsRequired();
         builder.Property(x => x.TargetLanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.CurrentLevel).HasMaxLength(20).IsRequired();
+
+        builder.OwnsOne(x => x.Preferences, pref =>
+        {
+            pref.Property(p => p.DailyGoalMinutes)
+                .HasColumnName("daily_goal_minutes")
+                .HasDefaultValue(15)
+                .IsRequired();
+            pref.Property(p => p.MorningReminderHour)
+                .HasColumnName("morning_reminder_hour")
+                .IsRequired(false);
+            pref.Property(p => p.EveningReminderHour)
+                .HasColumnName("evening_reminder_hour")
+                .IsRequired(false);
+            pref.Property(p => p.UtcOffsetHours)
+                .HasColumnName("utc_offset_hours")
+                .HasDefaultValue(0)
+                .IsRequired();
+        });
     }
 }

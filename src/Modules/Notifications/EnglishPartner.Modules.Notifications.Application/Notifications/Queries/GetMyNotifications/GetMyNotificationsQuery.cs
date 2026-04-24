@@ -3,11 +3,12 @@ using EnglishPartner.SharedKernel.CQRS;
 
 namespace EnglishPartner.Modules.Notifications.Application.Notifications.Queries.GetMyNotifications;
 
-public sealed record GetMyNotificationsQuery(Guid UserId, int Page, int PageSize) : IQuery<GetMyNotificationsResponse>;
+public sealed record GetMyNotificationsQuery(int Page, int PageSize) : IQuery<GetMyNotificationsResponse>;
 
 public sealed record GetMyNotificationsResponse(
     IReadOnlyList<NotificationDto> Items,
     int TotalCount,
+    int UnreadCount,
     int Page,
     int PageSize);
 

@@ -6,7 +6,8 @@ using EnglishPartner.SharedKernel.Results;
 namespace EnglishPartner.Modules.Learning.Application.Admin.Commands.ForceAbandonSession;
 
 internal sealed class ForceAbandonSessionCommandHandler(
-    IStudySessionRepository sessionRepository) : ICommandHandler<ForceAbandonSessionCommand>
+    IStudySessionRepository sessionRepository,
+    TimeProvider timeProvider) : ICommandHandler<ForceAbandonSessionCommand>
 {
     public async Task<Result> Handle(ForceAbandonSessionCommand request, CancellationToken cancellationToken)
     {
@@ -14,7 +15,7 @@ internal sealed class ForceAbandonSessionCommandHandler(
         if (session is null)
             return Result.Failure(LearningErrors.Session.NotFound(request.SessionId));
 
-        session.Abandon();
+        session.Abandon(timeProvider.GetUtcNow().UtcDateTime);
         sessionRepository.Update(session);
         return Result.Success();
     }

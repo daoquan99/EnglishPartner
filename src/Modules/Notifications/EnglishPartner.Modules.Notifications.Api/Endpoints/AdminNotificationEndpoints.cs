@@ -2,7 +2,7 @@ using EnglishPartner.Modules.Notifications.Application.Admin.Commands.DeleteAllU
 using EnglishPartner.Modules.Notifications.Application.Admin.Commands.DeleteNotification;
 using EnglishPartner.Modules.Notifications.Application.Admin.Commands.MarkAllAsRead;
 using EnglishPartner.Modules.Notifications.Application.Admin.Commands.SendNotification;
-using EnglishPartner.Modules.Notifications.Application.Abstractions;
+using EnglishPartner.Modules.Notifications.Application.Admin.Queries.GetAllNotifications;
 using EnglishPartner.Modules.Notifications.Domain.Notifications;
 using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
@@ -26,29 +26,29 @@ public static class AdminNotificationEndpoints
 
         // GET /api/v1/admin/notifications
         group.MapGet("/", async (
-            INotificationRepository repo,
+            ISender sender,
             Guid?  userId   = null,
             bool?  isRead   = null,
             int    page     = 1,
             int    pageSize = 20,
             CancellationToken cancellationToken = default) =>
         {
-            var (items, total) = await repo.GetAllPagedAsync(userId, isRead, page, pageSize, cancellationToken);
-            return Results.Ok(new { items, totalCount = total, page, pageSize });
-        });
+            var result = await sender.Send(new GetAllNotificationsQuery(userId, isRead, page, pageSize), cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        }).WithName("AdminGetAllNotifications").WithSummary("Get all notifications (paginated, filterable).");
 
         // GET /api/v1/admin/notifications/users/{userId}
         group.MapGet("/users/{userId:guid}", async (
             Guid userId,
-            INotificationRepository repo,
+            ISender sender,
             bool? isRead   = null,
             int   page     = 1,
             int   pageSize = 20,
             CancellationToken cancellationToken = default) =>
         {
-            var (items, total) = await repo.GetAllPagedAsync(userId, isRead, page, pageSize, cancellationToken);
-            return Results.Ok(new { items, totalCount = total, page, pageSize });
-        });
+            var result = await sender.Send(new GetAllNotificationsQuery(userId, isRead, page, pageSize), cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        }).WithName("AdminGetUserNotifications").WithSummary("Get all notifications for a specific user.");
 
         // POST /api/v1/admin/notifications/send
         group.MapPost("/send", async (
@@ -64,7 +64,7 @@ public static class AdminNotificationEndpoints
             return result.IsSuccess
                 ? Results.Created($"/api/v1/admin/notifications/{result.Value}", new { id = result.Value })
                 : result.ToProblemDetails();
-        });
+        }).WithName("AdminSendNotification").WithSummary("Send a notification to a specific user.");
 
         // DELETE /api/v1/admin/notifications/{id}
         group.MapDelete("/{id:guid}", async (
@@ -72,7 +72,7 @@ public static class AdminNotificationEndpoints
         {
             var result = await sender.Send(new DeleteNotificationCommand(id), cancellationToken);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        }).WithName("AdminDeleteNotification").WithSummary("Hard-delete a notification by id.");
 
         // POST /api/v1/admin/notifications/users/{userId}/read-all
         group.MapPost("/users/{userId:guid}/read-all", async (
@@ -80,7 +80,7 @@ public static class AdminNotificationEndpoints
         {
             var result = await sender.Send(new MarkAllAsReadCommand(userId), cancellationToken);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        }).WithName("AdminMarkAllNotificationsAsRead").WithSummary("Mark all notifications as read for a user.");
 
         // DELETE /api/v1/admin/notifications/users/{userId}/all
         group.MapDelete("/users/{userId:guid}/all", async (
@@ -88,7 +88,7 @@ public static class AdminNotificationEndpoints
         {
             var result = await sender.Send(new DeleteAllUserNotificationsCommand(userId), cancellationToken);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        }).WithName("AdminDeleteAllUserNotifications").WithSummary("Hard-delete all notifications for a user.");
     }
 
     private sealed record SendRequest(Guid UserId, string Title, string Message, string Type);

@@ -37,7 +37,6 @@ internal sealed class ManageUserRoleCommandHandler(
                 "Operation must be 'Assign' or 'Revoke'."));
         }
 
-        userRepository.Update(user);
         return Result.Success();
     }
 }

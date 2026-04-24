@@ -35,6 +35,7 @@ internal sealed class GrammarExampleConfiguration : IEntityTypeConfiguration<Gra
     {
         builder.ToTable("grammar_examples");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Sentence).HasMaxLength(1000).IsRequired();
         builder.Property(x => x.Note).HasMaxLength(500);
 
@@ -51,6 +52,7 @@ internal sealed class GrammarExampleTranslationConfiguration : IEntityTypeConfig
     {
         builder.ToTable("grammar_example_translations");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
         builder.Property(x => x.TranslatedText).HasMaxLength(2000).IsRequired();
 

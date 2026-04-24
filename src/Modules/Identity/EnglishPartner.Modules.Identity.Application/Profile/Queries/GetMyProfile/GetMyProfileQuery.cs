@@ -15,5 +15,7 @@ public sealed record MyProfileResponse(
     int DailyGoalMinutes,
     string? AvatarUrl,
     DateTime? DateOfBirth,
-    bool IsOnboardingCompleted,
-    List<string> Roles);
+    int? MorningReminderHour,
+    int? EveningReminderHour,
+    int UtcOffsetHours,
+    bool IsOnboardingCompleted);

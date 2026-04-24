@@ -1,25 +1,60 @@
 using EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
+using EnglishPartner.SharedKernel.Interfaces;
 using EnglishPartner.SharedKernel.Results;
+using EnglishPartner.SharedKernel.Application.Caching;
 
 namespace EnglishPartner.Modules.Curriculum.Application.ExampleSentences.Queries.GetExampleSentences;
 
 internal sealed class GetExampleSentencesQueryHandler(
-    IExampleSentenceRepository repository) : IQueryHandler<GetExampleSentencesQuery, List<ExampleSentenceResponse>>
+    IExampleSentenceRepository repository,
+    ICacheService cache) : IQueryHandler<GetExampleSentencesQuery, ExampleSentencesResponse>
 {
-    public async Task<Result<List<ExampleSentenceResponse>>> Handle(GetExampleSentencesQuery request, CancellationToken cancellationToken)
+    private static readonly TimeSpan CacheTtlDuration = CacheTtl.Medium;
+
+    public async Task<Result<ExampleSentencesResponse>> Handle(GetExampleSentencesQuery request, CancellationToken cancellationToken)
     {
-        var sentences = new List<EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.ExampleSentence>();
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var (searchItems, searchTotal) = await repository.GetPagedAsync(
+                languageCode: request.LanguageCode,
+                page: request.Page,
+                pageSize: request.PageSize,
+                searchTerm: request.SearchTerm,
+                vocabularyId: request.VocabularyId,
+                grammarId: request.GrammarId,
+                topicId: request.TopicId,
+                cancellationToken: cancellationToken);
+            
+            return MapResponse(searchItems, searchTotal, request.Page, request.PageSize);
+        }
 
-        // Extremely simplified routing, in a real app would have more robust query building
-        if (request.VocabularyId.HasValue)
-            sentences = await repository.GetByVocabularyIdAsync(request.VocabularyId.Value, cancellationToken);
-        else if (request.GrammarId.HasValue)
-            sentences = await repository.GetByGrammarIdAsync(request.GrammarId.Value, cancellationToken);
-        else if (request.TopicId.HasValue)
-            sentences = await repository.GetByTopicIdAsync(request.TopicId.Value, cancellationToken);
+        var cacheKey = CacheKeys.Curriculum.ExampleSentencesQuery(
+            request.LanguageCode, request.Page, request.PageSize, 
+            request.VocabularyId, request.GrammarId, request.TopicId);
 
-        return sentences.Select(s => new ExampleSentenceResponse(
+        var response = await cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var (items, totalCount) = await repository.GetPagedAsync(
+                languageCode: request.LanguageCode,
+                page: request.Page,
+                pageSize: request.PageSize,
+                searchTerm: null,
+                vocabularyId: request.VocabularyId,
+                grammarId: request.GrammarId,
+                topicId: request.TopicId,
+                cancellationToken: cancellationToken);
+            return MapResponse(items, totalCount, request.Page, request.PageSize);
+        }, CacheTtlDuration, cancellationToken);
+
+        return response!;
+    }
+
+    private static ExampleSentencesResponse MapResponse(
+        List<EnglishPartner.Modules.Curriculum.Domain.ExampleSentences.ExampleSentence> items, 
+        int totalCount, int page, int pageSize)
+    {
+        var dtos = items.Select(s => new ExampleSentenceResponse(
             s.Id,
             s.Text,
             s.AudioUrl,
@@ -27,5 +62,7 @@ internal sealed class GetExampleSentencesQueryHandler(
             s.Level,
             s.Translations.Select(t => new ExampleSentenceTranslationDto(t.LanguageCode, t.TranslatedText)).ToList()
         )).ToList();
+
+        return new ExampleSentencesResponse(dtos, totalCount, page, pageSize);
     }
 }

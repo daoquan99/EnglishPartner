@@ -12,6 +12,8 @@
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageVersion Include="MailKit" Version="4.13.0" />
+    <PackageVersion Include="Resend" Version="0.5.0" />
     <!-- Data -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />

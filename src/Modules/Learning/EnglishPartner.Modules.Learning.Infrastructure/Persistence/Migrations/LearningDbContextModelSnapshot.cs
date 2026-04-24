@@ -304,6 +304,11 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -339,6 +344,45 @@ namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("user_learning_profiles", "learning");
+                });
+
+            modelBuilder.Entity("EnglishPartner.Modules.Learning.Domain.UserProfiles.UserLearningProfile", b =>
+                {
+                    b.OwnsOne("EnglishPartner.Modules.Learning.Domain.UserProfiles.StudyPreferences", "Preferences", b1 =>
+                        {
+                            b1.Property<Guid>("UserLearningProfileId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("DailyGoalMinutes")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasDefaultValue(15)
+                                .HasColumnName("daily_goal_minutes");
+
+                            b1.Property<int?>("EveningReminderHour")
+                                .HasColumnType("integer")
+                                .HasColumnName("evening_reminder_hour");
+
+                            b1.Property<int?>("MorningReminderHour")
+                                .HasColumnType("integer")
+                                .HasColumnName("morning_reminder_hour");
+
+                            b1.Property<int>("UtcOffsetHours")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasDefaultValue(0)
+                                .HasColumnName("utc_offset_hours");
+
+                            b1.HasKey("UserLearningProfileId");
+
+                            b1.ToTable("user_learning_profiles", "learning");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserLearningProfileId");
+                        });
+
+                    b.Navigation("Preferences")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

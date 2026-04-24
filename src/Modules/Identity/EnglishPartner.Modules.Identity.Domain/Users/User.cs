@@ -36,13 +36,24 @@ public sealed class User : AggregateRoot
     public IReadOnlyList<UserRole> UserRoles => _userRoles.AsReadOnly();
     public IReadOnlyList<UserExternalLogin> ExternalLogins => _externalLogins.AsReadOnly();
 
-    public void CompleteOnboarding()
+    public void CompleteOnboarding(
+        string proficiencyLevel, string learningGoal, string targetLanguage,
+        int dailyGoalMinutes, int? morningReminderHour, int? eveningReminderHour, int utcOffsetHours)
     {
         IsOnboardingCompleted = true;
-        RaiseDomainEvent(new OnboardingCompletedDomainEvent(Id));
+        RaiseDomainEvent(new OnboardingCompletedDomainEvent(
+            Id, proficiencyLevel, learningGoal, targetLanguage,
+            dailyGoalMinutes, morningReminderHour, eveningReminderHour, utcOffsetHours));
     }
 
     public void UpdateProfile(string displayName) => DisplayName = displayName;
+
+    /// <summary>Raises UserProfileUpdatedDomainEvent after profile preferences have been changed.
+    /// Called by handler after profile.Update() — UserProfile is an Entity and cannot raise events itself.
+    /// </summary>
+    public void RaiseProfileUpdated(int dailyGoalMinutes, int? morningReminderHour, int? eveningReminderHour, int utcOffsetHours)
+        => RaiseDomainEvent(new UserProfileUpdatedDomainEvent(
+            Id, dailyGoalMinutes, morningReminderHour, eveningReminderHour, utcOffsetHours));
 
     public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
 

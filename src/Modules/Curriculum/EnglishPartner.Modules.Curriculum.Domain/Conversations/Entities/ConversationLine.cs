@@ -37,4 +37,13 @@ public sealed class ConversationLine : Entity
         if (existing is not null) _translations.Remove(existing);
         _translations.Add(ConversationLineTranslation.Create(Id, languageCode, translatedText));
     }
+
+    public void Update(string speaker, string text, string? audioUrl)
+    {
+        Speaker = speaker.Trim();
+        Text = text.Trim();
+        AudioUrl = audioUrl;
+    }
+
+    internal void SetSortOrder(int sortOrder) => SortOrder = sortOrder;
 }

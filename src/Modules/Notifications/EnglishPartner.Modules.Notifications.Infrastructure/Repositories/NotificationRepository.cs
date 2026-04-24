@@ -26,6 +26,13 @@ internal sealed class NotificationRepository(NotificationDbContext dbContext) : 
             .CountAsync(x => x.UserId == userId, cancellationToken);
     }
 
+    public async Task<int> CountUnreadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Notifications
+            .AsNoTracking()
+            .CountAsync(x => x.UserId == userId && !x.IsRead, cancellationToken);
+    }
+
     public async Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await dbContext.Notifications

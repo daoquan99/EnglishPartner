@@ -2,13 +2,15 @@ using EnglishPartner.Modules.Identity.Application.Abstractions;
 using EnglishPartner.Modules.Identity.Domain;
 using EnglishPartner.Modules.Identity.Domain.Users.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
+using EnglishPartner.SharedKernel.Email;
 using EnglishPartner.SharedKernel.Results;
 
 namespace EnglishPartner.Modules.Identity.Application.Admin.Users.Commands.ResetUserPassword;
 
 internal sealed class ResetUserPasswordCommandHandler(
     IUserRepository userRepository,
-    IPasswordHasher passwordHasher) : ICommandHandler<ResetUserPasswordCommand, ResetPasswordResult>
+    IPasswordHasher passwordHasher,
+    IEmailSender emailSender) : ICommandHandler<ResetUserPasswordCommand, ResetPasswordResult>
 {
     // Characters for generated temporary passwords
     private const string Chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
@@ -21,17 +23,30 @@ internal sealed class ResetUserPasswordCommandHandler(
         if (user is null)
             return Result.Failure<ResetPasswordResult>(IdentityErrors.User.NotFoundById(request.UserId));
 
-        // Generate a secure temporary password
         var tempPassword = GenerateTemporaryPassword();
         var hash = passwordHasher.Hash(tempPassword);
         user.ChangePassword(hash);
         userRepository.Update(user);
 
-        // TODO: If sendEmail=true, publish an integration event / call email service
-        // For now, we return the temp password (the caller / admin console shows it once)
         if (request.SendEmail)
         {
-            // Email sending would go here via an IEmailService
+            var html = $"""
+                <h2>Password Reset</h2>
+                <p>Hi {user.DisplayName},</p>
+                <p>Your password has been reset by an administrator.</p>
+                <p>Your temporary password is:</p>
+                <h1 style="letter-spacing:4px;font-size:24px;text-align:center;color:#00d4b0;">{tempPassword}</h1>
+                <p>Please login and change your password immediately.</p>
+                <p style="color:#888;font-size:12px;">— EnglishPartner</p>
+                """;
+
+            await emailSender.SendAsync(new EmailMessage(
+                To: user.Email,
+                Subject: "EnglishPartner — Your Password Has Been Reset",
+                HtmlBody: html,
+                PlainTextBody: $"Your temporary password is: {tempPassword}. Please login and change it immediately."
+            ), cancellationToken);
+
             return new ResetPasswordResult(null, EmailSent: true);
         }
 
@@ -40,7 +55,6 @@ internal sealed class ResetUserPasswordCommandHandler(
 
     private static string GenerateTemporaryPassword(int length = 12)
     {
-        // Use cryptographically secure RNG — available from .NET 6+
         return System.Security.Cryptography.RandomNumberGenerator.GetString(
             Chars, length);
     }

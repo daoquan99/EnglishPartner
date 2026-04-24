@@ -8,4 +8,6 @@ public sealed record CompleteOnboardingCommand(
     string TargetLanguage,
     string ProficiencyLevel,
     string LearningGoal,
-    int DailyGoalMinutes) : ICommand;
+    int DailyGoalMinutes,
+    int? MorningReminderHour,
+    int? EveningReminderHour) : ICommand;

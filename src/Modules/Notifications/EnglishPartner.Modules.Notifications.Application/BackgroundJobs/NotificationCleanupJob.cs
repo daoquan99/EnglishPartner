@@ -14,6 +14,7 @@ namespace EnglishPartner.Modules.Notifications.Application.BackgroundJobs;
 public sealed class NotificationCleanupJob(
     INotificationRepository notificationRepository,
     IOptions<NotificationSettings> options,
+    TimeProvider timeProvider,
     ILogger<NotificationCleanupJob> logger) : IJob
 {
     private readonly NotificationSettings _settings = options.Value;
@@ -26,7 +27,7 @@ public sealed class NotificationCleanupJob(
             return;
         }
 
-        var limitDate = DateTime.UtcNow.AddDays(-_settings.KeepHistoryDays);
+        var limitDate = timeProvider.GetUtcNow().UtcDateTime.AddDays(-_settings.KeepHistoryDays);
 
         logger.LogInformation(
             "NotificationCleanupJob started. KeepDays={Days}, CutoffDate={Cutoff}",

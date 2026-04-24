@@ -6,6 +6,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.Admin.Generate.GenerateA
 /// Admin command: Ask AI to generate conversation scripts with translations in multiple languages.
 /// </summary>
 public sealed record GenerateAndSaveConversationCommand(
+    string TargetLanguage,
     string TopicName,
     string? Level = null,
     string? Scenario = null,

@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.Identity.Application.Onboarding.Commands.CompleteOnboarding;
+using EnglishPartner.Modules.Identity.Domain.Users;
 using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -16,13 +17,34 @@ internal static class OnboardingEndpoints
             .WithTags("Onboarding")
             .RequireAuthorization();
 
+        group.MapGet("/questions", async (EnglishPartner.Modules.Curriculum.Contracts.Services.ILanguageQueryService languageQueryService, CancellationToken cancellationToken) =>
+        {
+            var languages = await languageQueryService.GetSupportedLanguagesAsync(cancellationToken);
+            var languageCodes = languages.Select(l => l.Code).ToArray();
+
+            var questions = OnboardingQuestions.All.Select(q =>
+            {
+                if (q.Key == "native_language" || q.Key == "target_language")
+                {
+                    return q with { Options = languageCodes };
+                }
+                return q;
+            }).ToList();
+
+            return Results.Ok(questions);
+        })
+        .WithName("GetOnboardingQuestions")
+        .WithSummary("Get the list of onboarding questions with options.")
+        .AllowAnonymous();
+
         group.MapPost("/complete", async (CompleteOnboardingRequest req, ClaimsPrincipal user, ISender sender) =>
         {
             if (!user.TryGetUserId(out var userId)) return Results.Unauthorized();
 
             var result = await sender.Send(new CompleteOnboardingCommand(
                 userId, req.NativeLanguage, req.TargetLanguage,
-                req.ProficiencyLevel, req.LearningGoal, req.DailyGoalMinutes));
+                req.ProficiencyLevel, req.LearningGoal, req.DailyGoalMinutes,
+                req.MorningReminderHour, req.EveningReminderHour));
 
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
         })
@@ -33,4 +55,5 @@ internal static class OnboardingEndpoints
 
 internal sealed record CompleteOnboardingRequest(
     string NativeLanguage, string TargetLanguage, string ProficiencyLevel,
-    string LearningGoal, int DailyGoalMinutes);
+    string LearningGoal, int DailyGoalMinutes,
+    int? MorningReminderHour, int? EveningReminderHour);

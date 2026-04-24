@@ -1,12 +1,15 @@
 using EnglishPartner.Modules.Curriculum.Domain.Vocabularies;
 using EnglishPartner.Modules.Curriculum.Domain.Vocabularies.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
+using EnglishPartner.SharedKernel.Interfaces;
 using EnglishPartner.SharedKernel.Results;
+using EnglishPartner.SharedKernel.Application.Caching;
 
 namespace EnglishPartner.Modules.Curriculum.Application.Vocabularies.Commands.CreateVocabulary;
 
 internal sealed class CreateVocabularyCommandHandler(
-    IVocabularyRepository vocabularyRepository) : ICommandHandler<CreateVocabularyCommand, Guid>
+    IVocabularyRepository vocabularyRepository,
+    ICacheService cache) : ICommandHandler<CreateVocabularyCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateVocabularyCommand request, CancellationToken cancellationToken)
     {
@@ -22,6 +25,9 @@ internal sealed class CreateVocabularyCommandHandler(
             request.Synonyms);
 
         vocabularyRepository.Add(vocabulary);
+        
+        await cache.RemoveByPrefixAsync(CacheKeys.Curriculum.VocabulariesPrefix(request.LanguageCode), cancellationToken);
+
         return vocabulary.Id;
     }
 }

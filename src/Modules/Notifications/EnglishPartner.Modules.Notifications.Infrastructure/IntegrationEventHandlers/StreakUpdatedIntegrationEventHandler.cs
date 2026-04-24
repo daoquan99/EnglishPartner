@@ -1,5 +1,5 @@
 using EnglishPartner.Messaging;
-using EnglishPartner.Modules.Identity.Contracts.IntegrationEvents;
+using EnglishPartner.Modules.Learning.Contracts.IntegrationEvents;
 using EnglishPartner.Modules.Notifications.Application.Abstractions;
 using EnglishPartner.Modules.Notifications.Domain.Notifications;
 using EnglishPartner.Modules.Notifications.Infrastructure.Persistence;
@@ -17,8 +17,9 @@ internal sealed class StreakUpdatedIntegrationEventHandler
     public StreakUpdatedIntegrationEventHandler(
         NotificationDbContext dbContext,
         INotificationPusher pusher,
+        TimeProvider timeProvider,
         ILogger<StreakUpdatedIntegrationEventHandler> logger)
-        : base(dbContext, logger)
+        : base(dbContext, timeProvider, logger)
     {
         _dbContext = dbContext;
         _pusher = pusher;

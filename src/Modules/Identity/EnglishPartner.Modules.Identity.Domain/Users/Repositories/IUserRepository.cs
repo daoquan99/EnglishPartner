@@ -26,4 +26,7 @@ public interface IUserRepository
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Returns true if any user has the given roleId — used to guard role deletion.</summary>
+    Task<bool> AnyWithRoleAsync(Guid roleId, CancellationToken cancellationToken = default);
 }

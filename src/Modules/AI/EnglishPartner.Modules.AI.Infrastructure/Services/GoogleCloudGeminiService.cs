@@ -267,12 +267,12 @@ internal sealed class GoogleCloudGeminiService(
         return $"\"translations\": {{ {langs} }}";
     }
 
-    public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string wordHint, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string targetLanguage, string wordHint, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var scope = count == 1
-            ? $"Generate vocabulary data for the word \"{wordHint}\"."
-            : $"Generate {count} English vocabulary words related to the topic: \"{wordHint}\". Pick diverse, useful words.";
+            ? $"Generate vocabulary data for the word \"{wordHint}\" in the language: {targetLanguage}."
+            : $"Generate {count} vocabulary words related to the topic: \"{wordHint}\" in the language: {targetLanguage}. Pick diverse, useful words.";
 
         var prompt = $$"""
             {{SystemIntro}}
@@ -283,10 +283,10 @@ internal sealed class GoogleCloudGeminiService(
             {
               "items": [
                 {
-                  "word": "<the English word>",
-                  "definition": "<clear English definition>",
-                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER'>",
-                  "phoneticTranscription": "<IPA notation, e.g. /pəˌsɪˈvɪər/>",
+                  "word": "<the word in {{targetLanguage}}>",
+                  "definition": "<clear explanation or meaning>",
+                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER' or romaji/pinyin if applicable>",
+                  "phoneticTranscription": "<IPA notation if applicable, e.g. /pəˌsɪˈvɪər/>",
                   "partOfSpeech": "<noun|verb|adjective|adverb|preposition|conjunction|interjection>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "synonyms": ["<synonym1>", "<synonym2>", "<synonym3>"]
@@ -310,13 +310,13 @@ internal sealed class GoogleCloudGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string targetLanguage, string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the CEFR level yourself.";
         var scope = count == 1
-            ? $"Generate a grammar lesson for: \"{title}\"."
-            : $"Generate {count} related grammar lessons, starting from \"{title}\".";
+            ? $"Generate a grammar lesson for: \"{title}\" for learning {targetLanguage}."
+            : $"Generate {count} related grammar lessons, starting from \"{title}\" for learning {targetLanguage}.";
         var trans = BuildTranslationsInstruction(targetLanguageCodes);
 
         var prompt = $$"""
@@ -329,13 +329,13 @@ internal sealed class GoogleCloudGeminiService(
             {
               "items": [
                 {
-                  "title": "<grammar rule title>",
-                  "explanation": "<clear English explanation>",
-                  "formula": "<structure formula, e.g. 'Subject + have/has + past participle'>",
+                  "title": "<grammar rule title in {{targetLanguage}} or English>",
+                  "explanation": "<clear explanation of the rule>",
+                  "formula": "<structure formula if applicable>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "examples": [
                     {
-                      "sentence": "<English example sentence>",
+                      "sentence": "<example sentence in {{targetLanguage}}>",
                       "note": "<short note explaining why this example illustrates the rule>",
                       {{trans}}
                     }
@@ -362,7 +362,7 @@ internal sealed class GoogleCloudGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string targetLanguage, string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 5);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the appropriate level.";
@@ -372,7 +372,7 @@ internal sealed class GoogleCloudGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
             
-            Generate {{count}} realistic English conversation(s) about the topic: "{{topicName}}".
+            Generate {{count}} realistic conversation(s) in {{targetLanguage}} about the topic: "{{topicName}}".
             {{scenarioHint}} {{levelHint}}
             Each conversation must have exactly {{lineCount}} lines alternating between 2 speakers.
             
@@ -384,7 +384,7 @@ internal sealed class GoogleCloudGeminiService(
                   "lines": [
                     {
                       "speaker": "<Speaker A or Speaker B>",
-                      "text": "<English dialogue line>",
+                      "text": "<dialogue line in {{targetLanguage}}>",
                       {{trans}}
                     }
                   ]
@@ -410,7 +410,7 @@ internal sealed class GoogleCloudGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string targetLanguage, string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Determine the appropriate level.";
@@ -418,7 +418,7 @@ internal sealed class GoogleCloudGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
 
-            Generate {{count}} English exercise(s) of type {{exerciseType}} based on this context: "{{context}}".
+            Generate {{count}} exercise(s) for learning {{targetLanguage}} of type {{exerciseType}} based on this context: "{{context}}".
             {{levelHint}}
 
             Exercise types: 1=MultipleChoice, 2=TrueFalse, 3=FillInTheBlank, 4=Translation, 5=Ordering, 6=Matching, 7=OpenEnded, 8=Pronunciation.
@@ -429,7 +429,7 @@ internal sealed class GoogleCloudGeminiService(
                 {
                   "title": "<exercise title>",
                   "instruction": "<clear instruction for the student>",
-                  "content": "<question or sentence with blank>",
+                  "content": "<question or sentence with blank in {{targetLanguage}} or mixed>",
                   "correctAnswer": "<the correct answer>",
                   "explanation": "<brief explanation of why this is correct>",
                   "options": [
@@ -456,7 +456,7 @@ internal sealed class GoogleCloudGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string targetLanguage, string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "";
@@ -465,13 +465,13 @@ internal sealed class GoogleCloudGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
             
-            Generate {{count}} example English sentence(s) demonstrating: "{{context}}". {{levelHint}}
+            Generate {{count}} example sentence(s) in {{targetLanguage}} demonstrating: "{{context}}". {{levelHint}}
             
             Respond ONLY with this exact JSON object:
             {
               "items": [
                 {
-                  "text": "<English example sentence>",
+                  "text": "<example sentence in {{targetLanguage}}>",
                   "note": "<short note explaining how this illustrates the concept>",
                   {{trans}}
                 }

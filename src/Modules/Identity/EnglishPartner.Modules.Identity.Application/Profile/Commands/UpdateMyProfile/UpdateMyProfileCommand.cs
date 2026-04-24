@@ -11,4 +11,7 @@ public sealed record UpdateMyProfileCommand(
     string? LearningGoal,
     int? DailyGoalMinutes,
     string? AvatarUrl,
-    DateTime? DateOfBirth) : ICommand;
+    DateTime? DateOfBirth,
+    int? MorningReminderHour,
+    int? EveningReminderHour,
+    int? UtcOffsetHours) : ICommand;

@@ -67,8 +67,14 @@ internal sealed class RoleRepository(IdentityDbContext context) : IRoleRepositor
     }
 
     public void Add(Role role) => context.Roles.Add(role);
-
     public void Update(Role role) => context.Roles.Update(role);
-}
+    public void Delete(Role role) => context.Roles.Remove(role);
 
+    public async Task<List<Role>> GetAllWithPermissionsAsync(CancellationToken cancellationToken = default)
+        => await context.Roles
+            .AsNoTracking()
+            .Include(r => r.RolePermissions)
+                .ThenInclude(rp => rp.Permission)
+            .ToListAsync(cancellationToken);
+}
 

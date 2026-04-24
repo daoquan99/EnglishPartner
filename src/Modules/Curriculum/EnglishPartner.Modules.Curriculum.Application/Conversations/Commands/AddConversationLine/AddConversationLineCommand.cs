@@ -6,5 +6,5 @@ public sealed record AddConversationLineCommand(
     Guid ConversationId,
     string Speaker,
     string Text,
-    string? Translation,
+    Dictionary<string, string>? Translations,
     string? AudioUrl) : ICommand;

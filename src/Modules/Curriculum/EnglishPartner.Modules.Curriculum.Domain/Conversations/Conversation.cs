@@ -72,5 +72,28 @@ public sealed class Conversation : AggregateRoot
         return line;
     }
 
+    public Entities.ConversationLine? UpdateLine(Guid lineId, string speaker, string text, string? audioUrl)
+    {
+        var line = _lines.FirstOrDefault(l => l.Id == lineId);
+        if (line is null) return null;
+
+        line.Update(speaker, text, audioUrl);
+        return line;
+    }
+
     public void ClearLines() => _lines.Clear();
+
+    /// <summary>
+    /// Reorders lines by the provided ordered list of line IDs.
+    /// </summary>
+    public void ReorderLines(IReadOnlyList<Guid> orderedLineIds)
+    {
+        var ids = orderedLineIds.ToList();
+        foreach (var line in _lines)
+        {
+            var index = ids.IndexOf(line.Id);
+            if (index >= 0)
+                line.SetSortOrder(index);
+        }
+    }
 }

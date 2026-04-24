@@ -13,12 +13,14 @@ namespace EnglishPartner.Modules.Identity.Application.Auth.Commands.Login;
 
 internal sealed class LoginCommandHandler(
     IUserRepository userRepository,
+    IUserProfileRepository profileRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IRoleRepository roleRepository,
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
     ISessionService sessionService,
     IHttpContextAccessor httpContextAccessor,
+    TimeProvider timeProvider,
     IOptions<JwtSettings> jwtSettings) : ICommandHandler<LoginCommand, LoginResponse>
 {
     public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -37,18 +39,30 @@ internal sealed class LoginCommandHandler(
         var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
         var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
-        // Session TTL = AccessToken lifetime + 2 min buffer (so session outlives token for valid refresh)
-        var sessionTtl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpirationMinutes + 2);
+        var sessionTtl = TimeSpan.FromDays(jwtSettings.Value.RefreshTokenExpirationDays);
         var sessionId = await sessionService.CreateSessionAsync(user.Id, sessionTtl, cancellationToken);
 
         var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions, sessionId);
+        var utcNow = timeProvider.GetUtcNow();
+        var expiresAt = utcNow.UtcDateTime.AddMinutes(jwtSettings.Value.AccessTokenExpirationMinutes);
 
         // Refresh token stored in DB + set as httpOnly cookie (NOT returned in body)
         var refreshToken = RefreshTokenEntity.Create(
             user.Id,
             tokenService.GenerateRefreshToken(),
-            DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
+            utcNow.UtcDateTime.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
         refreshTokenRepository.Add(refreshToken);
+
+        // Update timezone if FE provided it (X-Timezone-Offset header).
+        if (request.UtcOffsetHours.HasValue)
+        {
+            var profile = await profileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+            if (profile is not null)
+            {
+                profile.UpdateTimezone(request.UtcOffsetHours.Value);
+                profileRepository.Update(profile);
+            }
+        }
 
         SetRefreshTokenCookie(refreshToken.Token, jwtSettings.Value.RefreshTokenExpirationDays);
 
@@ -57,8 +71,10 @@ internal sealed class LoginCommandHandler(
 
         return new LoginResponse(
             user.Id,
+            user.Email,
             user.DisplayName,
             accessToken,
+            expiresAt,
             user.IsOnboardingCompleted,
             responsePermissions);
     }
@@ -72,7 +88,7 @@ internal sealed class LoginCommandHandler(
             Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/api/v1/auth",          // only sent to auth endpoints — not every request
-            Expires = DateTimeOffset.UtcNow.AddDays(expirationDays),
+            Expires = timeProvider.GetUtcNow().AddDays(expirationDays),
         });
     }
 }

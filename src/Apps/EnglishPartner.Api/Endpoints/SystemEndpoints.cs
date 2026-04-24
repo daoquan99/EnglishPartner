@@ -40,7 +40,7 @@ internal static class SystemEndpoints
         .WithSummary("Upload a file (Admin/User). Valid folders: avatars, topics, audio, general.");
 
         // ── AI Health Check ──
-        group.MapGet("/ai-ping", async (IGeminiService gemini, CancellationToken ct) =>
+        group.MapGet("/ai-ping", async (IGeminiService gemini, TimeProvider timeProvider, CancellationToken ct) =>
         {
             var sw = Stopwatch.StartNew();
             try
@@ -58,7 +58,7 @@ internal static class SystemEndpoints
                     status    = "ok",
                     response  = response.Trim(),
                     latencyMs = sw.ElapsedMilliseconds,
-                    timestamp = DateTime.UtcNow,
+                    timestamp = timeProvider.GetUtcNow().UtcDateTime,
                 });
             }
             catch (Exception ex)
@@ -69,7 +69,7 @@ internal static class SystemEndpoints
                     status    = "error",
                     error     = ex.Message,
                     latencyMs = sw.ElapsedMilliseconds,
-                    timestamp = DateTime.UtcNow,
+                    timestamp = timeProvider.GetUtcNow().UtcDateTime,
                 });
             }
         })

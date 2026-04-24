@@ -33,22 +33,27 @@ internal sealed class GoogleGenAIGeminiService(
 
     private Client CreateClient()
     {
+        var httpOptions = new HttpOptions
+        {
+            Timeout = (int)TimeSpan.FromSeconds(Config.TimeoutSeconds).TotalMilliseconds
+        };
+
         // Prioritize Google AI Studio (API Key)
         if (!string.IsNullOrWhiteSpace(Config.ApiKey))
         {
-            return new Client(apiKey: Config.ApiKey);
+            return new Client(apiKey: Config.ApiKey, httpOptions: httpOptions);
         }
 
         // Fallback to Vertex AI endpoint (Google Cloud ADC)
         if (!string.IsNullOrWhiteSpace(Config.ProjectId))
         {
-            return new Client(vertexAI: true, project: Config.ProjectId, location: Config.Location);
+            return new Client(vertexAI: true, project: Config.ProjectId, location: Config.Location, httpOptions: httpOptions);
         }
 
         throw new InvalidOperationException("Either ApiKey (for Gemini API) or ProjectId (for Vertex AI) must be configured in GeminiAISettings.");
     }
 
-    private GenerateContentConfig BuildGenerationConfig(bool requireJsonResponse = true)
+    private GenerateContentConfig BuildGenerationConfig(bool requireJsonResponse = true, string? modelName = null)
     {
         var cfg = new GenerateContentConfig
         {
@@ -57,7 +62,7 @@ internal sealed class GoogleGenAIGeminiService(
             TopP = (float)Config.TopP
         };
 
-        if (requireJsonResponse)
+        if (requireJsonResponse && SupportsJsonMode(modelName ?? Config.ModelName))
             cfg.ResponseMimeType = "application/json";
 
         if (Config.DisableAllSafetyRestrictions)
@@ -136,7 +141,7 @@ internal sealed class GoogleGenAIGeminiService(
             """;
 
         var client = CreateClient();
-        var config = BuildGenerationConfig(requireJsonResponse: true);
+        var config = BuildGenerationConfig(requireJsonResponse: true, modelName: Config.ModelName);
 
         var contents = new List<Content>
         {
@@ -205,7 +210,7 @@ internal sealed class GoogleGenAIGeminiService(
     public async Task<string> ChatAsync(string systemPrompt, IReadOnlyList<ChatTurn> history, string userMessage, CancellationToken cancellationToken = default)
     {
         var client = CreateClient();
-        var config = BuildGenerationConfig(requireJsonResponse: false);
+        var config = BuildGenerationConfig(requireJsonResponse: false, modelName: Config.ModelName);
         config.SystemInstruction = new Content
         {
             Role = "system",
@@ -261,12 +266,18 @@ internal sealed class GoogleGenAIGeminiService(
         return $"\"translations\": {{ {langs} }}";
     }
 
-    public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string wordHint, int count = 1, CancellationToken cancellationToken = default)
+    private bool SupportsJsonMode(string model)
+    {
+        return model.StartsWith("gemini-", StringComparison.OrdinalIgnoreCase);
+    }
+
+
+    public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string targetLanguage, string wordHint, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var scope = count == 1
-            ? $"Generate vocabulary data for the word \"{wordHint}\"."
-            : $"Generate {count} English vocabulary words related to the topic: \"{wordHint}\". Pick diverse, useful words.";
+            ? $"Generate vocabulary data for the word \"{wordHint}\" in the language: {targetLanguage}."
+            : $"Generate {count} vocabulary words related to the topic: \"{wordHint}\" in the language: {targetLanguage}. Pick diverse, useful words.";
 
         var prompt = $$"""
             {{SystemIntro}}
@@ -277,10 +288,10 @@ internal sealed class GoogleGenAIGeminiService(
             {
               "items": [
                 {
-                  "word": "<the English word>",
-                  "definition": "<clear English definition>",
-                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER'>",
-                  "phoneticTranscription": "<IPA notation, e.g. /pəˌsɪˈvɪər/>",
+                  "word": "<the word in {{targetLanguage}}>",
+                  "definition": "<clear explanation or meaning>",
+                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER' or romaji/pinyin if applicable>",
+                  "phoneticTranscription": "<IPA notation if applicable, e.g. /pəˌsɪˈvɪər/>",
                   "partOfSpeech": "<noun|verb|adjective|adverb|preposition|conjunction|interjection>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "synonyms": ["<synonym1>", "<synonym2>", "<synonym3>"]
@@ -304,13 +315,13 @@ internal sealed class GoogleGenAIGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string targetLanguage, string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the CEFR level yourself.";
         var scope = count == 1
-            ? $"Generate a grammar lesson for: \"{title}\"."
-            : $"Generate {count} related grammar lessons, starting from \"{title}\".";
+            ? $"Generate a grammar lesson for: \"{title}\" for learning {targetLanguage}."
+            : $"Generate {count} related grammar lessons, starting from \"{title}\" for learning {targetLanguage}.";
         var trans = BuildTranslationsInstruction(targetLanguageCodes);
 
         var prompt = $$"""
@@ -323,13 +334,13 @@ internal sealed class GoogleGenAIGeminiService(
             {
               "items": [
                 {
-                  "title": "<grammar rule title>",
-                  "explanation": "<clear English explanation>",
-                  "formula": "<structure formula, e.g. 'Subject + have/has + past participle'>",
+                  "title": "<grammar rule title in {{targetLanguage}} or English>",
+                  "explanation": "<clear explanation of the rule>",
+                  "formula": "<structure formula if applicable>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "examples": [
                     {
-                      "sentence": "<English example sentence>",
+                      "sentence": "<example sentence in {{targetLanguage}}>",
                       "note": "<short note explaining why this example illustrates the rule>",
                       {{trans}}
                     }
@@ -356,7 +367,7 @@ internal sealed class GoogleGenAIGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string targetLanguage, string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 5);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the appropriate level.";
@@ -366,7 +377,7 @@ internal sealed class GoogleGenAIGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
             
-            Generate {{count}} realistic English conversation(s) about the topic: "{{topicName}}".
+            Generate {{count}} realistic conversation(s) in {{targetLanguage}} about the topic: "{{topicName}}".
             {{scenarioHint}} {{levelHint}}
             Each conversation must have exactly {{lineCount}} lines alternating between 2 speakers.
             
@@ -378,7 +389,7 @@ internal sealed class GoogleGenAIGeminiService(
                   "lines": [
                     {
                       "speaker": "<Speaker A or Speaker B>",
-                      "text": "<English dialogue line>",
+                      "text": "<dialogue line in {{targetLanguage}}>",
                       {{trans}}
                     }
                   ]
@@ -404,7 +415,7 @@ internal sealed class GoogleGenAIGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string targetLanguage, string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Determine the appropriate level.";
@@ -412,7 +423,7 @@ internal sealed class GoogleGenAIGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
 
-            Generate {{count}} English exercise(s) of type {{exerciseType}} based on this context: "{{context}}".
+            Generate {{count}} exercise(s) for learning {{targetLanguage}} of type {{exerciseType}} based on this context: "{{context}}".
             {{levelHint}}
 
             Exercise types: 1=MultipleChoice, 2=TrueFalse, 3=FillInTheBlank, 4=Translation, 5=Ordering, 6=Matching, 7=OpenEnded, 8=Pronunciation.
@@ -423,7 +434,7 @@ internal sealed class GoogleGenAIGeminiService(
                 {
                   "title": "<exercise title>",
                   "instruction": "<clear instruction for the student>",
-                  "content": "<question or sentence with blank>",
+                  "content": "<question or sentence with blank in {{targetLanguage}} or mixed>",
                   "correctAnswer": "<the correct answer>",
                   "explanation": "<brief explanation of why this is correct>",
                   "options": [
@@ -450,7 +461,7 @@ internal sealed class GoogleGenAIGeminiService(
         }
     }
 
-    public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default)
+    public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string targetLanguage, string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "";
@@ -459,13 +470,13 @@ internal sealed class GoogleGenAIGeminiService(
         var prompt = $$"""
             {{SystemIntro}}
             
-            Generate {{count}} example English sentence(s) demonstrating: "{{context}}". {{levelHint}}
+            Generate {{count}} example sentence(s) in {{targetLanguage}} demonstrating: "{{context}}". {{levelHint}}
             
             Respond ONLY with this exact JSON object:
             {
               "items": [
                 {
-                  "text": "<English example sentence>",
+                  "text": "<example sentence in {{targetLanguage}}>",
                   "note": "<short note explaining how this illustrates the concept>",
                   {{trans}}
                 }
@@ -489,10 +500,14 @@ internal sealed class GoogleGenAIGeminiService(
     // ── Core execution ───────────────────────────────────────────────────────
 
     private async Task<(string Json, long LatencyMs, bool IsSuccess, string? Error)> CallWithLoggingAsync(
-        string requestType, string prompt, string? systemInstruction, bool requireJson, CancellationToken ct)
+        string requestType,
+        string prompt,
+        string? systemInstruction,
+        bool requireJson,
+        CancellationToken ct)
     {
         var client = CreateClient();
-        var config = BuildGenerationConfig(requireJson);
+        var config = BuildGenerationConfig(requireJson, modelName: Config.ModelName);
 
         if (!string.IsNullOrWhiteSpace(systemInstruction))
         {
@@ -514,6 +529,11 @@ internal sealed class GoogleGenAIGeminiService(
             logger.LogInformation("[GoogleGenAI] Calling {RequestType} on model {Model}", requestType, Config.ModelName);
             var response = await client.Models.GenerateContentAsync(Config.ModelName, contents, config, cancellationToken: ct);
             responseText = response.Text ?? (requireJson ? "{}" : "");
+            
+            if (requireJson)
+            {
+                responseText = CleanJsonMarkdown(responseText);
+            }
         }
         catch (Exception ex)
         {
@@ -530,6 +550,28 @@ internal sealed class GoogleGenAIGeminiService(
         logger.LogInformation("[GoogleGenAI] {RequestType} completed in {Ms}ms (success={Success})", requestType, sw.ElapsedMilliseconds, isSuccess);
 
         return (responseText, sw.ElapsedMilliseconds, isSuccess, errorMsg);
+    }
+
+    private static string CleanJsonMarkdown(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "{}";
+        
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed.Substring("```json".Length).TrimStart();
+        }
+        else if (trimmed.StartsWith("```", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed.Substring("```".Length).TrimStart();
+        }
+
+        if (trimmed.EndsWith("```", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed.Substring(0, trimmed.Length - "```".Length).TrimEnd();
+        }
+
+        return trimmed;
     }
 
     // ── Internal JSON DTOs ───────────────────────────────────────────────────

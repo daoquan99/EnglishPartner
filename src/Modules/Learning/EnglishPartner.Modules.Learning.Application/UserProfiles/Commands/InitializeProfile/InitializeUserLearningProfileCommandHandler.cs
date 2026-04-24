@@ -13,7 +13,7 @@ internal sealed class InitializeUserLearningProfileCommandHandler(
         var existingProfile = await profileRepository.GetByUserIdAsync(request.UserId, cancellationToken);
         if (existingProfile is null)
         {
-            var profile = UserLearningProfile.Create(request.UserId, request.DisplayName, request.TargetLanguageCode);
+            var profile = UserLearningProfile.Create(request.UserId, request.Email, request.DisplayName, request.TargetLanguageCode);
             profileRepository.Add(profile);
         }
 

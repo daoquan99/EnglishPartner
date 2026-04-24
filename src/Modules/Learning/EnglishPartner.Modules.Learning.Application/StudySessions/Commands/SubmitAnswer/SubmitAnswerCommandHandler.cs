@@ -4,6 +4,7 @@ using EnglishPartner.Modules.Learning.Domain.ItemMasteries.Repositories;
 using EnglishPartner.Modules.Learning.Domain.StudySessions;
 using EnglishPartner.Modules.Learning.Domain.StudySessions.Repositories;
 using EnglishPartner.SharedKernel.CQRS;
+using EnglishPartner.SharedKernel.Interfaces;
 using EnglishPartner.SharedKernel.Results;
 
 namespace EnglishPartner.Modules.Learning.Application.StudySessions.Commands.SubmitAnswer;
@@ -12,18 +13,23 @@ internal sealed class SubmitAnswerCommandHandler(
     IStudySessionRepository sessionRepository,
     IItemMasteryRepository masteryRepository,
     ILearningActivityLogRepository logRepository,
-    IAiEvaluationService aiEvaluationService) : ICommandHandler<SubmitAnswerCommand, SubmitAnswerResponse>
+    IAiEvaluationService aiEvaluationService,
+    TimeProvider timeProvider,
+    ICurrentUserService currentUser) : ICommandHandler<SubmitAnswerCommand, SubmitAnswerResponse>
 {
     // Fallback score when AI evaluation is unavailable (degraded mode — SM-2 still runs)
     private const int FallbackQualityScore = 0;
 
     public async Task<Result<SubmitAnswerResponse>> Handle(SubmitAnswerCommand request, CancellationToken cancellationToken)
     {
+        var userId = currentUser.UserId!.Value;
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var session = await sessionRepository.GetByIdAsync(request.SessionId, cancellationToken);
-        if (session is null || session.UserId != request.UserId)
+        if (session is null || session.UserId != userId)
             return Result.Failure<SubmitAnswerResponse>(CommonErrors.NotFound("StudySession", request.SessionId));
 
-        session.Ping(DateTime.UtcNow);
+        session.Ping(utcNow);
         sessionRepository.Update(session);
 
         // ── AI Evaluation (server-side scoring) ──
@@ -33,23 +39,24 @@ internal sealed class SubmitAnswerCommandHandler(
         var qualityScore = evaluation?.QualityScore ?? FallbackQualityScore;
 
         // ── SM-2: Find or create ItemMastery ──
-        var existingMastery = await masteryRepository.GetAsync(request.UserId, request.ItemId, cancellationToken);
-        var mastery = existingMastery ?? ItemMastery.Create(request.UserId, request.ItemId, request.ItemType);
+        var existingMastery = await masteryRepository.GetAsync(userId, request.ItemId, cancellationToken);
+        var mastery = existingMastery ?? ItemMastery.Create(userId, request.ItemId, request.ItemType, utcNow);
 
-        mastery.Review(qualityScore, DateTime.UtcNow);
+        mastery.Review(qualityScore, utcNow);
 
         if (existingMastery is null) masteryRepository.Add(mastery);
         else masteryRepository.Update(mastery);
 
         // ── Log the raw activity ──
         var log = LearningActivityLog.Record(
-            request.UserId,
+            userId,
             request.SessionId,
             request.ItemId,
             request.UserAnswer,
             isCorrect: evaluation?.IsCorrect ?? false,
             scoreGranted: qualityScore,
-            request.TimeSpentSeconds);
+            request.TimeSpentSeconds,
+            utcNow);
 
         logRepository.Add(log);
 

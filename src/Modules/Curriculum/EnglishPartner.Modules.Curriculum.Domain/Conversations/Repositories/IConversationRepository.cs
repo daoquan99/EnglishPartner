@@ -5,7 +5,8 @@ public interface IConversationRepository
     Task<Conversation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<Conversation>> GetByTopicIdAsync(Guid topicId, CancellationToken cancellationToken = default);
     Task<List<Conversation>> GetByLanguageCodeAsync(string languageCode, CancellationToken cancellationToken = default);
+    Task<List<Conversation>> GetFilteredAsync(string languageCode, Guid? topicId, string? level, CancellationToken cancellationToken = default);
     void Add(Conversation conversation);
     void Update(Conversation conversation);
-    void Remove(Conversation conversation);
+    void Remove(Conversation conversation, Guid? deletedBy = null, DateTime? deletedAt = null);
 }

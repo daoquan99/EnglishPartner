@@ -7,7 +7,6 @@ internal sealed class SendMessageCommandValidator : AbstractValidator<SendMessag
     public SendMessageCommandValidator()
     {
         RuleFor(x => x.SessionId).NotEmpty();
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Text)
             .NotEmpty().WithMessage("Message cannot be empty.")
             .MaximumLength(4000);

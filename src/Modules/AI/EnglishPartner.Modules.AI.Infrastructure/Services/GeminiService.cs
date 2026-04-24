@@ -195,12 +195,12 @@ internal sealed class GeminiService(
     }
 
     public async Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(
-        string wordHint, int count = 1, CancellationToken cancellationToken = default)
+        string targetLanguage, string wordHint, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var scope = count == 1
-            ? $"Generate vocabulary data for the word \"{wordHint}\"."
-            : $"Generate {count} English vocabulary words related to the topic: \"{wordHint}\". Pick diverse, useful words.";
+            ? $"Generate vocabulary data for the word \"{wordHint}\" in the language: {targetLanguage}."
+            : $"Generate {count} vocabulary words related to the topic: \"{wordHint}\" in the language: {targetLanguage}. Pick diverse, useful words.";
 
         var prompt = $$"""
             {{SystemIntro}}
@@ -211,10 +211,10 @@ internal sealed class GeminiService(
             {
               "items": [
                 {
-                  "word": "<the English word>",
-                  "definition": "<clear English definition>",
-                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER'>",
-                  "phoneticTranscription": "<IPA notation, e.g. /pəˌsɪˈvɪər/>",
+                  "word": "<the word in {{targetLanguage}}>",
+                  "definition": "<clear explanation or meaning>",
+                  "pronunciation": "<pronunciation guide, e.g. 'per-se-VEER' or romaji/pinyin if applicable>",
+                  "phoneticTranscription": "<IPA notation if applicable, e.g. /pəˌsɪˈvɪər/>",
                   "partOfSpeech": "<noun|verb|adjective|adverb|preposition|conjunction|interjection>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "synonyms": ["<synonym1>", "<synonym2>", "<synonym3>"]
@@ -241,14 +241,14 @@ internal sealed class GeminiService(
     }
 
     public async Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(
-        string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null,
+        string targetLanguage, string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null,
         int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Target CEFR level: {level}." : "Assess the CEFR level yourself.";
         var scope = count == 1
-            ? $"Generate a grammar lesson for: \"{title}\"."
-            : $"Generate {count} related grammar lessons, starting from \"{title}\".";
+            ? $"Generate a grammar lesson for: \"{title}\" for learning {targetLanguage}."
+            : $"Generate {count} related grammar lessons, starting from \"{title}\" for learning {targetLanguage}.";
         var translationsInstruction = BuildTranslationsInstruction(targetLanguageCodes);
 
         var prompt = $$"""
@@ -261,13 +261,13 @@ internal sealed class GeminiService(
             {
               "items": [
                 {
-                  "title": "<grammar rule title>",
-                  "explanation": "<clear English explanation>",
-                  "formula": "<structure formula, e.g. 'Subject + have/has + past participle'>",
+                  "title": "<grammar rule title in {{targetLanguage}} or English>",
+                  "explanation": "<clear explanation of the rule>",
+                  "formula": "<structure formula if applicable>",
                   "level": "<A1|A2|B1|B2|C1|C2>",
                   "examples": [
                     {
-                      "sentence": "<English example sentence>",
+                      "sentence": "<example sentence in {{targetLanguage}}>",
                       "note": "<short note explaining why this example illustrates the rule>",
                       {{translationsInstruction}}
                     }
@@ -300,15 +300,15 @@ internal sealed class GeminiService(
     }
 
     public async Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(
-        string topicName, string? level, string? scenario, int lineCount,
+        string targetLanguage, string topicName, string? level, string? scenario, int lineCount,
         List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 10);
         var levelHint = level is not null ? $"Language difficulty: CEFR {level}." : "";
         var scenarioHint = scenario is not null ? $"Scenario: {scenario}." : "";
         var scope = count == 1
-            ? $"Create a realistic English dialogue about: \"{topicName}\"."
-            : $"Create {count} different realistic English dialogues about: \"{topicName}\".";
+            ? $"Create a realistic conversation in {targetLanguage} about: \"{topicName}\"."
+            : $"Create {count} different realistic conversations in {targetLanguage} about: \"{topicName}\".";
         var translationsInstruction = BuildTranslationsInstruction(targetLanguageCodes);
 
         var prompt = $$"""
@@ -325,7 +325,7 @@ internal sealed class GeminiService(
                   "lines": [
                     {
                       "speaker": "<Speaker name, e.g. 'Alex' or 'Barista'>",
-                      "text": "<English dialogue line>",
+                      "text": "<dialogue line in {{targetLanguage}}>",
                       {{translationsInstruction}}
                     }
                   ]
@@ -357,7 +357,7 @@ internal sealed class GeminiService(
     }
 
     public async Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(
-        string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
+        string targetLanguage, string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
         var levelHint = level is not null ? $"Difficulty: CEFR {level}." : "";
@@ -389,7 +389,7 @@ internal sealed class GeminiService(
         var prompt = $$"""
             {{SystemIntro}}
 
-            {{scope}} for English learners.
+            {{scope}} for learning {{targetLanguage}}.
             Context / topic: {{context}}
             Exercise type: {{exerciseType}} ({{typeNames}})
             {{levelHint}}
@@ -400,9 +400,9 @@ internal sealed class GeminiService(
                 {
                   "title": "<short descriptive title>",
                   "instruction": "<clear learner instruction, e.g. 'Choose the correct answer'>",
-                  "content": "<question or passage text, or null>",
+                  "content": "<question or passage text in {{targetLanguage}} or mixed, or null>",
                   "correctAnswer": "<exact correct answer text>",
-                  "explanation": "<brief explanation why this is correct, can be in Vietnamese>",
+                  "explanation": "<brief explanation why this is correct>",
                   {{optionsNote}}
                 }
               ]
@@ -432,7 +432,7 @@ internal sealed class GeminiService(
 
 
     public async Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(
-        string context, int count, string? level, List<string>? targetLanguageCodes = null,
+        string targetLanguage, string context, int count, string? level, List<string>? targetLanguageCodes = null,
         CancellationToken cancellationToken = default)
     {
         count = Math.Clamp(count, 1, 20);
@@ -442,7 +442,7 @@ internal sealed class GeminiService(
         var prompt = $$"""
             {{SystemIntro}}
 
-            Generate {{count}} natural English example sentences illustrating:
+            Generate {{count}} natural example sentences in {{targetLanguage}} illustrating:
             {{context}}
             {{levelHint}}
 
@@ -450,7 +450,7 @@ internal sealed class GeminiService(
             {
               "items": [
                 {
-                  "text": "<English example sentence>",
+                  "text": "<example sentence in {{targetLanguage}}>",
                   "note": "<short note explaining how this illustrates the concept>",
                   {{translationsInstruction}}
                 }

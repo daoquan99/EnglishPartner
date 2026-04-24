@@ -24,10 +24,10 @@ public abstract class AggregateRoot : Entity
 
     public virtual void Deactivate() => IsActive = false;
 
-    public virtual void SoftDelete(Guid? deletedBy = null)
+    public virtual void SoftDelete(Guid? deletedBy = null, DateTime? deletedAt = null)
     {
         IsDeleted = true;
-        DeletedAt = DateTime.UtcNow;
+        DeletedAt = deletedAt ?? DateTime.UtcNow;
         DeletedBy = deletedBy;
         IsActive = false;
     }

@@ -23,13 +23,22 @@ internal static class ExampleSentenceEndpoints
             .RequireAuthorization("Admin");
 
         // ── User Endpoints ──
-        group.MapGet("", async (Guid? vocabularyId, Guid? grammarId, Guid? topicId, ISender sender) =>
+        group.MapGet("", async (
+            string languageCode,
+            int page,
+            int pageSize,
+            string? searchTerm,
+            Guid? vocabularyId,
+            Guid? grammarId,
+            Guid? topicId,
+            ISender sender) =>
         {
-            var result = await sender.Send(new GetExampleSentencesQuery(vocabularyId, grammarId, topicId));
+            var query = new GetExampleSentencesQuery(languageCode, page, pageSize, searchTerm, vocabularyId, grammarId, topicId);
+            var result = await sender.Send(query);
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("GetExampleSentences")
-        .WithSummary("Get example sentences filtered by vocabulary, grammar, or topic ID.");
+        .WithSummary("Get example sentences filtered by languageCode, search term, vocabulary, grammar, or topic ID.");
 
         // ── Admin Endpoints ──
         adminGroup.MapPost("", async (CreateExampleSentenceCommand command, ISender sender) =>

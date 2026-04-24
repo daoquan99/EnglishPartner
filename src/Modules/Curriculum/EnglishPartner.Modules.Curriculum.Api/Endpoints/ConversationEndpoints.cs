@@ -1,7 +1,9 @@
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.AddConversationLine;
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.CreateConversation;
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.DeleteConversation;
+using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.ReorderConversationLines;
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.UpdateConversation;
+using EnglishPartner.Modules.Curriculum.Application.Conversations.Commands.UpdateConversationLine;
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Queries.GetConversationById;
 using EnglishPartner.Modules.Curriculum.Application.Conversations.Queries.GetConversations;
 using EnglishPartner.SharedKernel.Extensions;
@@ -80,7 +82,7 @@ internal static class ConversationEndpoints
                     conversationId,
                     request.Speaker,
                     request.Text,
-                    request.Translation,
+                    request.Translations,
                     request.AudioUrl);
                 var result = await sender.Send(command);
                 return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
@@ -88,12 +90,50 @@ internal static class ConversationEndpoints
         .WithName("AddConversationLine")
         .WithSummary("Add a new line to a conversation.")
         .RequireAuthorization("curriculum.conversation.write");
+
+        adminGroup.MapPut("{conversationId:guid}/lines/{lineId:guid}",
+            async (Guid conversationId, Guid lineId, UpdateConversationLineRequest request, ISender sender) =>
+            {
+                var command = new UpdateConversationLineCommand(
+                    conversationId,
+                    lineId,
+                    request.Speaker,
+                    request.Text,
+                    request.AudioUrl,
+                    request.Translations);
+                var result = await sender.Send(command);
+                return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+            })
+        .WithName("UpdateConversationLine")
+        .WithSummary("Update a line in a conversation.")
+        .RequireAuthorization("curriculum.conversation.write");
+
+        adminGroup.MapPut("{conversationId:guid}/lines/reorder",
+            async (Guid conversationId, ReorderConversationLinesRequest request, ISender sender) =>
+            {
+                var command = new ReorderConversationLinesCommand(conversationId, request.OrderedLineIds);
+                var result = await sender.Send(command);
+                return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+            })
+        .WithName("ReorderConversationLines")
+        .WithSummary("Reorder lines in a conversation.")
+        .RequireAuthorization("curriculum.conversation.write");
     }
 }
+
+/// <summary>Request body for reordering conversation lines.</summary>
+public sealed record ReorderConversationLinesRequest(List<Guid> OrderedLineIds);
 
 /// <summary>Request body for adding a conversation line. ConversationId comes from the route.</summary>
 public sealed record AddConversationLineRequest(
     string Speaker,
     string Text,
-    string? Translation,
+    Dictionary<string, string>? Translations,
     string? AudioUrl);
+
+/// <summary>Request body for updating a conversation line. IDs come from the route.</summary>
+public sealed record UpdateConversationLineRequest(
+    string Speaker,
+    string Text,
+    string? AudioUrl,
+    Dictionary<string, string>? Translations);

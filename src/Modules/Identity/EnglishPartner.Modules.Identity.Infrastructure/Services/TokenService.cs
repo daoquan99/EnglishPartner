@@ -12,7 +12,7 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Services;
 /// <summary>
 /// JWT token generation service.
 /// </summary>
-internal sealed class TokenService(IOptions<JwtSettings> jwtSettings) : ITokenService
+internal sealed class TokenService(IOptions<JwtSettings> jwtSettings, TimeProvider timeProvider) : ITokenService
 {
     public string GenerateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<string> permissions, string sessionId)
     {
@@ -34,7 +34,7 @@ internal sealed class TokenService(IOptions<JwtSettings> jwtSettings) : ITokenSe
         var descriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(settings.AccessTokenExpirationMinutes),
+            Expires = timeProvider.GetUtcNow().UtcDateTime.AddMinutes(settings.AccessTokenExpirationMinutes),
             Issuer = settings.Issuer,
             Audience = settings.Audience,
             SigningCredentials = credentials

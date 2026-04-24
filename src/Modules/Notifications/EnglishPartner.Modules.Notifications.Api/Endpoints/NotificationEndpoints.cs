@@ -1,4 +1,5 @@
 using EnglishPartner.Modules.Notifications.Application.Notifications.Commands.MarkAsRead;
+using EnglishPartner.Modules.Notifications.Application.Notifications.Commands.MarkAllMyAsRead;
 using EnglishPartner.Modules.Notifications.Application.Notifications.Queries.GetMyNotifications;
 using EnglishPartner.Modules.Notifications.Api.Hubs;
 using EnglishPartner.SharedKernel.Extensions;
@@ -22,28 +23,31 @@ public static class NotificationEndpoints
         // GET /api/v1/notifications
         group.MapGet("/", async (
             ISender sender,
-            HttpContext context,
             int page = 1,
             int pageSize = 20,
             CancellationToken cancellationToken = default) =>
         {
-            if (!context.TryGetUserId(out var userId)) return Results.Unauthorized();
-
-            var result = await sender.Send(new GetMyNotificationsQuery(userId, page, pageSize), cancellationToken);
+            var result = await sender.Send(new GetMyNotificationsQuery(page, pageSize), cancellationToken);
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
-        });
+        }).WithName("GetMyNotifications").WithSummary("Get paginated notifications for the current user.");
 
         // PATCH /api/v1/notifications/{id}/read
         group.MapPatch("/{id:guid}/read", async (
             Guid id,
             ISender sender,
-            HttpContext context,
             CancellationToken cancellationToken = default) =>
         {
-            if (!context.TryGetUserId(out var userId)) return Results.Unauthorized();
-
-            var result = await sender.Send(new MarkNotificationAsReadCommand(id, userId), cancellationToken);
+            var result = await sender.Send(new MarkNotificationAsReadCommand(id), cancellationToken);
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
-        });
+        }).WithName("MarkNotificationAsRead").WithSummary("Mark a single notification as read.");
+
+        // PATCH /api/v1/notifications/read-all
+        group.MapPatch("/read-all", async (
+            ISender sender,
+            CancellationToken cancellationToken = default) =>
+        {
+            var result = await sender.Send(new MarkAllMyNotificationsAsReadCommand(), cancellationToken);
+            return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
+        }).WithName("MarkAllMyNotificationsAsRead").WithSummary("Mark all notifications as read for the current user.");
     }
 }

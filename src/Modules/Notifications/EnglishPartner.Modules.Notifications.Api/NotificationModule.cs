@@ -25,6 +25,7 @@ public static class NotificationModule
     public static IEndpointRouteBuilder UseNotificationModule(this IEndpointRouteBuilder app)
     {
         app.MapNotificationEndpoints();
+        app.MapAdminNotificationEndpoints();
         return app;
     }
 }

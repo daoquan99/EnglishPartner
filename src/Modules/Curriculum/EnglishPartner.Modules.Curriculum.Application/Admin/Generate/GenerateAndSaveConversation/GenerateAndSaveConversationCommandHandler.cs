@@ -15,7 +15,7 @@ internal sealed class GenerateAndSaveConversationCommandHandler(
     {
         var count = Math.Clamp(request.Count, 1, 10);
         var generated = await generationService.GenerateConversationAsync(
-            request.TopicName, request.Level, request.Scenario, request.LineCount,
+            request.TargetLanguage, request.TopicName, request.Level, request.Scenario, request.LineCount,
             request.TargetLanguageCodes, count, cancellationToken);
 
         var items = new List<GeneratedConversationItem>();
@@ -24,7 +24,7 @@ internal sealed class GenerateAndSaveConversationCommandHandler(
         {
             var conversation = Conversation.Create(
                 dto.Title,
-                languageCode: "en",
+                languageCode: request.TargetLanguage,
                 request.Scenario,
                 request.Level,
                 imageUrl: null,

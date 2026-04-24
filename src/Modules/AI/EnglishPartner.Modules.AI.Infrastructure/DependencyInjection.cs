@@ -50,8 +50,8 @@ public static class DependencyInjection
         //});
 
         //services.AddScoped<IGeminiService, GoogleCloudGeminiService>();
-        //services.AddScoped<IGeminiService, GoogleGenAIGeminiService>();
-        services.AddScoped<IGeminiService, MsccGeminiService>();
+        services.AddScoped<IGeminiService, GoogleGenAIGeminiService>();
+        //services.AddScoped<IGeminiService, MsccGeminiService>();
 
         // Google Cloud TTS + STT via official SDK (Google.Cloud.TextToSpeech.V1 / Google.Cloud.Speech.V1)
         // Auth: ADC — SDK picks up credentials automatically (gcloud auth application-default login)
@@ -63,6 +63,8 @@ public static class DependencyInjection
         services.AddSingleton<LiveAudioSessionManager>();
 
         // Gemini native TTS via HTTP REST (v1beta1)
+        // IMemoryCache with 50MB SizeLimit for audio clip caching (SetSize uses bytes)
+        services.AddMemoryCache(opts => opts.SizeLimit = 50 * 1024 * 1024); // 50 MB
         services.AddHttpClient("GeminiTTS");
         services.AddScoped<IGeminiTtsService, GeminiTtsService>();
 

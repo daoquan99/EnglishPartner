@@ -77,4 +77,12 @@ public sealed class ExampleSentence : AggregateRoot
         if (existing is not null) _translations.Remove(existing);
         _translations.Add(ExampleSentenceTranslation.Create(Id, languageCode, translatedText));
     }
+
+    public void RemoveTranslation(string languageCode)
+    {
+        var existing = _translations.FirstOrDefault(t => t.LanguageCode == languageCode);
+        if (existing is not null) _translations.Remove(existing);
+    }
+
+    public void ClearTranslations() => _translations.Clear();   
 }

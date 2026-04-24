@@ -32,6 +32,7 @@ internal static class CurriculumGenerateEndpoints
         admin.MapPost("/vocabulary", async (GenerateVocabularyRequest request, ISender sender) =>
         {
             var command = new GenerateAndSaveVocabularyCommand(
+                request.TargetLanguage,
                 request.WordHint,
                 request.Count,
                 request.Level,
@@ -45,13 +46,15 @@ internal static class CurriculumGenerateEndpoints
         })
         .WithName("GenerateAndSaveVocabulary")
         .WithSummary("AI: Generate N vocabulary entries with optional auto-generated example sentences, then save. Returns list.")
-        .RequireAuthorization("curriculum.generate");
+        .RequireAuthorization("curriculum.generate")
+        .RequireRateLimiting("ai-generate");
 
         // ── Grammar ────────────────────────────────────────────────────────
 
         admin.MapPost("/grammar", async (GenerateGrammarRequest request, ISender sender) =>
         {
             var command = new GenerateAndSaveGrammarCommand(
+                request.TargetLanguage,
                 request.Title,
                 request.Level,
                 request.TopicId,
@@ -64,13 +67,15 @@ internal static class CurriculumGenerateEndpoints
         })
         .WithName("GenerateAndSaveGrammar")
         .WithSummary("AI: Generate N grammar rules with examples translated into TargetLanguageCodes, then save. Returns list.")
-        .RequireAuthorization("curriculum.generate");
+        .RequireAuthorization("curriculum.generate")
+        .RequireRateLimiting("ai-generate");
 
         // ── Conversation ───────────────────────────────────────────────────
 
         admin.MapPost("/conversation", async (GenerateConversationRequest request, ISender sender) =>
         {
             var command = new GenerateAndSaveConversationCommand(
+                request.TargetLanguage,
                 request.TopicName,
                 request.Level,
                 request.Scenario,
@@ -85,13 +90,15 @@ internal static class CurriculumGenerateEndpoints
         })
         .WithName("GenerateAndSaveConversation")
         .WithSummary("AI: Generate N conversation scripts with lines translated into TargetLanguageCodes, then save. Returns list.")
-        .RequireAuthorization("curriculum.generate");
+        .RequireAuthorization("curriculum.generate")
+        .RequireRateLimiting("ai-generate");
 
         // ── Exercise ───────────────────────────────────────────────────────
 
         admin.MapPost("/exercise", async (GenerateExerciseRequest request, ISender sender) =>
         {
             var command = new GenerateAndSaveExerciseCommand(
+                request.TargetLanguage,
                 request.Context,
                 request.ExerciseType,
                 request.Level,
@@ -106,13 +113,15 @@ internal static class CurriculumGenerateEndpoints
         })
         .WithName("GenerateAndSaveExercise")
         .WithSummary("AI: Generate N exercises (text-based types only), then save. Returns 400 for media-dependent types.")
-        .RequireAuthorization("curriculum.generate");
+        .RequireAuthorization("curriculum.generate")
+        .RequireRateLimiting("ai-generate");
 
         // ── Example Sentences ──────────────────────────────────────────────
 
         admin.MapPost("/example-sentences", async (GenerateExampleSentencesRequest request, ISender sender) =>
         {
             var command = new GenerateAndSaveExampleSentencesCommand(
+                request.TargetLanguage,
                 request.Context,
                 request.Count,
                 request.Level,
@@ -126,13 +135,15 @@ internal static class CurriculumGenerateEndpoints
         })
         .WithName("GenerateAndSaveExampleSentences")
         .WithSummary("AI: Generate N example sentences with translations in TargetLanguageCodes, then save. Returns list.")
-        .RequireAuthorization("curriculum.generate");
+        .RequireAuthorization("curriculum.generate")
+        .RequireRateLimiting("ai-generate");
     }
 }
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 
 public sealed record GenerateVocabularyRequest(
+    string TargetLanguage,
     string WordHint,
     int Count = 1,
     string? Level = null,
@@ -142,6 +153,7 @@ public sealed record GenerateVocabularyRequest(
     List<string>? ExampleTargetLanguageCodes = null);
 
 public sealed record GenerateGrammarRequest(
+    string TargetLanguage,
     string Title,
     int Count = 1,
     string? Level = null,
@@ -150,6 +162,7 @@ public sealed record GenerateGrammarRequest(
     List<string>? TargetLanguageCodes = null);
 
 public sealed record GenerateConversationRequest(
+    string TargetLanguage,
     string TopicName,
     int Count = 1,
     string? Level = null,
@@ -160,6 +173,7 @@ public sealed record GenerateConversationRequest(
     Guid? GrammarId = null);
 
 public sealed record GenerateExerciseRequest(
+    string TargetLanguage,
     string Context,
     ExerciseType ExerciseType = ExerciseType.MultipleChoice,
     int Count = 1,
@@ -170,6 +184,7 @@ public sealed record GenerateExerciseRequest(
     int XpReward = 10);
 
 public sealed record GenerateExampleSentencesRequest(
+    string TargetLanguage,
     string Context,
     int Count = 3,
     string? Level = null,

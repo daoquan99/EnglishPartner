@@ -7,8 +7,7 @@ using EnglishPartner.SharedKernel.Results;
 using EnglishPartner.SharedKernel.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
-using RefreshTokenEntity = EnglishPartner.Modules.Identity.Domain.Users.Entities.RefreshToken;
+using System.Security.Claims; 
 
 namespace EnglishPartner.Modules.Identity.Application.Auth.Commands.RefreshToken;
 
@@ -19,56 +18,51 @@ internal sealed class RefreshTokenCommandHandler(
     ITokenService tokenService,
     ISessionService sessionService,
     IHttpContextAccessor httpContextAccessor,
+    TimeProvider timeProvider,
     IOptions<JwtSettings> jwtSettings) : ICommandHandler<RefreshTokenCommand, RefreshTokenResponse>
 {
     public async Task<Result<RefreshTokenResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        // Validate refresh token from DB
         var existingToken = await refreshTokenRepository.GetByTokenAsync(request.RefreshToken, cancellationToken);
-        if (existingToken is null || !existingToken.IsValid)
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        if (existingToken is null || !existingToken.IsValid(utcNow))
             return Result.Failure<RefreshTokenResponse>(IdentityErrors.Token.InvalidRefreshToken);
-
-        existingToken.Revoke();
 
         var user = await userRepository.GetByIdAsync(existingToken.UserId, cancellationToken);
         if (user is null || !user.IsActive)
             return Result.Failure<RefreshTokenResponse>(IdentityErrors.User.Deactivated);
 
-        // Load fresh roles + permissions from DB (picks up any permission changes since last login)
         var roleIds = user.UserRoles.Select(ur => ur.RoleId).ToList();
         var (roleNames, permissions) = await roleRepository.GetRolesAndPermissionsAsync(roleIds, cancellationToken);
 
-        // Delete the old session — old JWT with old sid is now invalid
         var oldSessionId = httpContextAccessor.HttpContext?.User.FindFirstValue("sid");
         if (oldSessionId is not null)
             await sessionService.DeleteSessionAsync(oldSessionId, cancellationToken);
 
-        // Create new session with fresh TTL
-        var sessionTtl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpirationMinutes + 2);
+        var sessionTtl = TimeSpan.FromDays(jwtSettings.Value.RefreshTokenExpirationDays);
         var newSessionId = await sessionService.CreateSessionAsync(user.Id, sessionTtl, cancellationToken);
 
         var accessToken = tokenService.GenerateAccessToken(user.Id, user.Email, roleNames, permissions, newSessionId);
+        var expiresAt = timeProvider.GetUtcNow().UtcDateTime.AddMinutes(jwtSettings.Value.AccessTokenExpirationMinutes);
 
-        // Rotate refresh token — issue new, revoke old (already done above)
-        var newRefreshToken = RefreshTokenEntity.Create(
-            user.Id,
-            tokenService.GenerateRefreshToken(),
-            DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays));
-        refreshTokenRepository.Add(newRefreshToken);
+        // Rotate refresh token in-place (UPDATE existing row, not INSERT new)
+        // Old token value is replaced immediately — any reuse of old token will fail IsValid()
+        var newRawToken = tokenService.GenerateRefreshToken();
+        var newExpiry = timeProvider.GetUtcNow().UtcDateTime.AddDays(jwtSettings.Value.RefreshTokenExpirationDays);
+        existingToken.Rotate(newRawToken, newExpiry);
 
-        // Set new cookie (replaces old __Secure-ep-refresh cookie)
-        var context = httpContextAccessor.HttpContext!;
-        context.Response.Cookies.Append("__Secure-ep-refresh", newRefreshToken.Token, new CookieOptions
+        // Update cookie with new token value
+        httpContextAccessor.HttpContext!.Response.Cookies.Append("__Secure-ep-refresh", newRawToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/api/v1/auth",
-            Expires = DateTimeOffset.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpirationDays),
+            Expires = timeProvider.GetUtcNow().AddDays(jwtSettings.Value.RefreshTokenExpirationDays),
         });
 
         var responsePermissions = permissions.Any() ? permissions.ToArray() : null;
 
-        return new RefreshTokenResponse(accessToken, responsePermissions);
+        return new RefreshTokenResponse(accessToken, expiresAt, responsePermissions);
     }
 }

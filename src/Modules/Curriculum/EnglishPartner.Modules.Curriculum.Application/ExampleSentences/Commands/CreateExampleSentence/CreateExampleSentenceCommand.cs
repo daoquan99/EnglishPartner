@@ -5,7 +5,7 @@ namespace EnglishPartner.Modules.Curriculum.Application.ExampleSentences.Command
 public sealed record CreateExampleSentenceCommand(
     string Text,
     string LanguageCode,
-    string? Translation,
+    Dictionary<string, string>? Translations,
     string? AudioUrl,
     string? Note,
     string? Level,

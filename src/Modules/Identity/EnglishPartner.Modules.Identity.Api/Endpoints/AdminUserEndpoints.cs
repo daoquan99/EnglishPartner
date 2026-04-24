@@ -28,11 +28,11 @@ public static class AdminUserEndpoints
         // GET /api/v1/admin/identity/users
         group.MapGet("/users", async (
             ISender sender,
-            string? search       = null,
-            string? role         = null,
-            bool?   isActive     = null,
-            int     page         = 1,
-            int     pageSize     = 20,
+            string? search = null,
+            string? role = null,
+            bool? isActive = null,
+            int page = 1,
+            int pageSize = 20,
             CancellationToken cancellationToken = default) =>
         {
             var result = await sender.Send(

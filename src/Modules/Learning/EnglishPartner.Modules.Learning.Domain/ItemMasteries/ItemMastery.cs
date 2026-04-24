@@ -29,7 +29,7 @@ public sealed class ItemMastery : AggregateRoot
 
     private ItemMastery() { }
 
-    public static ItemMastery Create(Guid userId, Guid itemId, ItemType type)
+    public static ItemMastery Create(Guid userId, Guid itemId, ItemType type, DateTime utcNow)
     {
         return new ItemMastery
         {
@@ -40,7 +40,7 @@ public sealed class ItemMastery : AggregateRoot
             EasinessFactor = 2.5, // Default SM-2 starting EF
             IntervalDays = 1,     // Initial interval 1 day
             Repetitions = 0,
-            NextReviewDate = DateTime.UtcNow.Date
+            NextReviewDate = utcNow.Date
         };
     }
 

@@ -11,7 +11,6 @@ namespace EnglishPartner.Modules.Learning.Application.StudySessions.Commands.Sub
 /// Fallback score of 0 is used if AI evaluation is unavailable (degraded mode).
 /// </summary>
 public sealed record SubmitAnswerCommand(
-    Guid UserId,
     Guid SessionId,
     Guid ItemId,
     ItemType ItemType,

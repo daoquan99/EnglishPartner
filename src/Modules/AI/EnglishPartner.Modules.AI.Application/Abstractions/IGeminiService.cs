@@ -25,19 +25,19 @@ public interface IGeminiService
     // ── Content Generation ──────────────────────────────────────────────────
 
     /// <summary>Generates vocabulary metadata. When count>1, wordHint is treated as topic context.</summary>
-    Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string wordHint, int count = 1, CancellationToken cancellationToken = default);
+    Task<List<GeminiGeneratedVocabulary>> GenerateVocabularyAsync(string targetLanguage, string wordHint, int count = 1, CancellationToken cancellationToken = default);
 
     /// <summary>Generates grammar rules with examples translated into targetLanguageCodes.</summary>
-    Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default);
+    Task<List<GeminiGeneratedGrammar>> GenerateGrammarAsync(string targetLanguage, string title, string? level, int exampleCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default);
 
     /// <summary>Generates conversation scripts with line translations into targetLanguageCodes.</summary>
-    Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default);
+    Task<List<GeminiGeneratedConversation>> GenerateFullConversationAsync(string targetLanguage, string topicName, string? level, string? scenario, int lineCount, List<string>? targetLanguageCodes = null, int count = 1, CancellationToken cancellationToken = default);
 
     /// <summary>Generates exercises. AI handles text-based types only.</summary>
-    Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default);
+    Task<List<GeminiGeneratedExercise>> GenerateExerciseAsync(string targetLanguage, string context, int exerciseType, string? level, int count = 1, CancellationToken cancellationToken = default);
 
     /// <summary>Generates example sentences translated into targetLanguageCodes.</summary>
-    Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default);
+    Task<List<GeminiGeneratedExampleSentence>> GenerateExampleSentencesAsync(string targetLanguage, string context, int count, string? level, List<string>? targetLanguageCodes = null, CancellationToken cancellationToken = default);
 }
 
 public sealed record EvaluationResult(

@@ -6,6 +6,9 @@ namespace EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.Repositor
 
 internal sealed class LanguageRepository(CurriculumDbContext dbContext) : ILanguageRepository
 {
+    public async Task<Language?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+        => await dbContext.Languages.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task<Language?> GetByCodeAsync(string code, CancellationToken cancellationToken)
         => await dbContext.Languages.FirstOrDefaultAsync(x => x.Code == code, cancellationToken);
 
@@ -13,4 +16,6 @@ internal sealed class LanguageRepository(CurriculumDbContext dbContext) : ILangu
         => await dbContext.Languages.OrderBy(x => x.SortOrder).ToListAsync(cancellationToken);
 
     public void Add(Language language) => dbContext.Languages.Add(language);
+    public void Update(Language language) => dbContext.Languages.Update(language);
+    public void Remove(Language language) => dbContext.Languages.Remove(language);
 }

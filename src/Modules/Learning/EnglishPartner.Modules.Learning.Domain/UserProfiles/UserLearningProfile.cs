@@ -1,4 +1,5 @@
 using EnglishPartner.SharedKernel.Domain;
+using EnglishPartner.Modules.Learning.Domain.UserProfiles.Events;
 
 namespace EnglishPartner.Modules.Learning.Domain.UserProfiles;
 
@@ -9,6 +10,7 @@ namespace EnglishPartner.Modules.Learning.Domain.UserProfiles;
 public sealed class UserLearningProfile : AggregateRoot
 {
     public Guid UserId { get; private set; }
+    public string Email { get; private set; } = string.Empty;
     public string DisplayName { get; private set; } = string.Empty;
     public string TargetLanguageCode { get; private set; } = "en";
     public string CurrentLevel { get; private set; } = "A1";
@@ -16,6 +18,7 @@ public sealed class UserLearningProfile : AggregateRoot
     public int CurrentStreak { get; private set; }
     public int LongestStreak { get; private set; }
     public DateTime? LastActivityDate { get; private set; }
+    public StudyPreferences Preferences { get; private set; } = StudyPreferences.Default;
 
     /// <summary>CEFR level XP thresholds (ascending). Keeps domain rule centralised.</summary>
     private static readonly (int MinXp, string Level)[] LevelThresholds =
@@ -30,27 +33,38 @@ public sealed class UserLearningProfile : AggregateRoot
 
     private UserLearningProfile() { }
 
-    public static UserLearningProfile Create(Guid userId, string displayName, string targetLanguageCode = "en")
+    public static UserLearningProfile Create(Guid userId, string email, string displayName, string targetLanguageCode = "en")
     {
         return new UserLearningProfile
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            Email = email,
             DisplayName = displayName,
             TargetLanguageCode = targetLanguageCode.ToLowerInvariant(),
             CurrentLevel = "A1",
             TotalXp = 0,
             CurrentStreak = 0,
             LongestStreak = 0,
-            LastActivityDate = null
+            LastActivityDate = null,
+            Preferences = StudyPreferences.Default
         };
     }
+
+    /// <summary>Sync study preferences from Identity module (OnboardingCompleted or UserProfileUpdated events).</summary>
+    public void UpdatePreferences(int dailyGoalMinutes, int? morningReminderHour, int? eveningReminderHour, int utcOffsetHours)
+        => Preferences.Update(dailyGoalMinutes, morningReminderHour, eveningReminderHour, utcOffsetHours);
 
     public void AddXp(int amount)
     {
         if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+
+        var previousLevel = CurrentLevel;
         TotalXp += amount;
         UpdateLevel();
+
+        if (CurrentLevel != previousLevel)
+            RaiseDomainEvent(new LevelUpDomainEvent(Id, UserId, previousLevel, CurrentLevel, TotalXp));
     }
 
     /// <summary>Admin: reduce XP, floored at 0.</summary>

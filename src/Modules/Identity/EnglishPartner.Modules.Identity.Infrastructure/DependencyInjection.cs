@@ -33,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<IStreakRepository, StreakRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IOnboardingAnswerRepository, OnboardingAnswerRepository>();
 
         // Services
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

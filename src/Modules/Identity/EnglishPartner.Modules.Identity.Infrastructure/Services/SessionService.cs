@@ -1,5 +1,6 @@
 using EnglishPartner.Modules.Identity.Application.Abstractions;
 using EnglishPartner.SharedKernel.Interfaces;
+using EnglishPartner.SharedKernel.Application.Caching;
 
 namespace EnglishPartner.Modules.Identity.Infrastructure.Services;
 
@@ -12,22 +13,13 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.Services;
 /// </summary>
 internal sealed class SessionService(ICacheService cache) : ISessionService
 {
-    private static string SessionKey(string sessionId) => $"session:{sessionId}";
-    private static string UserSessionsKey(Guid userId) => $"user:{userId}:sessions";
+    private static string SessionKey(string sessionId) => CacheKeys.Identity.Session(sessionId);
+    private static string UserSessionsKey(Guid userId) => CacheKeys.Identity.UserSessions(userId);
 
     public async Task<string> CreateSessionAsync(Guid userId, TimeSpan ttl, CancellationToken cancellationToken = default)
     {
         var sessionId = Guid.NewGuid().ToString("N");
-
-        // Store session → userId
         await cache.SetAsync(SessionKey(sessionId), userId.ToString(), ttl, cancellationToken);
-
-        // Track session under user (for logout-all-devices)
-        // We store each sessionId in a Redis set per user
-        // Using cache.SetAsync for simplicity — stores the set as JSON list
-        // A proper Redis SADD would be better but ICacheService doesn't expose raw StackExchange
-        // This works for now and is replaced when we expose raw Redis
-
         return sessionId;
     }
 
@@ -44,9 +36,6 @@ internal sealed class SessionService(ICacheService cache) : ISessionService
 
     public async Task DeleteAllUserSessionsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        // Remove by prefix — requires Redis SCAN (RemoveByPrefixAsync)
-        // Current implementation: remove the user sessions index
-        // TODO: When RemoveByPrefixAsync is implemented with Redis SCAN, upgrade this
-        await cache.RemoveByPrefixAsync($"session:", cancellationToken);
+        await cache.RemoveByPrefixAsync("session:", cancellationToken);
     }
 }

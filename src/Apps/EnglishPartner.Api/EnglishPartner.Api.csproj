@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <RootNamespace>EnglishPartner.Api</RootNamespace>
+    <UserSecretsId>5f865af3-6aa3-406a-a438-fc3d52f09db1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

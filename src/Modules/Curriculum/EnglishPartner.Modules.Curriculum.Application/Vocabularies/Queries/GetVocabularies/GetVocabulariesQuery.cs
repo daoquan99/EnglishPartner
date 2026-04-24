@@ -5,7 +5,10 @@ namespace EnglishPartner.Modules.Curriculum.Application.Vocabularies.Queries.Get
 public sealed record GetVocabulariesQuery(
     string LanguageCode = "en",
     int Page = 1,
-    int PageSize = 20) : IQuery<VocabulariesResponse>;
+    int PageSize = 20,
+    string? SearchTerm = null,
+    string? Level = null,
+    Guid? TopicId = null) : IQuery<VocabulariesResponse>;
 
 public sealed record VocabulariesResponse(
     List<VocabularyListItem> Items,

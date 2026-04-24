@@ -11,7 +11,8 @@ internal sealed class GetConversationByIdQueryHandler(
     public async Task<Result<ConversationDetailResponse>> Handle(GetConversationByIdQuery request, CancellationToken cancellationToken)
     {
         var conversation = await conversationRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (conversation is null) return Result.Failure<ConversationDetailResponse>(CurriculumErrors.Conversation.NotFound(request.Id));
+        if (conversation is null) 
+            return Result.Failure<ConversationDetailResponse>(CurriculumErrors.Conversation.NotFound(request.Id));
 
         return new ConversationDetailResponse(
             conversation.Id,

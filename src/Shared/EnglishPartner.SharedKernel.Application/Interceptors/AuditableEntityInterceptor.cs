@@ -9,7 +9,7 @@ namespace EnglishPartner.SharedKernel.Interceptors;
 /// EF Core interceptor that auto-populates audit fields on Entity
 /// and handles soft-delete conversion for AggregateRoot.
 /// </summary>
-public sealed class AuditableEntityInterceptor(ICurrentUserService currentUser)
+public sealed class AuditableEntityInterceptor(ICurrentUserService currentUser, TimeProvider timeProvider)
     : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -20,7 +20,7 @@ public sealed class AuditableEntityInterceptor(ICurrentUserService currentUser)
         if (eventData.Context is null)
             return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
         foreach (var entry in eventData.Context.ChangeTracker.Entries<Entity>())
         {

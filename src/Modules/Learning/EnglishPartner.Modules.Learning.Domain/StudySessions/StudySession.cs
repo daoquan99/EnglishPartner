@@ -26,19 +26,18 @@ public sealed class StudySession : AggregateRoot
 
     private StudySession() { }
 
-    public static StudySession Start(Guid userId, string sessionTitle, int totalItems)
+    public static StudySession Start(Guid userId, string sessionTitle, int totalItems, DateTime utcNow)
     {
-        var now = DateTime.UtcNow;
         return new StudySession
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             SessionTitle = sessionTitle,
-            StartTime = now,
+            StartTime = utcNow,
             TotalItems = totalItems,
             Status = SessionStatus.InProgress,
             Score = 0,
-            LastActivityTime = now
+            LastActivityTime = utcNow
         };
     }
 
@@ -48,20 +47,20 @@ public sealed class StudySession : AggregateRoot
         LastActivityTime = pingTime;
     }
 
-    public void Complete(int score)
+    public void Complete(int score, DateTime utcNow)
     {
         if (Status != SessionStatus.InProgress) return;
         Score = score;
-        EndTime = DateTime.UtcNow;
+        EndTime = utcNow;
         Status = SessionStatus.Completed;
 
         RaiseDomainEvent(new StudySessionCompletedDomainEvent(Id, UserId, Score, TotalItems));
     }
 
-    public void Abandon()
+    public void Abandon(DateTime utcNow)
     {
         if (Status != SessionStatus.InProgress) return;
-        EndTime = DateTime.UtcNow;
+        EndTime = utcNow;
         Status = SessionStatus.Abandoned;
     }
 }

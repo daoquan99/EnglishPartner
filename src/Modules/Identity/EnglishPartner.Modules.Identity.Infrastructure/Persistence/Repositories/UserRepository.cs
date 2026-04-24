@@ -10,12 +10,14 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
         => await context.Users
             .Include(u => u.UserRoles)
             .Include(u => u.ExternalLogins)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         => await context.Users
             .Include(u => u.UserRoles)
             .Include(u => u.ExternalLogins)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
     /// <summary>Lean auth variant — only loads UserRoles, no ExternalLogins join.</summary>
@@ -28,6 +30,7 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
         => await context.Users
             .Include(u => u.UserRoles)
             .Include(u => u.ExternalLogins)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.ExternalLogins.Any(el => el.LoginProvider == provider && el.ProviderKey == providerKey), cancellationToken);
 
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
@@ -49,6 +52,7 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
             .AsNoTracking()                  // read-only admin list — no tracking needed
             .Include(u => u.UserRoles)
             .Include(u => u.ExternalLogins)
+            .AsSplitQuery()
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -86,4 +90,6 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
         return (items, totalCount);
     }
 
+    public async Task<bool> AnyWithRoleAsync(Guid roleId, CancellationToken cancellationToken = default)
+        => await context.UserRoles.AnyAsync(ur => ur.RoleId == roleId, cancellationToken);
 }

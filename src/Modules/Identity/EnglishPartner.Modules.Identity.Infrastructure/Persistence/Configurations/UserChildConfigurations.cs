@@ -27,6 +27,7 @@ internal sealed class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
     {
         builder.ToTable("user_roles");
         builder.HasKey(ur => ur.Id);
+        builder.Property(ur => ur.Id).ValueGeneratedNever();
         builder.HasIndex(ur => new { ur.UserId, ur.RoleId }).IsUnique();
     }
 }
@@ -51,9 +52,6 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(t => t.Token).HasMaxLength(512).IsRequired();
         builder.HasIndex(t => t.Token).IsUnique();
         builder.HasIndex(t => t.UserId);
-
-        builder.Ignore(t => t.IsExpired);
-        builder.Ignore(t => t.IsValid);
     }
 }
 

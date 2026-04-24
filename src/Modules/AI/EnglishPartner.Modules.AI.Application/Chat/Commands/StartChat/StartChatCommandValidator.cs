@@ -6,7 +6,6 @@ internal sealed class StartChatCommandValidator : AbstractValidator<StartChatCom
 {
     public StartChatCommandValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Chat session title is required.")
             .MaximumLength(200);

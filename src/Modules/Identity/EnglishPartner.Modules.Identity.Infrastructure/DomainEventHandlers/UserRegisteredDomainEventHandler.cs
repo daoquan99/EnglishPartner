@@ -14,6 +14,7 @@ namespace EnglishPartner.Modules.Identity.Infrastructure.DomainEventHandlers;
 /// </summary>
 internal sealed class UserRegisteredDomainEventHandler(
     IEventBus eventBus,
+    TimeProvider timeProvider,
     ILogger<UserRegisteredDomainEventHandler> logger)
     : INotificationHandler<DomainEventNotification<UserRegisteredDomainEvent>>
 {
@@ -32,7 +33,7 @@ internal sealed class UserRegisteredDomainEventHandler(
                 domainEvent.UserId,
                 domainEvent.Email,
                 domainEvent.DisplayName,
-                DateTime.UtcNow),
+                timeProvider.GetUtcNow().UtcDateTime),
             cancellationToken);
     }
 }

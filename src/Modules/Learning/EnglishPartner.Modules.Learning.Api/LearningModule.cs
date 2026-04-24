@@ -19,6 +19,7 @@ public static class LearningModule
     public static IEndpointRouteBuilder UseLearningModule(this IEndpointRouteBuilder app)
     {
         Endpoints.LearningEndpoints.Map(app);
+
         return app;
     }
 }

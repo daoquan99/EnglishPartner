@@ -9,7 +9,7 @@ internal sealed class GetConversationsQueryHandler(
 {
     public async Task<Result<List<ConversationListItemResponse>>> Handle(GetConversationsQuery request, CancellationToken cancellationToken)
     {
-        var conversations = await conversationRepository.GetByLanguageCodeAsync(request.LanguageCode, cancellationToken);
+        var conversations = await conversationRepository.GetFilteredAsync(request.LanguageCode, request.TopicId, request.Level, cancellationToken);
         
         return conversations.Select(c => new ConversationListItemResponse(
             c.Id, c.Title, c.Scenario, c.Level, c.ImageUrl)).ToList();

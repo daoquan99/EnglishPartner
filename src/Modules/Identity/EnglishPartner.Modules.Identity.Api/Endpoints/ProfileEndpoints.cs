@@ -33,16 +33,18 @@ internal static class ProfileEndpoints
             var result = await sender.Send(new UpdateMyProfileCommand(
                 userId, req.DisplayName, req.NativeLanguage, req.TargetLanguage,
                 req.ProficiencyLevel, req.LearningGoal, req.DailyGoalMinutes,
-                req.AvatarUrl, req.DateOfBirth));
+                req.AvatarUrl, req.DateOfBirth,
+                req.MorningReminderHour, req.EveningReminderHour, req.UtcOffsetHours));
 
             return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
         })
         .WithName("UpdateMyProfile")
-        .WithSummary("Update the current user's profile, preferences, and avatar.");
+        .WithSummary("Update the current user's profile, preferences, avatar, and study reminders.");
     }
 }
 
 internal sealed record UpdateProfileRequest(
     string? DisplayName, string? NativeLanguage, string? TargetLanguage,
     string? ProficiencyLevel, string? LearningGoal, int? DailyGoalMinutes,
-    string? AvatarUrl, DateTime? DateOfBirth);
+    string? AvatarUrl, DateTime? DateOfBirth,
+    int? MorningReminderHour, int? EveningReminderHour, int? UtcOffsetHours);

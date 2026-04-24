@@ -27,6 +27,8 @@ public static class IdentityModule
         app.MapProfileEndpoints();
         app.MapStreakEndpoints();
         app.MapOnboardingEndpoints();
+        app.MapAdminUserEndpoints();
+        app.MapAdminRoleEndpoints();
 
         return app;
     }

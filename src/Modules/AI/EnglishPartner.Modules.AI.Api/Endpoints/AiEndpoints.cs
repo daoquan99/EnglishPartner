@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using EnglishPartner.Modules.AI.Application.Abstractions;
 using EnglishPartner.Modules.AI.Application.Admin.Queries.GetAiRequestLogs;
 using EnglishPartner.Modules.AI.Application.Chat.Commands.SendMessage;
@@ -21,8 +20,8 @@ internal static class AiEndpoints
     {
         // ── Authenticated user group ──
         var group = app.MapGroup("api/v1/ai")
-            .WithTags("AI");
-            //.RequireAuthorization();
+            .WithTags("AI")
+            .RequireAuthorization(); // all AI endpoints require login
 
         // ── Evaluation ──
         group.MapPost("/evaluate", async (EvaluateInputRequest request, ISender sender) =>
@@ -86,6 +85,20 @@ internal static class AiEndpoints
         .WithName("GetTtsVoices")
         .WithSummary("List all available Neural2 TTS voices with friendly names.");
 
+        // ── Gemini Live Voices ──
+        group.MapGet("/live-voices", () =>
+        {
+            var voices = LiveVoiceCatalog.All.Select(v => new
+            {
+                v.Id,
+                v.DisplayName,
+                v.Gender
+            });
+            return Results.Ok(voices);
+        })
+        .WithName("GetLiveVoices")
+        .WithSummary("List all 30 available Gemini Native Audio voices (polyglot) for Live sessions and Gemini TTS.");
+
         group.MapPost("/tts", async (TtsRequest request, ISpeechService speechService, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(request.Text))
@@ -94,10 +107,9 @@ internal static class AiEndpoints
             if (request.Text.Length > 5000)
                 return Results.BadRequest("text must not exceed 5000 characters.");
 
-            // Validate voice against catalog — fallback to default if not found
             var resolvedVoice = request.Voice is not null && TtsVoiceCatalog.FindById(request.Voice) is not null
                 ? request.Voice
-                : null; // null → SpeechService uses config default (en-US-Neural2-C)
+                : null;
 
             try
             {
@@ -116,7 +128,7 @@ internal static class AiEndpoints
         })
         .WithName("TextToSpeech")
         .WithSummary("Convert text to speech audio (MP3). Returns binary audio/mpeg file.")
-        .RequireRateLimiting("ai-chat");
+        .RequireRateLimiting("ai-scoring");
 
         // ── Gemini TTS ──
         group.MapPost("/gemini-tts", async (GeminiTtsRequest request, IGeminiTtsService geminiTtsService, CancellationToken ct) =>
@@ -145,22 +157,19 @@ internal static class AiEndpoints
         })
         .WithName("GeminiTextToSpeech")
         .WithSummary("Convert text to highly expressive speech audio (MP3) using Gemini. Support stylePrompt.")
-        .RequireRateLimiting("ai-chat");
+        .RequireRateLimiting("ai-scoring");
 
         // ── Speech-to-Text ──
         group.MapPost("/stt", async (
             IFormFile audioFile,
             ISpeechService speechService,
-            // Pass comma-separated codes for auto-detect: "en-US,vi-VN"
-            // Or a single code: "en-US"
-            // Or leave empty for server default
             [Microsoft.AspNetCore.Mvc.FromForm] string? languages,
             CancellationToken ct) =>
         {
             if (audioFile is null || audioFile.Length == 0)
                 return Results.BadRequest("Audio file is required.");
 
-            const long MaxBytes = 10 * 1024 * 1024; // 10 MB
+            const long MaxBytes = 10 * 1024 * 1024;
             if (audioFile.Length > MaxBytes)
                 return Results.BadRequest("Audio file too large. Maximum size is 10 MB.");
 
@@ -168,7 +177,6 @@ internal static class AiEndpoints
             var buffer = new byte[audioFile.Length];
             _ = await stream.ReadAsync(buffer, ct);
 
-            // Parse comma-separated language codes: "en-US,vi-VN" → ["en-US", "vi-VN"]
             var languageCodes = string.IsNullOrWhiteSpace(languages)
                 ? null
                 : languages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -198,19 +206,18 @@ internal static class AiEndpoints
         .DisableAntiforgery()
         .RequireRateLimiting("ai-scoring");
 
-        group.MapGet("/chat/sessions", async (ISender sender, HttpContext ctx) =>
+        // ── Chat (UserId resolved by handler via ICurrentUserService) ──
+        group.MapGet("/chat/sessions", async (ISender sender) =>
         {
-            if (!TryGetUserId(ctx, out var userId)) return Results.Unauthorized();
-            var result = await sender.Send(new GetMySessionsQuery(userId));
+            var result = await sender.Send(new GetMySessionsQuery());
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("GetMyChatSessions")
         .WithSummary("List all AI Tutor chat sessions for the current user.");
 
-        group.MapPost("/chat/sessions", async (StartChatRequest request, ISender sender, HttpContext ctx) =>
+        group.MapPost("/chat/sessions", async (StartChatRequest request, ISender sender) =>
         {
-            if (!TryGetUserId(ctx, out var userId)) return Results.Unauthorized();
-            var command = new StartChatCommand(userId, request.Title, request.SystemPrompt);
+            var command = new StartChatCommand(request.Title, request.SystemPrompt);
             var result = await sender.Send(command);
             return result.IsSuccess
                 ? Results.Created($"/api/v1/ai/chat/sessions/{result.Value}", new { SessionId = result.Value })
@@ -219,19 +226,17 @@ internal static class AiEndpoints
         .WithName("StartChat")
         .WithSummary("Start a new AI Tutor chat session.");
 
-        group.MapGet("/chat/sessions/{sessionId:guid}/messages", async (Guid sessionId, ISender sender, HttpContext ctx) =>
+        group.MapGet("/chat/sessions/{sessionId:guid}/messages", async (Guid sessionId, ISender sender) =>
         {
-            if (!TryGetUserId(ctx, out var userId)) return Results.Unauthorized();
-            var result = await sender.Send(new GetChatHistoryQuery(sessionId, userId));
+            var result = await sender.Send(new GetChatHistoryQuery(sessionId));
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("GetChatHistory")
         .WithSummary("Get all messages in a chat session.");
 
-        group.MapPost("/chat/sessions/{sessionId:guid}/messages", async (Guid sessionId, SendMessageRequest request, ISender sender, HttpContext ctx) =>
+        group.MapPost("/chat/sessions/{sessionId:guid}/messages", async (Guid sessionId, SendMessageRequest request, ISender sender) =>
         {
-            if (!TryGetUserId(ctx, out var userId)) return Results.Unauthorized();
-            var command = new SendMessageCommand(sessionId, userId, request.Text);
+            var command = new SendMessageCommand(sessionId, request.Text);
             var result = await sender.Send(command);
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
@@ -242,7 +247,7 @@ internal static class AiEndpoints
         // ── Admin group ──
         var admin = app.MapGroup("api/v1/admin/ai")
             .WithTags("AI Admin")
-            .RequireAuthorization("Admin");
+            .RequireAuthorization("ai.logs.read");
 
         admin.MapGet("/request-logs", async (
             [AsParameters] GetAiRequestLogsRequest request,
@@ -259,18 +264,11 @@ internal static class AiEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
         })
         .WithName("GetAiRequestLogs")
-        .WithSummary("Get a paginated list of AI request logs.")
-        .RequireAuthorization("ai.logs.read");
+        .WithSummary("Get a paginated list of AI request logs.");
     }
-
-    private static bool TryGetUserId(HttpContext ctx, out Guid userId)
-        => ctx.TryGetUserId(out userId);
 }
 
-// ── Request DTOs (only fields from body — UserId comes from JWT) ──
-/// <param name="ItemId">Optional. Curriculum item ID — server fetches context automatically.</param>
-/// <param name="ItemType">Required when ItemId is provided.</param>
-/// <param name="ItemContext">Optional. Provide directly if not using ItemId (standalone mode).</param>
+// ── Request DTOs ──
 public sealed record EvaluateInputRequest(
     string UserInput,
     Guid? ItemId = null,
@@ -286,18 +284,11 @@ public sealed record GetAiRequestLogsRequest(
     DateTime? From = null,
     DateTime? To = null);
 
-/// <param name="Text">Text to synthesize (max 5000 chars).</param>
-/// <param name="Voice">Voice name override (e.g. "en-US-Neural2-F" for female). Null = server default.</param>
-/// <param name="SpeakingRate">Speed multiplier 0.25–4.0. Null = 1.0 (normal).</param>
 public sealed record TtsRequest(
     string Text,
     string? Voice = null,
     double? SpeakingRate = null);
 
-/// <param name="Text">Text to synthesize.</param>
-/// <param name="Voice">Voice ID from LiveVoiceCatalog (e.g. "zephyr"). Null = default.</param>
-/// <param name="StylePrompt">Override for style instruction. Null = config default.</param>
-/// <param name="LanguageCode">Target language code. Null = config default.</param>
 public sealed record GeminiTtsRequest(
     string Text,
     string? Voice = null,

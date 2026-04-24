@@ -40,6 +40,8 @@ public static class DependencyInjection
         // Module Interface — consumed by other modules (e.g. AI) via Contracts
         services.AddScoped<ICurriculumQueryService, CurriculumQueryService>();
 
+        services.AddScoped<ILanguageQueryService, LanguageQueryService>();
+
         return services;
     }
 }

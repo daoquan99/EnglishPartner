@@ -8,11 +8,15 @@ namespace EnglishPartner.Application.Tests.Handlers.Identity;
 public sealed class CheckInCommandHandlerTests
 {
     private readonly IStreakRepository _streakRepository = Substitute.For<IStreakRepository>();
+    private readonly TimeProvider _timeProvider = Substitute.For<TimeProvider>();
     private readonly CheckInCommandHandler _sut;
+
+    private readonly DateTimeOffset _utcNow = DateTimeOffset.UtcNow;
 
     public CheckInCommandHandlerTests()
     {
-        _sut = new CheckInCommandHandler(_streakRepository);
+        _timeProvider.GetUtcNow().Returns(_utcNow);
+        _sut = new CheckInCommandHandler(_streakRepository, _timeProvider);
     }
 
     // ── Streak not found ──────────────────────────────────────────────────
@@ -38,7 +42,7 @@ public sealed class CheckInCommandHandlerTests
         var userId  = Guid.NewGuid();
         var command = new CheckInCommand(userId);
         var streak  = Streak.Create(userId);
-        var today   = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today   = DateOnly.FromDateTime(_utcNow.UtcDateTime);
         streak.CheckIn(today); // already checked in
 
         _streakRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
@@ -90,7 +94,7 @@ public sealed class CheckInCommandHandlerTests
         var userId  = Guid.NewGuid();
         var command = new CheckInCommand(userId);
         var streak  = Streak.Create(userId);
-        var today   = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today   = DateOnly.FromDateTime(_utcNow.UtcDateTime);
 
         _streakRepository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
                          .Returns(streak);

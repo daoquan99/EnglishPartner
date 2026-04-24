@@ -822,6 +822,116 @@ namespace EnglishPartner.Modules.Curriculum.Infrastructure.Persistence.Migration
                     b.HasIndex("LanguageCode");
 
                     b.ToTable("topics", "curriculum");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000001"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Basic greetings and introductions.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Beginner",
+                            SortOrder = 1,
+                            Title = "Greetings"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000002"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ordering food, drinks, and describing meals.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Beginner",
+                            SortOrder = 2,
+                            Title = "Food & Drink"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000003"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Navigating airports, hotels, and transportation.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Intermediate",
+                            SortOrder = 3,
+                            Title = "Travel"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000004"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Professional vocabulary for meetings and emails.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Advanced",
+                            SortOrder = 4,
+                            Title = "Business English"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000005"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Talking about daily routines and hobbies.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Elementary",
+                            SortOrder = 5,
+                            Title = "Everyday Activities"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000006"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Vocabulary for IT, hardware, and tech support.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Intermediate",
+                            SortOrder = 6,
+                            Title = "Information Technology"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000007"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Coding, software architecture, and agile methodologies.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Advanced",
+                            SortOrder = 7,
+                            Title = "Software Development"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000008"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Small talk, expressing opinions, and casual chats.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Elementary",
+                            SortOrder = 8,
+                            Title = "Daily Communication"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0002-000000000009"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Making connections, presenting ideas, and interviews.",
+                            IsActive = true,
+                            IsDeleted = false,
+                            LanguageCode = "en",
+                            Level = "Intermediate",
+                            SortOrder = 9,
+                            Title = "Professional Networking"
+                        });
                 });
 
             modelBuilder.Entity("EnglishPartner.Modules.Curriculum.Domain.Vocabularies.Vocabulary", b =>

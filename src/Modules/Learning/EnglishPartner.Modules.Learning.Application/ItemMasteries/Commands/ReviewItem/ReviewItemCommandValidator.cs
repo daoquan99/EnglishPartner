@@ -6,9 +6,6 @@ internal sealed class ReviewItemCommandValidator : AbstractValidator<ReviewItemC
 {
     public ReviewItemCommandValidator()
     {
-        RuleFor(x => x.UserId)
-            .NotEmpty();
-
         RuleFor(x => x.ItemId)
             .NotEmpty();
 

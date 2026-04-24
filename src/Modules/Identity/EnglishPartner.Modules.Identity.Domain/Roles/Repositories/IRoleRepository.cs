@@ -20,4 +20,8 @@ public interface IRoleRepository
 
     void Add(Role role);
     void Update(Role role);
+    void Delete(Role role);
+
+    /// <summary>Returns all roles with their permissions eagerly loaded.</summary>
+    Task<List<Role>> GetAllWithPermissionsAsync(CancellationToken cancellationToken = default);
 }

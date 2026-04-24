@@ -7,7 +7,7 @@ public sealed class ItemMasteryTests
     // ── Factories ──────────────────────────────────────────────────────────
 
     private static ItemMastery CreateNew() =>
-        ItemMastery.Create(Guid.NewGuid(), Guid.NewGuid(), ItemType.Vocabulary);
+        ItemMastery.Create(Guid.NewGuid(), Guid.NewGuid(), ItemType.Vocabulary, DateTime.UtcNow);
 
     // ── Initial state ──────────────────────────────────────────────────────
 

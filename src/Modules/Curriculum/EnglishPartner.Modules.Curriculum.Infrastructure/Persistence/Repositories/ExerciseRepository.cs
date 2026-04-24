@@ -28,6 +28,7 @@ internal sealed class ExerciseRepository(CurriculumDbContext dbContext) : IExerc
 
     public void Add(Exercise exercise) => dbContext.Exercises.Add(exercise);
     public void Update(Exercise exercise) => dbContext.Exercises.Update(exercise);
-    public void Remove(Exercise exercise) => exercise.SoftDelete();
+    public void Remove(Exercise exercise, Guid? deletedBy = null, DateTime? deletedAt = null)
+        => exercise.SoftDelete(deletedBy, deletedAt);
 }
 

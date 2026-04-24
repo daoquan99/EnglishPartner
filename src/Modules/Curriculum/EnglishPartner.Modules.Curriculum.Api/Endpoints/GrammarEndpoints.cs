@@ -3,6 +3,7 @@ using EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.DeleteGram
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Commands.UpdateGrammar;
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Queries.GetGrammarById;
 using EnglishPartner.Modules.Curriculum.Application.Grammars.Queries.GetGrammars;
+using EnglishPartner.Modules.Curriculum.Application.Grammars.Queries.LookupGrammars;
 using EnglishPartner.SharedKernel.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -39,6 +40,15 @@ internal static class GrammarEndpoints
         })
         .WithName("GetGrammarById")
         .WithSummary("Get a grammar rule by ID, including examples and translations.");
+
+        adminGroup.MapGet("lookup", async (
+            string languageCode, string? searchTerm, int page, int pageSize, ISender sender) =>
+        {
+            var result = await sender.Send(new LookupGrammarsQuery(languageCode, searchTerm, page, pageSize));
+            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
+        })
+        .WithName("LookupGrammars")
+        .WithSummary("Get a paginated lookup list of grammars (id, label) for admin UI.");
 
         // ── Admin Endpoints ──
         adminGroup.MapPost("", async (CreateGrammarCommand command, ISender sender) =>

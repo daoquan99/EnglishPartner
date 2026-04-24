@@ -13,4 +13,7 @@ public sealed class RolePermission : Entity
 
     public Guid RoleId { get; private set; }
     public Guid PermissionId { get; private set; }
+
+    // Navigation property — populated by EF when ThenInclude(rp => rp.Permission) is used
+    public Permission? Permission { get; private set; }
 }

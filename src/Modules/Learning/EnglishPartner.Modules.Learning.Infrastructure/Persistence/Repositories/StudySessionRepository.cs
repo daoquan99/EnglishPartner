@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnglishPartner.Modules.Learning.Infrastructure.Persistence.Repositories;
 
-internal sealed class StudySessionRepository(LearningDbContext dbContext) : IStudySessionRepository
+internal sealed class StudySessionRepository(LearningDbContext dbContext, TimeProvider timeProvider) : IStudySessionRepository
 {
     public async Task<StudySession?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
         => await dbContext.StudySessions.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -20,13 +20,14 @@ internal sealed class StudySessionRepository(LearningDbContext dbContext) : IStu
     public async Task<int> AbandonStaleSessionsAsync(Guid userId, DateTime staleThreshold, CancellationToken cancellationToken)
     {
         // Bulk UPDATE in one SQL statement — avoids load-then-loop N+1 pattern
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         return await dbContext.StudySessions
             .Where(x => x.UserId == userId
                      && x.Status == SessionStatus.InProgress
                      && x.LastActivityTime <= staleThreshold)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(x => x.Status, SessionStatus.Abandoned)
-                .SetProperty(x => x.EndTime, DateTime.UtcNow),
+                .SetProperty(x => x.EndTime, utcNow),
                 cancellationToken);
     }
 

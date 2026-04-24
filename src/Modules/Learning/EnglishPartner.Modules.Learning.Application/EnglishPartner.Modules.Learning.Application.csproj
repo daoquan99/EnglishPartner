@@ -5,6 +5,7 @@
     <ProjectReference Include="..\..\..\Shared\EnglishPartner.Messaging\EnglishPartner.Messaging.csproj" />
     <ProjectReference Include="..\..\Identity\EnglishPartner.Modules.Identity.Contracts\EnglishPartner.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\EnglishPartner.Modules.Learning.Domain\EnglishPartner.Modules.Learning.Domain.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Learning.Contracts\EnglishPartner.Modules.Learning.Contracts.csproj" />
     <ProjectReference Include="..\..\AI\EnglishPartner.Modules.AI.Contracts\EnglishPartner.Modules.AI.Contracts.csproj" />
   </ItemGroup>
 

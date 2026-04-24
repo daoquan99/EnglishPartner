@@ -6,8 +6,7 @@ namespace EnglishPartner.Modules.AI.Application.Chat.Queries.GetChatHistory;
 /// Returns all messages in a chat session, ordered by timestamp.
 /// </summary>
 public sealed record GetChatHistoryQuery(
-    Guid SessionId,
-    Guid UserId) : IQuery<ChatHistoryResponse>;
+    Guid SessionId) : IQuery<ChatHistoryResponse>;
 
 public sealed record ChatHistoryResponse(
     Guid SessionId,
