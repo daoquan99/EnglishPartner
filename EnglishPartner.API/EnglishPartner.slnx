@@ -1,0 +1,56 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Apps/">
+    <Project Path="src/Apps/EnglishPartner.Api/EnglishPartner.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/AI/">
+    <Project Path="src/Modules/AI/EnglishPartner.Modules.AI.Api/EnglishPartner.Modules.AI.Api.csproj" />
+    <Project Path="src/Modules/AI/EnglishPartner.Modules.AI.Application/EnglishPartner.Modules.AI.Application.csproj" />
+    <Project Path="src/Modules/AI/EnglishPartner.Modules.AI.Contracts/EnglishPartner.Modules.AI.Contracts.csproj" />
+    <Project Path="src/Modules/AI/EnglishPartner.Modules.AI.Domain/EnglishPartner.Modules.AI.Domain.csproj" />
+    <Project Path="src/Modules/AI/EnglishPartner.Modules.AI.Infrastructure/EnglishPartner.Modules.AI.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Curriculum/">
+    <Project Path="src/Modules/Curriculum/EnglishPartner.Modules.Curriculum.Api/EnglishPartner.Modules.Curriculum.Api.csproj" />
+    <Project Path="src/Modules/Curriculum/EnglishPartner.Modules.Curriculum.Application/EnglishPartner.Modules.Curriculum.Application.csproj" />
+    <Project Path="src/Modules/Curriculum/EnglishPartner.Modules.Curriculum.Contracts/EnglishPartner.Modules.Curriculum.Contracts.csproj" />
+    <Project Path="src/Modules/Curriculum/EnglishPartner.Modules.Curriculum.Domain/EnglishPartner.Modules.Curriculum.Domain.csproj" />
+    <Project Path="src/Modules/Curriculum/EnglishPartner.Modules.Curriculum.Infrastructure/EnglishPartner.Modules.Curriculum.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/EnglishPartner.Modules.Identity.Api/EnglishPartner.Modules.Identity.Api.csproj" />
+    <Project Path="src/Modules/Identity/EnglishPartner.Modules.Identity.Application/EnglishPartner.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/EnglishPartner.Modules.Identity.Contracts/EnglishPartner.Modules.Identity.Contracts.csproj" />
+    <Project Path="src/Modules/Identity/EnglishPartner.Modules.Identity.Domain/EnglishPartner.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/EnglishPartner.Modules.Identity.Infrastructure/EnglishPartner.Modules.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Learning/">
+    <Project Path="src/Modules/Learning/EnglishPartner.Modules.Learning.Api/EnglishPartner.Modules.Learning.Api.csproj" />
+    <Project Path="src/Modules/Learning/EnglishPartner.Modules.Learning.Application/EnglishPartner.Modules.Learning.Application.csproj" />
+    <Project Path="src/Modules/Learning/EnglishPartner.Modules.Learning.Contracts/EnglishPartner.Modules.Learning.Contracts.csproj" />
+    <Project Path="src/Modules/Learning/EnglishPartner.Modules.Learning.Domain/EnglishPartner.Modules.Learning.Domain.csproj" />
+    <Project Path="src/Modules/Learning/EnglishPartner.Modules.Learning.Infrastructure/EnglishPartner.Modules.Learning.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/EnglishPartner.Modules.Notifications.Api/EnglishPartner.Modules.Notifications.Api.csproj" />
+    <Project Path="src/Modules/Notifications/EnglishPartner.Modules.Notifications.Application/EnglishPartner.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/EnglishPartner.Modules.Notifications.Contracts/EnglishPartner.Modules.Notifications.Contracts.csproj" />
+    <Project Path="src/Modules/Notifications/EnglishPartner.Modules.Notifications.Domain/EnglishPartner.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/EnglishPartner.Modules.Notifications.Infrastructure/EnglishPartner.Modules.Notifications.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/EnglishPartner.Messaging/EnglishPartner.Messaging.csproj" />
+    <Project Path="src/Shared/EnglishPartner.SharedKernel.Application/EnglishPartner.SharedKernel.Application.csproj" />
+    <Project Path="src/Shared/EnglishPartner.SharedKernel/EnglishPartner.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnglishPartner.Application.Tests/EnglishPartner.Application.Tests.csproj" />
+    <Project Path="tests/EnglishPartner.Domain.Tests/EnglishPartner.Domain.Tests.csproj" />
+    <Project Path="tests/EnglishPartner.Infrastructure.Tests/EnglishPartner.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

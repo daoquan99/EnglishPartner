@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishPartner.Modules.Curriculum.Domain\EnglishPartner.Modules.Curriculum.Domain.csproj" />
+    <ProjectReference Include="..\EnglishPartner.Modules.Curriculum.Contracts\EnglishPartner.Modules.Curriculum.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishPartner.SharedKernel.Application\EnglishPartner.SharedKernel.Application.csproj" />
+    <ProjectReference Include="..\..\AI\EnglishPartner.Modules.AI.Contracts\EnglishPartner.Modules.AI.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+</Project>
