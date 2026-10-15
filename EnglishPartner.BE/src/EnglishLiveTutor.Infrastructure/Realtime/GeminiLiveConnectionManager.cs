@@ -24,6 +24,8 @@ public sealed class ConversationTurnState
     public bool AiIsSpeaking { get; set; }
 
     public Dictionary<string, string> TranscriptByTurn { get; } = new();
+    public Dictionary<string, string> TutorSourceTranscriptByTurn { get; } = new();
+    public Dictionary<string, string> TranscribeSourceTranscriptByTurn { get; } = new();
     public Dictionary<string, string> TranslationByTurn { get; } = new();
     public Dictionary<string, string> AudioTranslationBufferByTurn { get; } = new();
     public Dictionary<string, int> SequenceByTurn { get; } = new();
@@ -426,7 +428,8 @@ public sealed class GeminiLiveConnectionManager
                     userTurnId,
                     userSeq,
                     finalText,
-                    isFinal: false);
+                    isFinal: false,
+                    sourceHub: "transcribe");
             }
         };
 
@@ -548,17 +551,26 @@ public sealed class GeminiLiveConnectionManager
         int sequenceOrder,
         string interimText)
     {
-        string current;
+        string preview;
         lock (state.SyncRoot)
         {
-            current = state.TranscriptByTurn.TryGetValue(turnId, out var c) ? c : string.Empty;
+            // Merge with TranscribeHub's committed text ONLY (never overwrite committed buffer with interim draft!)
+            string committed = state.TranscribeSourceTranscriptByTurn.TryGetValue(turnId, out var c) ? c : string.Empty;
+            preview = SmartTextDeduplicator.MergeChunk(committed, interimText);
+            state.SequenceByTurn[turnId] = sequenceOrder;
         }
 
-        string preview = SmartTextDeduplicator.MergeChunk(current, interimText);
+        if (string.IsNullOrWhiteSpace(preview))
+            return;
 
         await _notifier.SendTranscribeTranscriptAsync(conversationId, speaker, turnId, sequenceOrder, preview, isFinal: false);
 
         ScheduleTurnTranslation(conversationId, state, speaker, turnId, sequenceOrder, preview, isFinal: false);
+
+        if (speaker == "user")
+        {
+            ScheduleUserGrammarCheck(conversationId, state, turnId, preview, immediate: false);
+        }
     }
 
     private async Task MergeAndBroadcastTranscriptAsync(
@@ -568,13 +580,34 @@ public sealed class GeminiLiveConnectionManager
         string turnId,
         int sequenceOrder,
         string deltaText,
-        bool isFinal)
+        bool isFinal,
+        string sourceHub = "tutor")
     {
         string merged;
         lock (state.SyncRoot)
         {
-            string existing = state.TranscriptByTurn.TryGetValue(turnId, out var c) ? c : string.Empty;
-            merged = SmartTextDeduplicator.MergeChunk(existing, deltaText);
+            if (speaker == "user")
+            {
+                var sourceDict = sourceHub == "transcribe"
+                    ? state.TranscribeSourceTranscriptByTurn
+                    : state.TutorSourceTranscriptByTurn;
+
+                string existingForSource = sourceDict.TryGetValue(turnId, out var srcText) ? srcText : string.Empty;
+                string updatedForSource = SmartTextDeduplicator.MergeChunk(existingForSource, deltaText);
+                sourceDict[turnId] = updatedForSource;
+
+                // Pick the fuller, cleaner single-source transcript rather than concatenating both hubs together
+                string tutorText = state.TutorSourceTranscriptByTurn.TryGetValue(turnId, out var tText) ? tText : string.Empty;
+                string transcribeText = state.TranscribeSourceTranscriptByTurn.TryGetValue(turnId, out var trText) ? trText : string.Empty;
+
+                merged = transcribeText.Length >= tutorText.Length ? transcribeText : tutorText;
+            }
+            else
+            {
+                string existing = state.TranscriptByTurn.TryGetValue(turnId, out var c) ? c : string.Empty;
+                merged = SmartTextDeduplicator.MergeChunk(existing, deltaText);
+            }
+
             state.TranscriptByTurn[turnId] = merged;
             state.SequenceByTurn[turnId] = sequenceOrder;
         }
@@ -683,7 +716,9 @@ public sealed class GeminiLiveConnectionManager
                 string cefrLevel;
                 lock (state.SyncRoot)
                 {
-                    latestText = state.TranscriptByTurn.TryGetValue(turnId, out var c) ? c : userTextSnapshot;
+                    latestText = state.TranscriptByTurn.TryGetValue(turnId, out var c) && !string.IsNullOrWhiteSpace(c)
+                        ? c
+                        : userTextSnapshot;
                     cefrLevel = state.CefrLevel;
 
                     if (string.IsNullOrWhiteSpace(latestText))
@@ -694,7 +729,6 @@ public sealed class GeminiLiveConnectionManager
                     {
                         return;
                     }
-                    state.LastAnalyzedTextByTurn[turnId] = latestText;
                 }
 
                 _sessionApiKeys.TryGetValue(conversationId, out var apiKey);
@@ -708,6 +742,10 @@ public sealed class GeminiLiveConnectionManager
 
                 if (correction is not null && !token.IsCancellationRequested)
                 {
+                    lock (state.SyncRoot)
+                    {
+                        state.LastAnalyzedTextByTurn[turnId] = latestText;
+                    }
                     await _repo.SaveCorrectionAsync(MapToCorrectionEntity(correction));
                     await _notifier.SendLanguageCorrectionAsync(conversationId, correction, token);
                 }

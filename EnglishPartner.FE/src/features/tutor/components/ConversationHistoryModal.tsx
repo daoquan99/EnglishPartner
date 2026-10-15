@@ -3,6 +3,7 @@ import {
   History,
   Play,
   MessageSquare,
+  MessageSquarePlus,
   Clock,
   Volume2,
   Sparkles,
@@ -21,7 +22,9 @@ interface ConversationHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   conversations: ConversationSummaryDto[];
+  activeConversationId?: string | null;
   onResumeConversation: (detail: ConversationDetailDto) => void;
+  onStartNewConversation: () => void;
   onDeleteConversation: (id: string) => Promise<void> | void;
 }
 
@@ -29,7 +32,9 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
   isOpen,
   onClose,
   conversations,
+  activeConversationId,
   onResumeConversation,
+  onStartNewConversation,
   onDeleteConversation,
 }) => {
   const [selectedDetail, setSelectedDetail] = useState<ConversationDetailDto | null>(null);
@@ -45,7 +50,6 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
         setSelectedDetail(detail);
       }
     } catch {
-      // Fallback detail preview if offline
       setSelectedDetail({
         ...conv,
         messages: [],
@@ -107,9 +111,9 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
             ? `Chi tiết Hội thoại: ${selectedDetail.title}`
             : `Lịch sử Cuộc trò chuyện (${conversations.length})`
         }
-        description="Xem lại chi tiết nội dung song ngữ, tiếp tục phiên luyện nói cũ hoặc xóa lịch sử trong Database"
+        description="Xem lại chi tiết nội dung song ngữ, chuyển sang cuộc hội thoại mới, tiếp tục phiên cũ hoặc xóa lịch sử"
         footer={
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center justify-between w-full flex-wrap gap-2">
             {selectedDetail ? (
               <>
                 <Button
@@ -120,27 +124,54 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                   <ArrowLeft className="w-4 h-4" />
                   Quay lại danh sách
                 </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    onResumeConversation(selectedDetail);
-                    setSelectedDetail(null);
-                    onClose();
-                  }}
-                >
-                  <Play className="w-4 h-4" />
-                  Tiếp tục phiên hội thoại này
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDetail(null);
+                      onStartNewConversation();
+                      onClose();
+                    }}
+                  >
+                    <MessageSquarePlus className="w-4 h-4 text-emerald-700" />
+                    Tạo cuộc hội thoại mới
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      onResumeConversation(selectedDetail);
+                      setSelectedDetail(null);
+                      onClose();
+                    }}
+                  >
+                    <Play className="w-4 h-4" />
+                    Tiếp tục phiên hội thoại này
+                  </Button>
+                </div>
               </>
             ) : (
               <>
                 <span className="text-xs text-slate-500">
                   Tổng cộng <strong>{conversations.length}</strong> phiên hội thoại đã lưu
                 </span>
-                <Button variant="outline" size="sm" onClick={onClose}>
-                  Đóng (ESC)
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      onStartNewConversation();
+                      onClose();
+                    }}
+                  >
+                    <MessageSquarePlus className="w-4 h-4" />
+                    Tạo cuộc hội thoại mới
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onClose}>
+                    Đóng (ESC)
+                  </Button>
+                </div>
               </>
             )}
           </div>
@@ -203,81 +234,91 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className="p-4 rounded-2xl border border-slate-200 hover:border-emerald-400 bg-white shadow-2xs transition-all flex flex-col justify-between gap-3"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-extrabold text-slate-900 line-clamp-1">
-                      {conv.title || `${conv.conversationMode} (${conv.cefrLevel})`}
-                    </h3>
-                    <Badge variant="emerald">CEFR {conv.cefrLevel}</Badge>
-                  </div>
+            {conversations.map((conv) => {
+              const isCurrentActive = activeConversationId === conv.id;
+              return (
+                <div
+                  key={conv.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 shadow-2xs ${
+                    isCurrentActive
+                      ? 'border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-400/50'
+                      : 'border-slate-200 hover:border-emerald-400 bg-white'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-extrabold text-slate-900 line-clamp-1">
+                        {conv.title || `${conv.conversationMode} (${conv.cefrLevel})`}
+                      </h3>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isCurrentActive && <Badge variant="emerald">Đang mở</Badge>}
+                        <Badge variant="emerald">CEFR {conv.cefrLevel}</Badge>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge variant="sky">{conv.conversationMode}</Badge>
-                    <Badge variant="violet">
-                      <Volume2 className="w-3 h-3" /> {conv.voiceName}
-                    </Badge>
-                    {conv.topic && (
-                      <span className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg truncate max-w-[200px]">
-                        {conv.topic}
-                      </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="sky">{conv.conversationMode}</Badge>
+                      <Badge variant="violet">
+                        <Volume2 className="w-3 h-3" /> {conv.voiceName}
+                      </Badge>
+                      {conv.topic && (
+                        <span className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg truncate max-w-[200px]">
+                          {conv.topic}
+                        </span>
+                      )}
+                    </div>
+
+                    {conv.lastMessagePreview && (
+                      <p className="text-xs text-slate-500 line-clamp-2 italic">
+                        &ldquo;{conv.lastMessagePreview}&rdquo;
+                      </p>
                     )}
                   </div>
 
-                  {conv.lastMessagePreview && (
-                    <p className="text-xs text-slate-500 line-clamp-2 italic">
-                      &ldquo;{conv.lastMessagePreview}&rdquo;
-                    </p>
-                  )}
-                </div>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
+                      <span className="inline-flex items-center gap-1">
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                        {conv.messageCount} lượt
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        {conv.correctionCount} sửa lỗi
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(conv.updatedAtUtc || conv.createdAtUtc).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
 
-                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                      {conv.messageCount} lượt
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      {conv.correctionCount} sửa lỗi
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      {new Date(conv.updatedAtUtc || conv.createdAtUtc).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <IconButton
-                      action="view"
-                      size="sm"
-                      label="Xem chi tiết hội thoại"
-                      disabled={loadingDetailId === conv.id}
-                      onClick={() => void handleViewDetail(conv)}
-                    />
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      disabled={loadingDetailId === conv.id}
-                      onClick={() => void handleResume(conv)}
-                    >
-                      <Play className="w-3.5 h-3.5" />
-                      Tiếp tục
-                    </Button>
-                    <IconButton
-                      action="delete"
-                      size="sm"
-                      label={`Xóa hội thoại ${conv.title}`}
-                      onClick={() => setDeleteTarget(conv)}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <IconButton
+                        action="view"
+                        size="sm"
+                        label="Xem chi tiết hội thoại"
+                        disabled={loadingDetailId === conv.id}
+                        onClick={() => void handleViewDetail(conv)}
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={loadingDetailId === conv.id}
+                        onClick={() => void handleResume(conv)}
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        Tiếp tục
+                      </Button>
+                      <IconButton
+                        action="delete"
+                        size="sm"
+                        label={`Xóa hội thoại ${conv.title}`}
+                        onClick={() => setDeleteTarget(conv)}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Dialog>

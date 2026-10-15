@@ -205,6 +205,15 @@ public sealed class GrammarCorrectionAnalyzerService
     {
         var rules = new (string Pattern, string Replacement, string Category, string ExplanationVi, string Tip)[]
         {
+            (@"\bone\s+(?:of\s+)?my\s+favou?rite\s+([a-z]+\s+)?(movie|book|song|place|food|sport|hobby|scene|actor|game)\b(?!s)", "one of my favorite $1$2s", "Grammar (One of + Plural Noun)",
+                "Cấu trúc \"one of my favorite + danh từ đếm được\" bắt buộc danh từ phía sau phải ở dạng số nhiều (thêm -s, ví dụ: \"one of my favorite comedy movies\").",
+                "Luôn nhớ bật âm /-s/ hoặc /-z/ ở danh từ sau cụm 'one of my favorite...'."),
+            (@"\bwatched\s+it\s+in\s+several\s+times?\b", "watched it several times", "Grammar (Redundant Preposition)",
+                "Khi nói số lần thực hiện hành động (\"several times\", \"many times\"), không dùng giới từ \"in\" phía trước.",
+                "Nói trực tiếp: 'I have watched it several times' (Tôi đã xem nó vài lần)."),
+            (@"\bto\s+relax\s+and\s+forgot\b", "to relax and forget", "Grammar (Parallel Verb Forms)",
+                "Sau cấu trúc chỉ mục đích \"to + V nguyên mẫu\" (to relax and...), động từ nối tiếp sau \"and\" cũng phải ở dạng nguyên mẫu là \"forget\" thay vì quá khứ \"forgot\".",
+                "Giữ cấu trúc song song (Parallel Structure): 'to relax and forget about work'."),
             (@"\bto\s+new\s+place\b", "to new places", "Grammar (Plural Noun)",
                 "Khi nói chung về việc đi du lịch đến \"những vùng đất/địa điểm mới\", danh từ đếm được \"place\" phải ở dạng số nhiều là \"new places\" (hoặc \"a new place\").",
                 "Chú ý phát âm rõ âm đuôi /ɪz/ trong 'places' (/ˈpleɪ.sɪz/)."),

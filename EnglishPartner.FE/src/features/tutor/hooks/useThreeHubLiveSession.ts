@@ -2,11 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { getAccessToken, resolveBackendBaseUrl } from '@/shared/api/httpClient';
 import type { CefrLevel, ConversationModeCode, TeacherVoiceName } from '@/shared/api/openapi.types';
-import type {
-  BilingualTurnItem,
-  GrammarCorrectionItem,
-  SessionPhase,
-  ThreeHubStates,
+import {
+  buildClientGrammarCorrectionFallback,
+  normalizeGrammarCorrection,
+  sanitizeLiveTranscriptText,
+  type BilingualTurnItem,
+  type GrammarCorrectionItem,
+  type SessionPhase,
+  type ThreeHubStates,
 } from '../types/tutor.types';
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -49,6 +52,7 @@ export function useThreeHubLiveSession() {
   });
   const [turns, setTurns] = useState<BilingualTurnItem[]>([]);
   const [corrections, setCorrections] = useState<GrammarCorrectionItem[]>([]);
+  const [isAnalyzingGrammar, setIsAnalyzingGrammar] = useState<boolean>(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [micLevel, setMicLevel] = useState<number>(0);
   const [aiAudioLevel, setAiAudioLevel] = useState<number>(0);
@@ -65,7 +69,180 @@ export function useThreeHubLiveSession() {
   const nextPlayTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const sessionIdRef = useRef<string>('');
+  const activeCefrRef = useRef<CefrLevel>('B1');
+  const activeApiKeyRef = useRef<string>('');
   const isAiSpeakingRef = useRef<boolean>(false);
+
+  // Track received corrections and pending auto-analysis timers per user turn
+  const receivedCorrectionTurnsRef = useRef<Set<string>>(new Set());
+  const grammarTimersByTurnRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const latestUserTextByTurnRef = useRef<Map<string, string>>(new Map());
+
+  const clearGrammarTimers = useCallback(() => {
+    for (const timer of grammarTimersByTurnRef.current.values()) {
+      clearTimeout(timer);
+    }
+    grammarTimersByTurnRef.current.clear();
+  }, []);
+
+  const upsertCorrectionItem = useCallback((item: GrammarCorrectionItem) => {
+    receivedCorrectionTurnsRef.current.add(item.turnId);
+    const existingTimer = grammarTimersByTurnRef.current.get(item.turnId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      grammarTimersByTurnRef.current.delete(item.turnId);
+    }
+    setIsAnalyzingGrammar(false);
+    setCorrections((prev) => {
+      const filtered = prev.filter((c) => c.turnId !== item.turnId);
+      return [item, ...filtered];
+    });
+  }, []);
+
+  /**
+   * Direct Gemini REST API grammar & vocabulary analysis fallback if the SignalR Hub
+   * roundtrip does not return within timeout, falling back to deterministic rule analysis.
+   */
+  const analyzeWithGeminiClientFallback = useCallback(
+    async (turnId: string, transcriptText: string, cefrLevel: CefrLevel, apiKey: string) => {
+      const cleaned = sanitizeLiveTranscriptText(transcriptText);
+      if (!cleaned || cleaned.split(/\s+/).length < 2) return;
+
+      if (apiKey && apiKey.trim()) {
+        const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+        for (const model of modelsToTry) {
+          try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+              apiKey.trim()
+            )}`;
+            const prompt = [
+              `You are an expert English speaking coach evaluating a spoken sentence from a Vietnamese learner (CEFR Level: ${cefrLevel}).`,
+              `Learner utterance: "${cleaned}"`,
+              '',
+              'Analyze grammar, vocabulary, collocations, plural/article usage, tense, and natural phrasing.',
+              'Even if the sentence is grammatically acceptable, provide a natural speaking upgrade and vocabulary tip.',
+              'Return ONLY a valid JSON object (no markdown fences):',
+              '{',
+              '  "originalText": "exact learner sentence",',
+              '  "correctedText": "corrected and natural English sentence",',
+              '  "naturalAlternative": "an idiomatic or higher-CEFR alternative way to say it",',
+              '  "errorCategory": "Grammar | Vocabulary & Collocation | Plural & Article | Speaking Upgrade",',
+              '  "explanationVi": "Giải thích chi tiết, ngắn gọn, dễ hiểu bằng tiếng Việt",',
+              `  "cefrTip": "[${cefrLevel}] Mẹo luyện nói hoặc từ vựng nâng cấp bằng tiếng Việt"`,
+              '}',
+            ].join('\n');
+
+            const resp = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.15 },
+              }),
+            });
+
+            if (resp.ok) {
+              const data = await resp.json();
+              const rawText: string | undefined =
+                data?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (rawText) {
+                const startBrace = rawText.indexOf('{');
+                const endBrace = rawText.lastIndexOf('}');
+                if (startBrace >= 0 && endBrace > startBrace) {
+                  const parsed = JSON.parse(rawText.slice(startBrace, endBrace + 1));
+                  const normalized = normalizeGrammarCorrection({
+                    ...parsed,
+                    turnId,
+                    timestamp: Date.now(),
+                  });
+                  if (normalized) {
+                    upsertCorrectionItem(normalized);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch {
+            // Fall through to next model or local fallback
+          }
+        }
+      }
+
+      const fallbackItem = buildClientGrammarCorrectionFallback(turnId, cleaned, cefrLevel);
+      if (fallbackItem) {
+        upsertCorrectionItem(fallbackItem);
+      }
+    },
+    [upsertCorrectionItem]
+  );
+
+  /**
+   * Triggers Grammar & Vocabulary analysis for a specific turn via TutorConversationHub
+   * ('AnalyzeTurnGrammar'), with automatic client-side fallback if SignalR does not emit
+   * 'ReceiveLanguageCorrection' within 1.8s.
+   */
+  const analyzeTurnGrammar = useCallback(
+    async (turnId: string, transcriptText: string, forceReanalyze = true) => {
+      const cleaned = sanitizeLiveTranscriptText(transcriptText);
+      if (!cleaned || cleaned.split(/\s+/).length < 2) return;
+
+      if (!forceReanalyze && receivedCorrectionTurnsRef.current.has(turnId)) {
+        return;
+      }
+
+      setIsAnalyzingGrammar(true);
+      const convId = sessionIdRef.current || 'manual-session';
+      const cefr = activeCefrRef.current;
+      const apiKey = activeApiKeyRef.current;
+
+      const hub = tutorConnRef.current;
+      if (hub && hub.state === signalR.HubConnectionState.Connected) {
+        try {
+          await hub.invoke('AnalyzeTurnGrammar', convId, turnId, cleaned, cefr);
+          // Wait briefly to see if Backend broadcasts ReceiveLanguageCorrection
+          setTimeout(() => {
+            if (!receivedCorrectionTurnsRef.current.has(turnId)) {
+              void analyzeWithGeminiClientFallback(turnId, cleaned, cefr, apiKey);
+            } else {
+              setIsAnalyzingGrammar(false);
+            }
+          }, 1600);
+          return;
+        } catch {
+          // Fall through to client fallback if Hub invoke fails
+        }
+      }
+
+      await analyzeWithGeminiClientFallback(turnId, cleaned, cefr, apiKey);
+    },
+    [analyzeWithGeminiClientFallback]
+  );
+
+  const scheduleAutoGrammarAnalysisForUserTurn = useCallback(
+    (turnId: string, fullTranscriptText: string, isFinal: boolean) => {
+      const cleaned = sanitizeLiveTranscriptText(fullTranscriptText);
+      if (!cleaned || cleaned.split(/\s+/).length < 2) return;
+
+      latestUserTextByTurnRef.current.set(turnId, cleaned);
+
+      const prevTimer = grammarTimersByTurnRef.current.get(turnId);
+      if (prevTimer) {
+        clearTimeout(prevTimer);
+      }
+
+      const delayMs = isFinal ? 450 : 1250;
+      const timer = setTimeout(() => {
+        grammarTimersByTurnRef.current.delete(turnId);
+        const latestText = latestUserTextByTurnRef.current.get(turnId) || cleaned;
+        if (!receivedCorrectionTurnsRef.current.has(turnId)) {
+          void analyzeTurnGrammar(turnId, latestText, false);
+        }
+      }, delayMs);
+
+      grammarTimersByTurnRef.current.set(turnId, timer);
+    },
+    [analyzeTurnGrammar]
+  );
 
   const flushPlaybackQueue = useCallback(() => {
     for (const src of activeSourcesRef.current) {
@@ -133,7 +310,9 @@ export function useThreeHubLiveSession() {
   }, []);
 
   const upsertTurnLine1 = useCallback(
-    (turnId: string, speaker: 'user' | 'ai', englishText: string, isFinal: boolean) => {
+    (turnId: string, speaker: 'user' | 'ai', rawEnglishText: string, isFinal: boolean) => {
+      const englishText =
+        speaker === 'user' ? sanitizeLiveTranscriptText(rawEnglishText) : rawEnglishText.trim();
       if (!englishText) return;
       setTurns((prev) => {
         const idx = prev.findIndex((t) => t.turnId === turnId);
@@ -193,6 +372,7 @@ export function useThreeHubLiveSession() {
   );
 
   const stopSession = useCallback(async () => {
+    clearGrammarTimers();
     const convId = sessionIdRef.current;
     sessionIdRef.current = '';
 
@@ -250,15 +430,18 @@ export function useThreeHubLiveSession() {
       transcribeHub: 'disconnected',
       translateHub: 'disconnected',
     });
+    setIsAnalyzingGrammar(false);
     setMicLevel(0);
     setAiAudioLevel(0);
     setPhase('idle');
-  }, [flushPlaybackQueue]);
+  }, [clearGrammarTimers, flushPlaybackQueue]);
 
   const startSession = useCallback(
     async (params: StartLiveSessionParams) => {
       if (!params.apiKey || !params.apiKey.trim()) {
-        setErrorBanner('Vui lòng nhập Google AI Studio API Key (AIzaSy...) ở cột Thiết lập trước khi bắt đầu.');
+        setErrorBanner(
+          'Vui lòng nhập Google AI Studio API Key (AIzaSy...) ở cột Thiết lập trước khi bắt đầu.'
+        );
         setPhase('error');
         return;
       }
@@ -266,6 +449,9 @@ export function useThreeHubLiveSession() {
       await stopSession();
       setErrorBanner(null);
       setPhase('connecting');
+
+      activeCefrRef.current = params.cefrLevel;
+      activeApiKeyRef.current = params.apiKey.trim();
 
       const convId =
         params.conversationId ||
@@ -290,7 +476,6 @@ export function useThreeHubLiveSession() {
       transcribeConnRef.current = transcribeHub;
       translateConnRef.current = translateHub;
 
-      // Support both event names from Backend Hubs
       tutorHub.on(
         'ReceiveTutorAudio',
         (dto: { turnId: string; base64Pcm24k: string; interactionStatus?: string }) => {
@@ -300,12 +485,11 @@ export function useThreeHubLiveSession() {
         }
       );
 
-      tutorHub.on('ReceiveLanguageCorrection', (payload: GrammarCorrectionItem) => {
-        if (payload?.turnId && payload.hasErrors) {
-          setCorrections((prev) => {
-            const filtered = prev.filter((c) => c.turnId !== payload.turnId);
-            return [{ ...payload, timestamp: Date.now() }, ...filtered];
-          });
+      // Normalize Backend LanguageCorrectionDto (originalText, correctedText, errorCategory, explanationVi, cefrTip)
+      tutorHub.on('ReceiveLanguageCorrection', (payload: unknown) => {
+        const normalized = normalizeGrammarCorrection(payload);
+        if (normalized) {
+          upsertCorrectionItem(normalized);
         }
       });
 
@@ -323,8 +507,15 @@ export function useThreeHubLiveSession() {
           fullTranscriptText: string;
           isFinal: boolean;
         }) => {
-          if (dto?.turnId) {
+          if (dto?.turnId && dto.fullTranscriptText) {
             upsertTurnLine1(dto.turnId, dto.speaker, dto.fullTranscriptText, dto.isFinal);
+            if (dto.speaker === 'user') {
+              scheduleAutoGrammarAnalysisForUserTurn(
+                dto.turnId,
+                dto.fullTranscriptText,
+                Boolean(dto.isFinal)
+              );
+            }
           }
         }
       );
@@ -353,7 +544,6 @@ export function useThreeHubLiveSession() {
 
         await Promise.all([tutorHub.start(), transcribeHub.start(), translateHub.start()]);
 
-        // Initialize Tutor session first, then Sub-Hubs sequentially
         await tutorHub.invoke('InitializeTutorSession', {
           conversationId: convId,
           apiKey: params.apiKey.trim(),
@@ -384,11 +574,9 @@ export function useThreeHubLiveSession() {
           translateHub: 'connected',
         });
 
-        // Initialize 24kHz Playback AudioContext
         playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
         nextPlayTimeRef.current = playbackCtxRef.current.currentTime;
 
-        // Initialize 16kHz Microphone Capture + AudioWorklet
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
@@ -431,7 +619,9 @@ export function useThreeHubLiveSession() {
           await captureCtx.audioWorklet.addModule('/pcm16k-capture-worklet.js');
           const workletNode = new AudioWorkletNode(captureCtx, 'pcm16k-capture-processor');
           workletNodeRef.current = workletNode;
-          workletNode.port.onmessage = (event: MessageEvent<{ pcmBuffer?: ArrayBuffer; pcm16Buffer?: ArrayBuffer }>) => {
+          workletNode.port.onmessage = (
+            event: MessageEvent<{ pcmBuffer?: ArrayBuffer; pcm16Buffer?: ArrayBuffer }>
+          ) => {
             const buf = event.data.pcmBuffer || event.data.pcm16Buffer;
             if (buf) handleAudioChunk(buf);
           };
@@ -461,16 +651,35 @@ export function useThreeHubLiveSession() {
         setPhase('error');
       }
     },
-    [flushPlaybackQueue, scheduleAiPcm24kChunk, stopSession, upsertTurnLine1, upsertTurnLine2]
+    [
+      flushPlaybackQueue,
+      scheduleAiPcm24kChunk,
+      scheduleAutoGrammarAnalysisForUserTurn,
+      stopSession,
+      upsertCorrectionItem,
+      upsertTurnLine1,
+      upsertTurnLine2,
+    ]
   );
 
   const loadPersistedSessionData = useCallback(
     (loadedTurns: BilingualTurnItem[], loadedCorrections: GrammarCorrectionItem[]) => {
       setTurns(loadedTurns);
       setCorrections(loadedCorrections);
+      receivedCorrectionTurnsRef.current = new Set(loadedCorrections.map((c) => c.turnId));
     },
     []
   );
+
+  const resetConversationWorkspace = useCallback(async () => {
+    await stopSession();
+    setTurns([]);
+    setCorrections([]);
+    setErrorBanner(null);
+    setIsAnalyzingGrammar(false);
+    receivedCorrectionTurnsRef.current.clear();
+    latestUserTextByTurnRef.current.clear();
+  }, [stopSession]);
 
   useEffect(() => {
     return () => {
@@ -483,12 +692,15 @@ export function useThreeHubLiveSession() {
     hubStates,
     turns,
     corrections,
+    isAnalyzingGrammar,
     errorBanner,
     micLevel,
     aiAudioLevel,
     startSession,
     stopSession,
+    analyzeTurnGrammar,
     loadPersistedSessionData,
+    resetConversationWorkspace,
     clearError: () => setErrorBanner(null),
   };
 }

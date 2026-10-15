@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Volume2, User, Bot, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Volume2, User, Bot, Sparkles, CheckCircle2, Wand2 } from 'lucide-react';
 import type { BilingualTurnItem, GrammarCorrectionItem } from '../types/tutor.types';
 import { cn } from '@/shared/lib/cn';
 
@@ -7,12 +7,14 @@ interface LiveMessengerStreamProps {
   turns: BilingualTurnItem[];
   corrections: GrammarCorrectionItem[];
   onSelectCorrection?: (correction: GrammarCorrectionItem) => void;
+  onAnalyzeTurn?: (turnId: string, englishText: string) => void;
 }
 
 export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
   turns,
   corrections,
   onSelectCorrection,
+  onAnalyzeTurn,
 }) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -40,8 +42,8 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
         </h3>
         <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
           Nhập <strong>Google AI Studio API Key</strong> ở cột Thiết lập bên trái rồi nhấn{' '}
-          <strong>Bắt đầu Luyện Nói Live</strong> để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI 24kHz),
-          Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp), và Hub 3 (Dịch Tiếng Việt tức thì).
+          <strong>Bắt đầu luyện nói</strong> để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI
+          24kHz), Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp Realtime), và Hub 3 (Dịch Tiếng Việt tức thì).
         </p>
       </div>
     );
@@ -52,7 +54,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
       {turns.map((turn) => {
         const isUser = turn.speaker === 'user';
         const turnCorrection = isUser
-          ? corrections.find((c) => c.turnId === turn.turnId && c.hasErrors)
+          ? corrections.find((c) => c.turnId === turn.turnId)
           : undefined;
 
         return (
@@ -71,7 +73,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
               {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
 
-            <div className={cn('max-w-[82%] space-y-1.5', isUser ? 'items-end' : 'items-start')}>
+            <div className={cn('max-w-[82%] flex flex-col gap-1.5', isUser ? 'items-end' : 'items-start')}>
               <div
                 className={cn(
                   'rounded-2xl px-4 py-3 shadow-xs border transition-all',
@@ -85,21 +87,33 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                   <p className="text-sm font-semibold leading-relaxed">
                     {turn.englishLine1 || '...'}
                   </p>
-                  {turn.englishLine1 && (
-                    <button
-                      type="button"
-                      onClick={() => speakEnglishText(turn.englishLine1)}
-                      title="Nghe lại câu tiếng Anh"
-                      className={cn(
-                        'p-1 rounded-lg shrink-0 transition-colors cursor-pointer',
-                        isUser
-                          ? 'text-emerald-100 hover:bg-emerald-500'
-                          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
-                      )}
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isUser && turn.englishLine1 && onAnalyzeTurn && (
+                      <button
+                        type="button"
+                        onClick={() => onAnalyzeTurn(turn.turnId, turn.englishLine1)}
+                        title="Phân tích ngữ pháp & từ vựng câu này"
+                        className="p-1 rounded-lg text-emerald-100 hover:bg-emerald-500 transition-colors cursor-pointer"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {turn.englishLine1 && (
+                      <button
+                        type="button"
+                        onClick={() => speakEnglishText(turn.englishLine1)}
+                        title="Nghe lại câu tiếng Anh"
+                        className={cn(
+                          'p-1 rounded-lg transition-colors cursor-pointer',
+                          isUser
+                            ? 'text-emerald-100 hover:bg-emerald-500'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                        )}
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Line 2: Vietnamese Translation */}
@@ -115,15 +129,18 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                 </p>
               </div>
 
-              {/* Inline Grammar Suggestion Pill if errors were detected */}
+              {/* Compact 1-line Grammar Status Badge (full details sit in the Right Panel) */}
               {turnCorrection && (
                 <button
                   type="button"
                   onClick={() => onSelectCorrection?.(turnCorrection)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-semibold transition-colors cursor-pointer"
+                  title="Xem giải thích chi tiết ở cột Sửa lỗi Ngữ pháp & Từ vựng bên phải"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200/90 text-amber-900 text-[11px] font-semibold transition-colors cursor-pointer max-w-full"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Gợi ý nâng cấp câu: &ldquo;{turnCorrection.correctedSentence}&rdquo;</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate">
+                    {turnCorrection.errorCategory}: &ldquo;{turnCorrection.correctedSentence}&rdquo;
+                  </span>
                 </button>
               )}
             </div>

@@ -6,6 +6,7 @@ import {
   Settings,
   Wifi,
   AlertCircle,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { TutorSetupSidebar as TutorSetupModal } from '../components/TutorSetupSidebar';
 import { ConversationHistoryModal } from '../components/ConversationHistoryModal';
@@ -19,7 +20,11 @@ import {
   useDeleteConversationMutation,
   useUpdateConversationSettingsMutation,
 } from '../hooks/useConversations';
-import type { ConversationDetailDto } from '../types/tutor.types';
+import {
+  normalizeGrammarCorrection,
+  type ConversationDetailDto,
+  type GrammarCorrectionItem,
+} from '../types/tutor.types';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
@@ -37,6 +42,7 @@ export const LiveTutorPage: React.FC = () => {
     activeConversationId,
     isSetupModalOpen,
     isHistoryDrawerOpen,
+    setActiveConversationId,
     setSetupModalOpen,
     setHistoryDrawerOpen,
     requestFocusLeftMenuApiKey,
@@ -48,12 +54,15 @@ export const LiveTutorPage: React.FC = () => {
     hubStates,
     turns,
     corrections,
+    isAnalyzingGrammar,
     errorBanner,
     micLevel,
     aiAudioLevel,
     startSession,
     stopSession,
+    analyzeTurnGrammar,
     loadPersistedSessionData,
+    resetConversationWorkspace,
     clearError,
   } = useThreeHubLiveSession();
 
@@ -63,6 +72,21 @@ export const LiveTutorPage: React.FC = () => {
   const deleteConvMutation = useDeleteConversationMutation();
 
   const isSessionActive = phase !== 'idle' && phase !== 'error';
+
+  const latestUserTurn = [...turns]
+    .reverse()
+    .find((t) => t.speaker === 'user' && t.englishLine1.trim().length > 0);
+
+  /**
+   * Switches to a brand-new conversation workspace:
+   * - Stops any active live microphone/audio session
+   * - Clears turns & grammar corrections from the screen
+   * - Resets activeConversationId to null so the next session creates a fresh conversation in DB
+   */
+  const handleSwitchNewConversation = async () => {
+    await resetConversationWorkspace();
+    setActiveConversationId(null);
+  };
 
   const handleSaveSettingsOnly = async () => {
     if (activeConversationId) {
@@ -95,20 +119,41 @@ export const LiveTutorPage: React.FC = () => {
     }
 
     let convId = activeConversationId;
-    try {
-      const created = await createConvMutation.mutateAsync({
-        title: `${conversationMode} (${cefrLevel}) — ${topic || 'Free Talk'}`,
-        cefrLevel,
-        voiceName,
-        speechSpeed,
-        conversationMode,
-        topic,
-        customSystemPrompt,
-        extendedThinking,
-      });
-      convId = created.id;
-    } catch {
-      // Proceed with local UUID if BE DB is offline
+    if (!convId) {
+      try {
+        const created = await createConvMutation.mutateAsync({
+          title: `${conversationMode} (${cefrLevel}) — ${topic || 'Free Talk'}`,
+          cefrLevel,
+          voiceName,
+          speechSpeed,
+          conversationMode,
+          topic,
+          customSystemPrompt,
+          extendedThinking,
+        });
+        convId = created.id;
+        setActiveConversationId(convId);
+      } catch {
+        // Proceed with local UUID if BE DB is offline
+      }
+    } else {
+      try {
+        await updateSettingsMutation.mutateAsync({
+          id: convId,
+          payload: {
+            title: `${conversationMode} (${cefrLevel}) — ${topic || 'Free Talk'}`,
+            cefrLevel,
+            voiceName,
+            speechSpeed,
+            conversationMode,
+            topic,
+            customSystemPrompt,
+            extendedThinking,
+          },
+        });
+      } catch {
+        // ignore offline
+      }
     }
 
     await startSession({
@@ -136,8 +181,12 @@ export const LiveTutorPage: React.FC = () => {
       extendedThinking: detail.extendedThinking,
     });
 
+    const normalizedCorrections = (detail.corrections || [])
+      .map((c) => normalizeGrammarCorrection(c))
+      .filter((c): c is GrammarCorrectionItem => c !== null);
+
     loadPersistedSessionData(
-      detail.messages.map((m) => ({
+      (detail.messages || []).map((m) => ({
         turnId: m.turnId,
         speaker: m.speaker,
         englishLine1: m.transcriptLine1,
@@ -145,24 +194,7 @@ export const LiveTutorPage: React.FC = () => {
         isFinal: true,
         timestamp: new Date(m.createdAtUtc).getTime(),
       })),
-      detail.corrections.map((c) => {
-        let parsedErrors = [];
-        try {
-          parsedErrors = JSON.parse(c.errorsJson || '[]');
-        } catch {
-          parsedErrors = [];
-        }
-        return {
-          turnId: c.turnId,
-          hasErrors: true,
-          originalSentence: c.originalSentence,
-          correctedSentence: c.correctedSentence,
-          naturalAlternative: c.naturalAlternative,
-          overallTipVi: c.overallTipVi,
-          errors: parsedErrors,
-          timestamp: new Date(c.createdAtUtc).getTime(),
-        };
-      })
+      normalizedCorrections
     );
   };
 
@@ -179,6 +211,17 @@ export const LiveTutorPage: React.FC = () => {
           >
             <Settings className="w-4 h-4 text-emerald-700" />
             Thiết lập phiên luyện nói
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void handleSwitchNewConversation()}
+            title="Tạo cuộc hội thoại mới và làm mới khung chat"
+            className="border-slate-300 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-slate-800 hover:text-emerald-900 font-semibold"
+          >
+            <MessageSquarePlus className="w-4 h-4 text-emerald-600" />
+            Hội thoại mới
           </Button>
 
           <Badge variant="emerald">CEFR {cefrLevel}</Badge>
@@ -207,7 +250,6 @@ export const LiveTutorPage: React.FC = () => {
             <span>Hub 3: {hubStates.translateHub}</span>
           </div>
 
-          {/* Button opens Centered Dialog/Modal instead of inline drawer */}
           <Button
             variant="outline"
             size="sm"
@@ -238,7 +280,7 @@ export const LiveTutorPage: React.FC = () => {
       {/* Expanded 2-Column Live Chat Workspace (8 cols Messenger + 4 cols Grammar Correction) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 shadow-xs flex flex-col h-[calc(100vh-9.5rem)] min-h-[540px]">
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap shrink-0">
             <div className="flex items-center gap-2">
               <div
                 className={cn(
@@ -249,9 +291,22 @@ export const LiveTutorPage: React.FC = () => {
               <span className="text-sm font-extrabold text-slate-800">
                 Hội thoại Song ngữ Trực tiếp (EN / VI)
               </span>
+              <Badge variant={activeConversationId ? 'sky' : 'emerald'}>
+                {activeConversationId ? 'Đang mở phiên đã lưu' : 'Phiên mới'}
+              </Badge>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500">{turns.length} lượt thoại</span>
+              {(turns.length > 0 || activeConversationId) && (
+                <button
+                  type="button"
+                  onClick={() => void handleSwitchNewConversation()}
+                  className="text-xs font-bold text-slate-600 hover:text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <MessageSquarePlus className="w-3.5 h-3.5 text-emerald-600" />
+                  Tạo mới
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSetupModalOpen(true)}
@@ -263,7 +318,13 @@ export const LiveTutorPage: React.FC = () => {
             </div>
           </div>
 
-          <LiveMessengerStream turns={turns} corrections={corrections} />
+          <LiveMessengerStream
+            turns={turns}
+            corrections={corrections}
+            onAnalyzeTurn={(turnId, englishText) => {
+              void analyzeTurnGrammar(turnId, englishText, true);
+            }}
+          />
 
           <div className="p-4 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex flex-wrap items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-4 text-xs text-slate-600">
@@ -288,6 +349,16 @@ export const LiveTutorPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => void handleSwitchNewConversation()}
+                title="Chuyển sang cuộc hội thoại mới"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+                Hội thoại mới
+              </Button>
+
               <Button variant="outline" size="md" onClick={() => setSetupModalOpen(true)}>
                 <Settings className="w-4 h-4" />
                 Thiết lập
@@ -313,7 +384,16 @@ export const LiveTutorPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-4">
-          <GrammarCorrectionPanel corrections={corrections} />
+          <GrammarCorrectionPanel
+            corrections={corrections}
+            isAnalyzing={isAnalyzingGrammar}
+            canAnalyzeLatestTurn={Boolean(latestUserTurn)}
+            onAnalyzeLatestTurn={() => {
+              if (latestUserTurn) {
+                void analyzeTurnGrammar(latestUserTurn.turnId, latestUserTurn.englishLine1, true);
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -326,14 +406,19 @@ export const LiveTutorPage: React.FC = () => {
         onStartSpeaking={() => void handleStartLive()}
       />
 
-      {/* Modal 2: Conversation History Dialog (with View Detail, Resume, and Delete ConfirmDialog) */}
+      {/* Modal 2: Conversation History Dialog */}
       <ConversationHistoryModal
         isOpen={isHistoryDrawerOpen}
         onClose={() => setHistoryDrawerOpen(false)}
         conversations={historyList}
+        activeConversationId={activeConversationId}
         onResumeConversation={handleResumeFromModal}
+        onStartNewConversation={() => void handleSwitchNewConversation()}
         onDeleteConversation={async (id) => {
           await deleteConvMutation.mutateAsync(id);
+          if (activeConversationId === id) {
+            await handleSwitchNewConversation();
+          }
         }}
       />
     </div>
