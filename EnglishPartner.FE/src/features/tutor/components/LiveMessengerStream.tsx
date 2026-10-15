@@ -39,8 +39,9 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
           Sẵn sàng bắt đầu phiên hội thoại song ngữ
         </h3>
         <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
-          Nhấn nút <strong>Bắt đầu Luyện Nói Live</strong> bên dưới để kết nối đồng thời 3 SignalR Hubs:
-          Hub 1 (Giọng nói AI 24kHz), Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp), và Hub 3 (Dịch Tiếng Việt tức thì).
+          Nhập <strong>Google AI Studio API Key</strong> ở cột Thiết lập bên trái rồi nhấn{' '}
+          <strong>Bắt đầu Luyện Nói Live</strong> để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI 24kHz),
+          Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp), và Hub 3 (Dịch Tiếng Việt tức thì).
         </p>
       </div>
     );

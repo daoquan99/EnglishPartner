@@ -29,6 +29,7 @@ function base64ToInt16Array(base64: string): Int16Array {
 }
 
 interface StartLiveSessionParams {
+  apiKey: string;
   cefrLevel: CefrLevel;
   extendedThinking: boolean;
   voiceName: TeacherVoiceName;
@@ -192,7 +193,7 @@ export function useThreeHubLiveSession() {
   );
 
   const stopSession = useCallback(async () => {
-    const sid = sessionIdRef.current;
+    const convId = sessionIdRef.current;
     sessionIdRef.current = '';
 
     try {
@@ -226,35 +227,23 @@ export function useThreeHubLiveSession() {
       playbackCtxRef.current = null;
     }
 
-    if (tutorConnRef.current) {
-      try {
-        if (sid && tutorConnRef.current.state === signalR.HubConnectionState.Connected) {
-          await tutorConnRef.current.invoke('StopSession', sid);
-        }
-        await tutorConnRef.current.stop();
-      } catch {
-        // ignore
-      }
-      tutorConnRef.current = null;
+    if (convId) {
+      await Promise.all([
+        tutorConnRef.current?.invoke('NotifyUserSpeechEnd', convId).catch(() => {}),
+        transcribeConnRef.current?.invoke('EndAudioTurn', convId).catch(() => {}),
+        translateConnRef.current?.invoke('EndTranslateAudioTurn', convId).catch(() => {}),
+      ]);
     }
 
-    if (transcribeConnRef.current) {
-      try {
-        await transcribeConnRef.current.stop();
-      } catch {
-        // ignore
-      }
-      transcribeConnRef.current = null;
-    }
+    await Promise.all([
+      tutorConnRef.current?.stop().catch(() => {}),
+      transcribeConnRef.current?.stop().catch(() => {}),
+      translateConnRef.current?.stop().catch(() => {}),
+    ]);
 
-    if (translateConnRef.current) {
-      try {
-        await translateConnRef.current.stop();
-      } catch {
-        // ignore
-      }
-      translateConnRef.current = null;
-    }
+    tutorConnRef.current = null;
+    transcribeConnRef.current = null;
+    translateConnRef.current = null;
 
     setHubStates({
       tutorHub: 'disconnected',
@@ -268,14 +257,20 @@ export function useThreeHubLiveSession() {
 
   const startSession = useCallback(
     async (params: StartLiveSessionParams) => {
+      if (!params.apiKey || !params.apiKey.trim()) {
+        setErrorBanner('Vui lòng nhập Google AI Studio API Key (AIzaSy...) ở cột Thiết lập trước khi bắt đầu.');
+        setPhase('error');
+        return;
+      }
+
       await stopSession();
       setErrorBanner(null);
       setPhase('connecting');
 
-      const sessionId =
+      const convId =
         params.conversationId ||
         (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `sess-${Date.now()}`);
-      sessionIdRef.current = sessionId;
+      sessionIdRef.current = convId;
 
       const baseUrl = resolveBackendBaseUrl();
       const accessTokenFactory = () => getAccessToken() ?? '';
@@ -295,43 +290,17 @@ export function useThreeHubLiveSession() {
       transcribeConnRef.current = transcribeHub;
       translateConnRef.current = translateHub;
 
-      tutorHub.on('ReceiveAiAudioChunk', (payload: { pcm24kBase64: string }) => {
-        if (payload?.pcm24kBase64) {
-          scheduleAiPcm24kChunk(payload.pcm24kBase64);
-        }
-      });
-
-      tutorHub.on('AiInterrupted', () => {
-        flushPlaybackQueue();
-        setPhase('user_speaking');
-      });
-
-      tutorHub.on('AiTurnComplete', () => {
-        if (activeSourcesRef.current.size === 0) {
-          setPhase('listening');
-        }
-      });
-
-      tutorHub.on('SessionError', (payload: { message: string }) => {
-        setErrorBanner(payload?.message || 'Lỗi phiên kết nối AI Tutor.');
-        setPhase('error');
-      });
-
-      transcribeHub.on(
-        'ReceiveTranscription',
-        (payload: {
-          turnId: string;
-          speaker: 'user' | 'ai';
-          englishText: string;
-          isFinal: boolean;
-        }) => {
-          if (payload?.turnId) {
-            upsertTurnLine1(payload.turnId, payload.speaker, payload.englishText, payload.isFinal);
+      // Support both event names from Backend Hubs
+      tutorHub.on(
+        'ReceiveTutorAudio',
+        (dto: { turnId: string; base64Pcm24k: string; interactionStatus?: string }) => {
+          if (dto?.base64Pcm24k) {
+            scheduleAiPcm24kChunk(dto.base64Pcm24k);
           }
         }
       );
 
-      transcribeHub.on('ReceiveGrammarCorrection', (payload: GrammarCorrectionItem) => {
+      tutorHub.on('ReceiveLanguageCorrection', (payload: GrammarCorrectionItem) => {
         if (payload?.turnId && payload.hasErrors) {
           setCorrections((prev) => {
             const filtered = prev.filter((c) => c.turnId !== payload.turnId);
@@ -340,21 +309,37 @@ export function useThreeHubLiveSession() {
         }
       });
 
-      translateHub.on(
-        'ReceiveVietnameseTranslation',
-        (payload: {
-          turnId: string;
+      tutorHub.on('TutorInterrupted', () => {
+        flushPlaybackQueue();
+        setPhase('user_speaking');
+      });
+
+      transcribeHub.on(
+        'ReceiveTranscriptLine1',
+        (dto: {
           speaker: 'user' | 'ai';
-          vietnameseText: string;
+          turnId: string;
+          sequenceOrder: number;
+          fullTranscriptText: string;
           isFinal: boolean;
         }) => {
-          if (payload?.turnId) {
-            upsertTurnLine2(
-              payload.turnId,
-              payload.speaker,
-              payload.vietnameseText,
-              payload.isFinal
-            );
+          if (dto?.turnId) {
+            upsertTurnLine1(dto.turnId, dto.speaker, dto.fullTranscriptText, dto.isFinal);
+          }
+        }
+      );
+
+      translateHub.on(
+        'ReceiveTranslationLine2',
+        (dto: {
+          speaker: 'user' | 'ai';
+          turnId: string;
+          sequenceOrder: number;
+          fullVietnameseText: string;
+          isFinal: boolean;
+        }) => {
+          if (dto?.turnId) {
+            upsertTurnLine2(dto.turnId, dto.speaker, dto.fullVietnameseText, dto.isFinal);
           }
         }
       );
@@ -368,26 +353,35 @@ export function useThreeHubLiveSession() {
 
         await Promise.all([tutorHub.start(), transcribeHub.start(), translateHub.start()]);
 
+        // Initialize Tutor session first, then Sub-Hubs sequentially
+        await tutorHub.invoke('InitializeTutorSession', {
+          conversationId: convId,
+          apiKey: params.apiKey.trim(),
+          cefrLevel: params.cefrLevel,
+          extendedThinking: params.extendedThinking,
+          thinkingLevel: 'medium',
+          voiceName: params.voiceName,
+          speechSpeed: params.speechSpeed,
+          conversationMode: params.conversationMode,
+          topic: params.topic.trim(),
+          customSystemPrompt: params.customSystemPrompt?.trim() || null,
+        });
+        setHubStates((prev) => ({ ...prev, tutorHub: 'connected' }));
+
+        await transcribeHub.invoke('InitializeTranscribeSession', {
+          conversationId: convId,
+          apiKey: params.apiKey.trim(),
+        });
+        setHubStates((prev) => ({ ...prev, transcribeHub: 'connected' }));
+
+        await translateHub.invoke('InitializeTranslateSession', {
+          conversationId: convId,
+          apiKey: params.apiKey.trim(),
+        });
         setHubStates({
           tutorHub: 'connected',
           transcribeHub: 'connected',
           translateHub: 'connected',
-        });
-
-        await Promise.all([
-          transcribeHub.invoke('JoinTranscriptionSession', sessionId),
-          translateHub.invoke('JoinTranslationSession', sessionId),
-        ]);
-
-        await tutorHub.invoke('StartSession', {
-          sessionId,
-          cefrLevel: params.cefrLevel,
-          extendedThinking: params.extendedThinking,
-          voiceName: params.voiceName,
-          speechSpeed: params.speechSpeed,
-          conversationMode: params.conversationMode,
-          topic: params.topic,
-          customSystemPrompt: params.customSystemPrompt ?? '',
         });
 
         // Initialize 24kHz Playback AudioContext
@@ -408,32 +402,61 @@ export function useThreeHubLiveSession() {
 
         const captureCtx = new AudioContext({ sampleRate: 16000 });
         captureCtxRef.current = captureCtx;
-        await captureCtx.audioWorklet.addModule('/pcm16k-capture-worklet.js');
-
         const source = captureCtx.createMediaStreamSource(stream);
-        const workletNode = new AudioWorkletNode(captureCtx, 'pcm16k-capture-processor');
-        workletNodeRef.current = workletNode;
 
-        workletNode.port.onmessage = (event) => {
-          const { pcm16Buffer, rms } = event.data as { pcm16Buffer: ArrayBuffer; rms: number };
-          setMicLevel(Math.min(1, (rms || 0) * 6));
-
-          if (rms > 0.025 && isAiSpeakingRef.current) {
-            flushPlaybackQueue();
+        const handleAudioChunk = (pcmBuffer: ArrayBuffer) => {
+          const int16 = new Int16Array(pcmBuffer);
+          let sumSq = 0;
+          for (let i = 0; i < int16.length; i++) {
+            const norm = int16[i] / 32768.0;
+            sumSq += norm * norm;
           }
+          const rms = int16.length > 0 ? Math.sqrt(sumSq / int16.length) : 0;
+          setMicLevel(Math.min(1, rms * 6));
 
-          if (tutorHub.state === signalR.HubConnectionState.Connected && sessionIdRef.current) {
-            const base64Pcm = arrayBufferToBase64(pcm16Buffer);
-            void tutorHub.invoke('SendMicrophonePcm16k', sessionIdRef.current, base64Pcm);
-          }
+          const base64Pcm16k = arrayBufferToBase64(pcmBuffer);
+          const payload = {
+            conversationId: convId,
+            speaker: 'user',
+            turnId: null,
+            base64Pcm16k,
+          };
+
+          tutorHub.invoke('StreamUserAudioToTutor', payload).catch(() => {});
+          transcribeHub.invoke('StreamAudioForTranscription', payload).catch(() => {});
+          translateHub.invoke('StreamAudioForTranslation', payload).catch(() => {});
         };
 
-        source.connect(workletNode);
+        try {
+          await captureCtx.audioWorklet.addModule('/pcm16k-capture-worklet.js');
+          const workletNode = new AudioWorkletNode(captureCtx, 'pcm16k-capture-processor');
+          workletNodeRef.current = workletNode;
+          workletNode.port.onmessage = (event: MessageEvent<{ pcmBuffer?: ArrayBuffer; pcm16Buffer?: ArrayBuffer }>) => {
+            const buf = event.data.pcmBuffer || event.data.pcm16Buffer;
+            if (buf) handleAudioChunk(buf);
+          };
+          source.connect(workletNode);
+          workletNode.connect(captureCtx.destination);
+        } catch {
+          const processor = captureCtx.createScriptProcessor(2048, 1, 1);
+          processor.onaudioprocess = (e) => {
+            const floatSamples = e.inputBuffer.getChannelData(0);
+            const pcm16 = new Int16Array(floatSamples.length);
+            for (let i = 0; i < floatSamples.length; i++) {
+              const s = Math.max(-1, Math.min(1, floatSamples[i]));
+              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            handleAudioChunk(pcm16.buffer);
+          };
+          source.connect(processor);
+          processor.connect(captureCtx.destination);
+        }
+
         setPhase('listening');
       } catch (err: any) {
         setErrorBanner(
           err?.message ||
-            'Không thể kết nối 3 SignalR Hubs hoặc truy cập Microphone. Hãy kiểm tra Backend (.NET) đang chạy ở cổng 5099.'
+            'Không thể kết nối 3 SignalR Hubs hoặc Google AI Studio. Hãy kiểm tra API Key và Backend (.NET) đang chạy ở cổng 5099.'
         );
         setPhase('error');
       }

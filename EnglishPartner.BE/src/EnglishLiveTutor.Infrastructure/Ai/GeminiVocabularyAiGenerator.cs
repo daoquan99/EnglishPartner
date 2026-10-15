@@ -11,6 +11,7 @@ public sealed class GeminiVocabularyAiGenerator : IVocabularyAiGenerator
     public GeminiVocabularyAiGenerator(HttpClient http)
     {
         _http = http;
+        _http.Timeout = TimeSpan.FromSeconds(3000);
     }
 
     public async Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(

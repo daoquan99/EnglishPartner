@@ -79,6 +79,7 @@ export interface DailyVocabularyPlanResponseDto {
 }
 
 export interface GenerateVocabularyRequestDto {
+  apiKey: string;
   cefrLevel: CefrLevel;
   topic: string;
   count: number;

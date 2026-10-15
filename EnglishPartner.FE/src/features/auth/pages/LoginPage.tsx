@@ -8,7 +8,7 @@ import { useLoginMutation } from '../hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 
 const loginSchema = z.object({
-  emailOrUsername: z.string().min(2, 'Vui lòng nhập Username hoặc Email'),
+  usernameOrEmail: z.string().min(2, 'Vui lòng nhập Username hoặc Email'),
   password: z.string().min(4, 'Mật khẩu phải có ít nhất 4 ký tự'),
 });
 
@@ -27,14 +27,14 @@ export const LoginPage: React.FC = () => {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      emailOrUsername: 'default-learner',
+      usernameOrEmail: 'default-learner',
       password: 'Learner@123',
     },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
     const res = await loginMutation.mutateAsync({
-      emailOrUsername: values.emailOrUsername,
+      usernameOrEmail: values.usernameOrEmail,
       password: values.password,
       deviceInfo: navigator.userAgent.slice(0, 120),
     });
@@ -52,11 +52,10 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-
-  const handleQuickDemoLogin = async (emailOrUsername: string, password: string) => {
-    setValue('emailOrUsername', emailOrUsername);
+  const handleQuickDemoLogin = async (usernameOrEmail: string, password: string) => {
+    setValue('usernameOrEmail', usernameOrEmail);
     setValue('password', password);
-    await onSubmit({ emailOrUsername, password });
+    await onSubmit({ usernameOrEmail, password });
   };
 
   return (
@@ -144,13 +143,13 @@ export const LoginPage: React.FC = () => {
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  {...register('emailOrUsername')}
+                  {...register('usernameOrEmail')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   placeholder="default-learner hoặc admin@lingomint.local"
                 />
               </div>
-              {errors.emailOrUsername && (
-                <p className="text-xs text-rose-600 mt-1">{errors.emailOrUsername.message}</p>
+              {errors.usernameOrEmail && (
+                <p className="text-xs text-rose-600 mt-1">{errors.usernameOrEmail.message}</p>
               )}
             </div>
 

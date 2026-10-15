@@ -18,11 +18,6 @@ import {
   DEFAULT_TOPICS,
 } from './catalogDefaults';
 
-/**
- * Pure functions to filter AI models according to business capabilities:
- * 1. Vocabulary Generation Models: Gemini & Gemma 4 (supportsTextGeneration && supportsStructuredOutput)
- * 2. Audio Pronunciation Models: ONLY models supporting Audio Input (supportsAudioInput && supportsPronunciationAssessment)
- */
 export function filterVocabularyGenerationModels(models: AiModelOptionDto[]): AiModelOptionDto[] {
   return models
     .filter((m) => m.isEnabled && m.isAvailable && m.supportsTextGeneration && m.supportsStructuredOutput)

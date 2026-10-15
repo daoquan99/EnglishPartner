@@ -47,20 +47,4 @@ export const conversationsApi = {
   async deleteConversation(id: string): Promise<void> {
     await httpClient.delete(`/api/conversations/${id}`);
   },
-
-  async previewSystemPrompt(payload: {
-    cefrLevel: CefrLevel;
-    conversationMode: ConversationModeCode;
-    voiceName: TeacherVoiceName;
-    speechSpeed: number;
-    topic: string;
-    customSystemPrompt?: string;
-    extendedThinking: boolean;
-  }): Promise<{ systemInstruction: string }> {
-    const { data } = await httpClient.post<{ systemInstruction: string }>(
-      '/api/prompts/preview',
-      payload
-    );
-    return data;
-  },
 };

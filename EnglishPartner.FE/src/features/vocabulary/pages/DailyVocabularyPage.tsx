@@ -6,12 +6,15 @@ import {
   Sparkles,
   Mic,
   Square,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Cpu,
   ShieldCheck,
   Award,
+  KeyRound,
+  Eye,
+  EyeOff,
+  AlertCircle,
 } from 'lucide-react';
 import {
   useActiveScoringRubricQuery,
@@ -19,6 +22,7 @@ import {
   useTopicsQuery,
   useVocabularyGenerationModelsQuery,
 } from '@/features/catalog';
+import { useTutorSessionStore } from '@/features/tutor';
 import {
   useAssessPronunciationMutation,
   useDailyVocabularyPlanQuery,
@@ -50,6 +54,8 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export const DailyVocabularyPage: React.FC = () => {
+  const { apiKey, requestFocusLeftMenuApiKey } = useTutorSessionStore();
+
   const { data: plan, isLoading } = useDailyVocabularyPlanQuery(10);
   const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
   const { data: audioModels = [] } = usePronunciationModelsQuery();
@@ -66,6 +72,7 @@ export const DailyVocabularyPage: React.FC = () => {
   const [cards, setCards] = useState<VocabularyFlashcardDto[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [apiKeyWarning, setApiKeyWarning] = useState<string | null>(null);
 
   // AI Vocabulary Generator State (synced with DB Catalog)
   const [genCefr, setGenCefr] = useState<CefrLevel>('B2');
@@ -141,8 +148,15 @@ export const DailyVocabularyPage: React.FC = () => {
   };
 
   const handleGenerateMoreWords = async () => {
+    if (!apiKey.trim()) {
+      setApiKeyWarning('Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái trước khi tạo từ vựng AI.');
+      requestFocusLeftMenuApiKey();
+      return;
+    }
+    setApiKeyWarning(null);
     try {
       const generated = await generateMutation.mutateAsync({
+        apiKey: apiKey.trim(),
         cefrLevel: genCefr,
         topic: genTopic || 'Software Engineering & Daily Workplace',
         count: genCount,
@@ -153,13 +167,23 @@ export const DailyVocabularyPage: React.FC = () => {
         setCurrentIndex(0);
         setIsFlipped(false);
       }
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setApiKeyWarning(
+        err?.response?.data?.error ||
+          err?.message ||
+          'Không thể tạo từ vựng AI. Hãy kiểm tra API Key và kết nối Backend.'
+      );
     }
   };
 
   const startRecording = async () => {
     if (!currentCard) return;
+    if (!apiKey.trim()) {
+      setApiKeyWarning('Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái để chấm điểm phát âm bằng AI.');
+      requestFocusLeftMenuApiKey();
+      return;
+    }
+    setApiKeyWarning(null);
     setAssessmentResult(null);
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
@@ -183,6 +207,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
       try {
         const res = await assessMutation.mutateAsync({
+          apiKey: apiKey.trim(),
           vocabularyId: currentCard.vocabularyId,
           senseId: currentCard.senseId,
           exampleId: targetType === 'example' ? primaryExample?.id : undefined,
@@ -194,7 +219,6 @@ export const DailyVocabularyPage: React.FC = () => {
         });
         setAssessmentResult(res);
       } catch {
-        // Offline simulated rubric score if BE is unreachable
         setAssessmentResult({
           assessmentId: `offline-${Date.now()}`,
           overallScore: 88,
@@ -231,11 +255,11 @@ export const DailyVocabularyPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Top Progress Header */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs">
+    <div className="space-y-5">
+      {/* Top Progress Header + Shared Google AI Studio API Key Input */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
@@ -248,7 +272,7 @@ export const DailyVocabularyPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Badge variant="emerald">
             Hoàn thành: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} từ
           </Badge>
@@ -257,6 +281,22 @@ export const DailyVocabularyPage: React.FC = () => {
           </Badge>
         </div>
       </div>
+
+      {apiKeyWarning && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-center justify-between gap-2 text-xs text-amber-900">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>{apiKeyWarning}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setApiKeyWarning(null)}
+            className="font-bold hover:underline cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+      )}
 
       {/* Main 12-Col Grid: Left (Flashcard + Pronunciation Studio) | Right (AI Vocabulary Generator from DB) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">

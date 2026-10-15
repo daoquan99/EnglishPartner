@@ -3,14 +3,13 @@ import {
   Mic,
   PhoneOff,
   History,
-  SlidersHorizontal,
-  Sparkles,
+  Settings,
   Wifi,
   AlertCircle,
   Trash2,
   FolderOpen,
 } from 'lucide-react';
-import { TutorSetupSidebar } from '../components/TutorSetupSidebar';
+import { TutorSetupSidebar as TutorSetupModal } from '../components/TutorSetupSidebar';
 import { LiveMessengerStream } from '../components/LiveMessengerStream';
 import { GrammarCorrectionPanel } from '../components/GrammarCorrectionPanel';
 import { useTutorSessionStore } from '../store/tutorSessionStore';
@@ -19,6 +18,7 @@ import {
   useConversationsListQuery,
   useCreateConversationMutation,
   useDeleteConversationMutation,
+  useUpdateConversationSettingsMutation,
 } from '../hooks/useConversations';
 import { conversationsApi } from '../api/conversationsApi';
 import { Button } from '@/shared/components/ui/Button';
@@ -27,6 +27,7 @@ import { cn } from '@/shared/lib/cn';
 
 export const LiveTutorPage: React.FC = () => {
   const {
+    apiKey,
     cefrLevel,
     conversationMode,
     voiceName,
@@ -35,10 +36,11 @@ export const LiveTutorPage: React.FC = () => {
     customSystemPrompt,
     extendedThinking,
     activeConversationId,
-    isSetupPanelOpen,
+    isSetupModalOpen,
     isHistoryDrawerOpen,
-    setSetupPanelOpen,
+    setSetupModalOpen,
     setHistoryDrawerOpen,
+    requestFocusLeftMenuApiKey,
     applyConversationSettings,
   } = useTutorSessionStore();
 
@@ -58,11 +60,41 @@ export const LiveTutorPage: React.FC = () => {
 
   const { data: historyList = [] } = useConversationsListQuery();
   const createConvMutation = useCreateConversationMutation();
+  const updateSettingsMutation = useUpdateConversationSettingsMutation();
   const deleteConvMutation = useDeleteConversationMutation();
 
   const isSessionActive = phase !== 'idle' && phase !== 'error';
 
+  const handleSaveSettingsOnly = async () => {
+    if (activeConversationId) {
+      try {
+        await updateSettingsMutation.mutateAsync({
+          id: activeConversationId,
+          payload: {
+            title: `${conversationMode} (${cefrLevel}) — ${topic || 'Free Talk'}`,
+            cefrLevel,
+            voiceName,
+            speechSpeed,
+            conversationMode,
+            topic,
+            customSystemPrompt,
+            extendedThinking,
+          },
+        });
+      } catch {
+        // ignore offline
+      }
+    }
+    setSetupModalOpen(false);
+  };
+
   const handleStartLive = async () => {
+    setSetupModalOpen(false);
+
+    if (!apiKey.trim()) {
+      requestFocusLeftMenuApiKey();
+    }
+
     let convId = activeConversationId;
     try {
       const created = await createConvMutation.mutateAsync({
@@ -81,6 +113,7 @@ export const LiveTutorPage: React.FC = () => {
     }
 
     await startSession({
+      apiKey,
       cefrLevel,
       extendedThinking,
       voiceName,
@@ -143,15 +176,26 @@ export const LiveTutorPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Top Session Status Bar */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+      {/* Top Action & Configuration Bar */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Primary Button to Open Setup Modal */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSetupModalOpen(true)}
+            className="border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-900 font-bold"
+          >
+            <Settings className="w-4 h-4 text-emerald-700" />
+            Thiết lập phiên luyện nói
+          </Button>
+
           <Badge variant="emerald">CEFR {cefrLevel}</Badge>
           <Badge variant="sky">{conversationMode}</Badge>
           <Badge variant="violet">Voice: {voiceName}</Badge>
           <Badge variant="amber">Speed: {speechSpeed.toFixed(2)}x</Badge>
           {topic && (
-            <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-full truncate max-w-xs">
+            <span className="hidden md:inline-block text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-full truncate max-w-xs">
               Chủ đề: {topic}
             </span>
           )}
@@ -159,7 +203,7 @@ export const LiveTutorPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {/* 3 SignalR Hub Badges */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+          <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
             <Wifi
               className={cn(
                 'w-3.5 h-3.5',
@@ -180,16 +224,6 @@ export const LiveTutorPage: React.FC = () => {
           >
             <History className="w-3.5 h-3.5" />
             Lịch sử ({historyList.length})
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSetupPanelOpen(!isSetupPanelOpen)}
-            className="lg:hidden"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Cấu hình
           </Button>
         </div>
       </div>
@@ -260,16 +294,11 @@ export const LiveTutorPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main 3-Column Workspace Grid */}
+      {/* Expanded 2-Column Live Chat Workspace (8 cols Messenger + 4 cols Grammar Correction) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* Left Column: Setup Sidebar */}
-        <div className={cn('lg:col-span-4', isSetupPanelOpen ? 'block' : 'hidden lg:block')}>
-          <TutorSetupSidebar isSessionActive={isSessionActive} />
-        </div>
-
-        {/* Center Column: Bilingual Live Messenger & Call Controls */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/90 shadow-xs flex flex-col h-[740px]">
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        {/* Expanded Center/Left Column: Bilingual Live Messenger & Call Controls */}
+        <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 shadow-xs flex flex-col h-[calc(100vh-9.5rem)] min-h-[540px]">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <div
                 className={cn(
@@ -281,17 +310,27 @@ export const LiveTutorPage: React.FC = () => {
                 Hội thoại Song ngữ Trực tiếp (EN / VI)
               </span>
             </div>
-            <span className="text-xs text-slate-500">{turns.length} lượt thoại</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">{turns.length} lượt thoại</span>
+              <button
+                type="button"
+                onClick={() => setSetupModalOpen(true)}
+                className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Đổi thiết lập
+              </button>
+            </div>
           </div>
 
           <LiveMessengerStream turns={turns} corrections={corrections} />
 
           {/* Bottom Audio Visualizer & Start/Stop Call Bar */}
-          <div className="p-4 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-xs text-slate-600">
+          <div className="p-4 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex flex-wrap items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-4 text-xs text-slate-600">
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold">Mic:</span>
-                <div className="w-16 h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="w-20 h-2 rounded-full bg-slate-200 overflow-hidden">
                   <div
                     className="h-full bg-emerald-500 transition-all"
                     style={{ width: `${Math.round(micLevel * 100)}%` }}
@@ -300,7 +339,7 @@ export const LiveTutorPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold">AI Voice:</span>
-                <div className="w-16 h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="w-20 h-2 rounded-full bg-slate-200 overflow-hidden">
                   <div
                     className="h-full bg-amber-500 transition-all"
                     style={{ width: `${Math.round(aiAudioLevel * 100)}%` }}
@@ -309,25 +348,54 @@ export const LiveTutorPage: React.FC = () => {
               </div>
             </div>
 
-            {!isSessionActive ? (
-              <Button variant="primary" size="md" onClick={handleStartLive}>
-                <Mic className="w-4 h-4" />
-                Bắt đầu Luyện Nói Live
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setSetupModalOpen(true)}
+              >
+                <Settings className="w-4 h-4" />
+                Thiết lập
               </Button>
-            ) : (
-              <Button variant="danger" size="md" onClick={() => void stopSession()}>
-                <PhoneOff className="w-4 h-4" />
-                Kết thúc phiên ({phase})
-              </Button>
-            )}
+
+              {!isSessionActive ? (
+                <Button
+                  variant={apiKey.trim() ? 'primary' : 'secondary'}
+                  size="md"
+                  onClick={handleStartLive}
+                  title={
+                    apiKey.trim()
+                      ? 'Kết nối 3 SignalR Hubs'
+                      : 'Nhập Google AI Studio API Key ở Left Menu để kết nối'
+                  }
+                >
+                  <Mic className="w-4 h-4" />
+                  Bắt đầu luyện nói
+                </Button>
+              ) : (
+                <Button variant="danger" size="md" onClick={() => void stopSession()}>
+                  <PhoneOff className="w-4 h-4" />
+                  Kết thúc phiên ({phase})
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Right Column: Realtime Grammar & Vocabulary Corrections */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
           <GrammarCorrectionPanel corrections={corrections} />
         </div>
       </div>
+
+      {/* Session Setup Dialog / Modal */}
+      <TutorSetupModal
+        isOpen={isSetupModalOpen}
+        isSessionActive={isSessionActive}
+        onClose={() => setSetupModalOpen(false)}
+        onSaveSettings={() => void handleSaveSettingsOnly()}
+        onStartSpeaking={() => void handleStartLive()}
+      />
     </div>
   );
 };

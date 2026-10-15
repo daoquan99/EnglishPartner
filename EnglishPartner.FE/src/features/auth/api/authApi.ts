@@ -65,7 +65,7 @@ export const authApi = {
         throw new Error(err.response.data?.error || 'Sai tài khoản hoặc mật khẩu.');
       }
       // Graceful offline fallback for demo accounts when BE is unreachable
-      const norm = payload.emailOrUsername.trim().toLowerCase();
+      const norm = payload.usernameOrEmail.trim().toLowerCase();
       const demoProfile =
         norm.includes('admin') ? DEMO_USERS.admin : DEMO_USERS.learner;
       const fallbackAuth: AuthResponseDto = {

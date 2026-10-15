@@ -85,7 +85,7 @@ export interface AuthResponseDto {
 }
 
 export interface LoginRequestDto {
-  emailOrUsername: string;
+  usernameOrEmail: string;
   password: string;
   deviceInfo?: string;
 }

@@ -102,3 +102,12 @@
   font-family: var(--font-family-sans);
   min-height: 100vh;
 }
+
+
+/* App Shell Fixed Viewport Scroll Lock */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}

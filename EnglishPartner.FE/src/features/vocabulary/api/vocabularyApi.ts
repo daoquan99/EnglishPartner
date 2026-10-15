@@ -194,6 +194,7 @@ export const vocabularyApi = {
   },
 
   async assessPronunciation(payload: {
+    apiKey: string;
     userId?: string;
     vocabularyId: string;
     senseId?: string;
