@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="160" height="140" fill="none">
+  <!-- Centered Mark Group -->
+  <g transform="translate(48, 10)">
+    <!-- Soft Mint Badge -->
+    <rect x="0" y="0" width="64" height="64" rx="18" fill="#e2f3ee" stroke="#26443c" stroke-width="2.5"/>
+    
+    <!-- Left Ear -->
+    <path d="M 15,24 C 12,13 21,9 25,14 L 28,23 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M 18,21 C 16,15 21,12 24,15 L 27,21 Z" fill="#ebdcc9"/>
+    
+    <!-- Right Ear -->
+    <path d="M 49,24 C 52,13 43,9 39,14 L 36,23 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M 46,21 C 48,15 43,12 40,15 L 37,21 Z" fill="#ebdcc9"/>
+    
+    <!-- Head -->
+    <ellipse cx="32" cy="32" rx="17" ry="15" fill="#ffffff" stroke="#26443c" stroke-width="2.5"/>
+    
+    <!-- Cheeks -->
+    <ellipse cx="21" cy="35" rx="3.2" ry="2.2" fill="#f7c5ba"/>
+    <ellipse cx="43" cy="35" rx="3.2" ry="2.2" fill="#f7c5ba"/>
+    
+    <!-- Eyes -->
+    <ellipse cx="25.5" cy="30" rx="2.6" ry="3.6" fill="#26443c"/>
+    <circle cx="24.5" cy="28.5" r="1.1" fill="#ffffff"/>
+    <ellipse cx="38.5" cy="30" rx="2.6" ry="3.6" fill="#26443c"/>
+    <circle cx="37.5" cy="28.5" r="1.1" fill="#ffffff"/>
+    
+    <!-- Nose & Smile -->
+    <polygon points="30.8,34.5 33.2,34.5 32,36" fill="#e88d8d"/>
+    <path d="M 29.5,37 Q 32,39 32,36.8 Q 32,39 34.5,37" stroke="#26443c" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    
+    <!-- Book in Front -->
+    <path d="M 14,47 Q 24,44 32,47 Q 40,44 50,47 L 49.5,55 Q 40,51.5 32,54 Q 24,51.5 14.5,55 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M 32,47 L 32,54" stroke="#26443c" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Neckerchief -->
+    <path d="M 29,41.5 L 32,46 L 35,41.5 Z" fill="#4fa685" stroke="#26443c" stroke-width="1.6" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Centered Brand Title & Tagline -->
+  <text x="80" y="102" font-family="'Grandstander', 'Nunito', sans-serif" font-size="20" font-weight="700" fill="#26443c" text-anchor="middle" letter-spacing="-0.3">English<tspan fill="#4fa685">Learning</tspan></text>
+  <text x="80" y="121" font-family="'Be Vietnam Pro', sans-serif" font-size="10" font-weight="500" fill="#54675f" text-anchor="middle" letter-spacing="0.5">AI Live English Tutor</text>
+</svg>

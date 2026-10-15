@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Top Slider (Blue Theme) -->
+  <line x1="3" y1="7" x2="21" y2="7" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" />
+  <line x1="3" y1="7" x2="8" y2="7" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" />
+  <circle cx="8" cy="7" r="3" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.4" />
+  <circle cx="8" cy="7" r="1.2" fill="#ffffff" />
+
+  <!-- Bottom Slider (Emerald Theme) -->
+  <line x1="3" y1="17" x2="21" y2="17" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" />
+  <line x1="3" y1="17" x2="16" y2="17" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+  <circle cx="16" cy="17" r="3" fill="#10b981" stroke="#047857" stroke-width="1.4" />
+  <circle cx="16" cy="17" r="1.2" fill="#ffffff" />
+</svg>

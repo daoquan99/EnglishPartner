@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none" aria-hidden="true">
+  <!-- Ground Shadow -->
+  <ellipse cx="120" cy="182" rx="95" ry="12" fill="#e2f3ee" />
+
+  <!-- Calendar card on the right -->
+  <g class="calendar-card">
+    <rect x="156" y="70" width="56" height="66" rx="8" fill="#ffffff" stroke="#26443c" stroke-width="2.2" />
+    <path d="M 156,78 C 156,73.5 159.5,70 164,70 L 204,70 C 208.5,70 212,73.5 212,78 L 212,88 L 156,88 Z" fill="#4fa685" stroke="#26443c" stroke-width="2.2" />
+    <!-- Rings -->
+    <rect x="168" y="65" width="4" height="8" rx="2" fill="#26443c" />
+    <rect x="196" y="65" width="4" height="8" rx="2" fill="#26443c" />
+    <!-- Calendar content: Star / Sun target for daily plan -->
+    <circle cx="184" cy="110" r="10" fill="#e2f3ee" stroke="#26443c" stroke-width="1.8" />
+    <polygon points="184,103 186.5,108 191,108.5 187.5,111.5 188.5,116 184,113.5 179.5,116 180.5,111.5 177,108.5 181.5,108" fill="#f4c442" />
+  </g>
+
+  <!-- Tail on left -->
+  <path d="M 75,155 C 50,152 42,130 50,118 C 55,110 65,114 62,122 C 58,132 68,142 80,146" stroke="#26443c" stroke-width="7" stroke-linecap="round" fill="none" />
+  <path d="M 75,155 C 50,152 42,130 50,118 C 55,110 65,114 62,122 C 58,132 68,142 80,146" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" fill="none" />
+
+  <!-- Body -->
+  <path d="M 74,124 C 68,138 72,170 82,174 C 95,178 125,178 138,174 C 148,170 148,138 140,124 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <ellipse cx="88" cy="174" rx="9" ry="6" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+  <ellipse cx="126" cy="174" rx="9" ry="6" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+
+  <!-- Left Ear -->
+  <path d="M 82,66 C 76,46 88,36 98,46 L 103,60 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M 86,60 C 82,47 89,41 94,47 L 98,57 Z" fill="#ebdcc9" />
+
+  <!-- Right Ear -->
+  <path d="M 134,66 C 140,46 128,36 118,46 L 113,60 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M 130,60 C 134,47 127,41 122,47 L 118,57 Z" fill="#ebdcc9" />
+
+  <!-- Head -->
+  <ellipse cx="108" cy="80" rx="32" ry="28" fill="#ffffff" stroke="#26443c" stroke-width="2.2" />
+
+  <!-- Blush Cheeks -->
+  <ellipse cx="87" cy="86" rx="6" ry="4" fill="#f7c5ba" opacity="0.85" />
+  <ellipse cx="129" cy="86" rx="6" ry="4" fill="#f7c5ba" opacity="0.85" />
+
+  <!-- Whiskers -->
+  <path d="M 74,80 L 86,83 M 73,87 L 85,87" stroke="#54675f" stroke-width="1.4" stroke-linecap="round" />
+  <path d="M 142,80 L 130,83 M 143,87 L 131,87" stroke="#54675f" stroke-width="1.4" stroke-linecap="round" />
+
+  <!-- Eyes - Inquisitive & hopeful -->
+  <ellipse cx="96" cy="77" rx="4.5" ry="6" fill="#26443c" />
+  <circle cx="94.5" cy="74.5" r="2" fill="#ffffff" />
+  <ellipse cx="120" cy="77" rx="4.5" ry="6" fill="#26443c" />
+  <circle cx="118.5" cy="74.5" r="2" fill="#ffffff" />
+
+  <!-- Nose & Mouth -->
+  <polygon points="106,85 110,85 108,88" fill="#e88d8d" />
+  <path d="M 103,89 Q 108,92 108,89 Q 108,92 113,89" stroke="#26443c" stroke-width="2" stroke-linecap="round" fill="none" />
+
+  <!-- Neckerchief -->
+  <path d="M 90,102 Q 108,111 126,102 L 108,121 Z" fill="#4fa685" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <circle cx="108" cy="105" r="3.5" fill="#6dbd9f" stroke="#26443c" stroke-width="1.8" />
+
+  <!-- Book held in paws -->
+  <g class="held-book">
+    <path d="M 75,130 C 90,123 103,124 108,129 C 113,124 126,123 141,130 L 141,152 C 126,145 113,146 108,151 C 103,146 90,145 75,152 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+    <line x1="108" y1="129" x2="108" y2="151" stroke="#26443c" stroke-width="2" />
+    <line x1="81" y1="134" x2="102" y2="134" stroke="#4fa685" stroke-width="1.4" stroke-linecap="round" />
+    <line x1="81" y1="139" x2="98" y2="139" stroke="#54675f" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="81" y1="144" x2="100" y2="144" stroke="#54675f" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="114" y1="134" x2="135" y2="134" stroke="#4fa685" stroke-width="1.4" stroke-linecap="round" />
+    <line x1="114" y1="139" x2="131" y2="139" stroke="#54675f" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="114" y1="144" x2="133" y2="144" stroke="#54675f" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Paws clasping book sides -->
+    <ellipse cx="76" cy="138" rx="6.5" ry="5.5" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+    <ellipse cx="140" cy="138" rx="6.5" ry="5.5" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+  </g>
+
+  <!-- Cheerful accent sparkles -->
+  <polygon points="50,45 53,51 59,54 53,57 50,63 47,57 41,54 47,51" fill="#f4c442" />
+</svg>

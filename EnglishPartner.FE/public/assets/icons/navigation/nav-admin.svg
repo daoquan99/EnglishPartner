@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Shield Body Left / Right Dual Tone -->
+  <path d="M 12,3 L 19,6 V 11.5 C 19,16 16,19.5 12,21 C 8,19.5 5,16 5,11.5 V 6 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1.8" stroke-linejoin="round" />
+  <path d="M 12,3 L 19,6 V 11.5 C 19,16 16,19.5 12,21 Z" fill="#1d4ed8" opacity="0.35" />
+
+  <!-- Center Golden Star -->
+  <polygon points="12,7.5 13.3,10.2 16,10.5 14,12.3 14.5,15 12,13.6 9.5,15 10,12.3 8,10.5 10.7,10.2" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.2" stroke-linejoin="round" />
+</svg>

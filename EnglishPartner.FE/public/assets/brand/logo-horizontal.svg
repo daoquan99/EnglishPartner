@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" width="240" height="48" fill="none">
+  <!-- Mark Group -->
+  <g transform="translate(4, 4)">
+    <!-- Soft Mint Badge -->
+    <rect x="0" y="0" width="40" height="40" rx="10" fill="#e2f3ee" stroke="#26443c" stroke-width="1.8"/>
+    
+    <!-- Ears -->
+    <path d="M 9,15 C 7,8 12.5,5.5 15,9 L 17,14 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M 10.5,13.5 C 9.5,9.5 12.5,8 14,10 L 16,13 Z" fill="#ebdcc9"/>
+    
+    <path d="M 31,15 C 33,8 27.5,5.5 25,9 L 23,14 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M 29.5,13.5 C 30.5,9.5 27.5,8 26,10 L 24,13 Z" fill="#ebdcc9"/>
+    
+    <!-- Head -->
+    <ellipse cx="20" cy="20" rx="11" ry="9.5" fill="#ffffff" stroke="#26443c" stroke-width="1.8"/>
+    
+    <!-- Cheeks -->
+    <ellipse cx="13" cy="22" rx="2" ry="1.4" fill="#f7c5ba"/>
+    <ellipse cx="27" cy="22" rx="2" ry="1.4" fill="#f7c5ba"/>
+    
+    <!-- Eyes -->
+    <ellipse cx="16" cy="19" rx="1.6" ry="2.3" fill="#26443c"/>
+    <circle cx="15.4" cy="18" r="0.7" fill="#ffffff"/>
+    <ellipse cx="24" cy="19" rx="1.6" ry="2.3" fill="#26443c"/>
+    <circle cx="23.4" cy="18" r="0.7" fill="#ffffff"/>
+    
+    <!-- Nose & Smile -->
+    <polygon points="19.2,21.8 20.8,21.8 20,22.8" fill="#e88d8d"/>
+    <path d="M 18.2,23.5 Q 20,24.6 20,23.2 Q 20,24.6 21.8,23.5" stroke="#26443c" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    
+    <!-- Book -->
+    <path d="M 9,30 Q 15,28 20,30 Q 25,28 31,30 L 30.5,35 Q 25,33 20,34.5 Q 15,33 9.5,35 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M 20,30 L 20,34.5" stroke="#26443c" stroke-width="1.3" stroke-linecap="round"/>
+    
+    <!-- Neckerchief -->
+    <path d="M 18,26.5 L 20,29 L 22,26.5 Z" fill="#4fa685" stroke="#26443c" stroke-width="1.1" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Wordmark Text -->
+  <text x="56" y="27" font-family="'Grandstander', 'Nunito', 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#26443c" letter-spacing="-0.3">English<tspan fill="#4fa685">Learning</tspan></text>
+  <text x="56.5" y="40" font-family="'Be Vietnam Pro', 'Segoe UI', sans-serif" font-size="9.5" font-weight="500" fill="#54675f" letter-spacing="0.4">AI LIVE ENGLISH TUTOR</text>
+</svg>

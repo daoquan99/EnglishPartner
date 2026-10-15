@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Sentence Card Base -->
+  <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" fill="#fef3c7" stroke="#d97706" stroke-width="1.8" />
+  
+  <!-- Quotation Mark Accent (Top-Left) -->
+  <path d="M 5.5 8 C 5.5 6.8 6.5 6 7.5 6 C 8.2 6 8.8 6.5 8.8 7.2 C 8.8 8.4 7.6 9.4 6.2 9.8" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M 9 8 C 9 6.8 10 6 11 6 C 11.7 6 12.3 6.5 12.3 7.2 C 12.3 8.4 11.1 9.4 9.7 9.8" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- Sentence Lines -->
+  <line x1="6" y1="12.5" x2="18" y2="12.5" stroke="#0d9488" stroke-width="2" stroke-linecap="round" />
+  <line x1="6" y1="16" x2="14" y2="16" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Soundwave / Pronunciation Bead -->
+  <circle cx="17.5" cy="16" r="1.5" fill="#3b82f6" />
+</svg>

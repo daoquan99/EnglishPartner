@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Open Book Base Pages -->
+  <path d="M 2,8 C 5.5,6.5 8.5,6.5 12,8 L 12,19 C 8.5,17.5 5.5,17.5 2,19 Z" fill="#e2f3ee" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round" />
+  <path d="M 12,8 C 15.5,6.5 18.5,6.5 22,8 L 22,19 C 18.5,17.5 15.5,17.5 12,19 Z" fill="#f0fdf4" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round" />
+  <line x1="12" y1="8" x2="12" y2="19" stroke="#26443c" stroke-width="1.8" />
+  
+  <!-- Subtle page text lines -->
+  <line x1="4.5" y1="11.5" x2="9.5" y2="10.8" stroke="#4fa685" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="4.5" y1="14.5" x2="9.5" y2="13.8" stroke="#6dbd9f" stroke-width="1" stroke-linecap="round" />
+  <line x1="14.5" y1="10.8" x2="19.5" y2="11.5" stroke="#4fa685" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="14.5" y1="13.8" x2="19.5" y2="14.5" stroke="#6dbd9f" stroke-width="1" stroke-linecap="round" />
+
+  <!-- Study Flashcard rising upward -->
+  <rect x="8.5" y="2.5" width="7" height="6.5" rx="1.5" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4" />
+  <rect x="8.5" y="2.5" width="7" height="2" rx="1" fill="#3b82f6" />
+  <circle cx="12" cy="6.2" r="1" fill="#f59e0b" />
+</svg>

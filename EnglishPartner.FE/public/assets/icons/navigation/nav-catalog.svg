@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Shelf base -->
+  <line x1="2" y1="20" x2="22" y2="20" stroke="#b45309" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Book 1 (Coral Red) -->
+  <rect x="3.5" y="6" width="4.5" height="14" rx="1" fill="#f43f5e" stroke="#be123c" stroke-width="1.4" />
+  <line x1="5.75" y1="9" x2="5.75" y2="12" stroke="#ffe4e6" stroke-width="1.2" stroke-linecap="round" />
+
+  <!-- Book 2 (Emerald Green, Taller) -->
+  <rect x="9.5" y="4.5" width="5" height="15.5" rx="1" fill="#10b981" stroke="#047857" stroke-width="1.4" />
+  <line x1="12" y1="7.5" x2="12" y2="11.5" stroke="#d1fae5" stroke-width="1.4" stroke-linecap="round" />
+
+  <!-- Book 3 (Sapphire Blue) -->
+  <rect x="16" y="6.5" width="4.5" height="13.5" rx="1" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1.4" />
+  <!-- Golden ribbon hanging from Book 3 -->
+  <path d="M 18,17 L 18,21 L 19,20.2 L 20,21 L 20,17" fill="#f59e0b" />
+  <line x1="18.25" y1="9" x2="18.25" y2="11.5" stroke="#bfdbfe" stroke-width="1.2" stroke-linecap="round" />
+</svg>

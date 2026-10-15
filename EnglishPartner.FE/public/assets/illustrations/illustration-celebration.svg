@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none" aria-hidden="true">
+  <!-- Ground Shadow -->
+  <ellipse cx="120" cy="182" rx="90" ry="12" fill="#e2f3ee" />
+
+  <!-- Confetti and Celebration Sparkles -->
+  <g class="celebration-particles">
+    <!-- Golden stars -->
+    <polygon points="52,42 55,48 61,51 55,54 52,60 49,54 43,51 49,48" fill="#f4c442" />
+    <polygon points="188,38 191,44 197,47 191,50 188,56 185,50 179,47 185,44" fill="#f4c442" />
+    <polygon points="120,20 122,25 127,27 122,29 120,34 118,29 113,27 118,25" fill="#f4c442" />
+
+    <!-- Confetti ribbons & dots -->
+    <rect x="70" y="30" width="8" height="4" rx="2" transform="rotate(25 74 32)" fill="#4fa685" />
+    <rect x="165" y="26" width="8" height="4" rx="2" transform="rotate(-30 169 28)" fill="#e88d8d" />
+    <circle cx="85" cy="50" r="3" fill="#6dbd9f" />
+    <circle cx="155" cy="48" r="3" fill="#f7c5ba" />
+    <circle cx="62" cy="78" r="2.5" fill="#f4c442" />
+    <circle cx="178" cy="74" r="2.5" fill="#4fa685" />
+  </g>
+
+  <!-- Tail happy swish upward -->
+  <path d="M 148,150 C 174,146 188,124 182,108 C 178,98 168,102 170,112 C 172,122 158,136 144,142" stroke="#26443c" stroke-width="7" stroke-linecap="round" fill="none" />
+  <path d="M 148,150 C 174,146 188,124 182,108 C 178,98 168,102 170,112 C 172,122 158,136 144,142" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" fill="none" />
+
+  <!-- Body -->
+  <path d="M 92,122 C 86,136 90,168 100,172 C 113,176 137,176 148,172 C 158,168 158,136 150,122 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <ellipse cx="106" cy="172" rx="8.5" ry="5.5" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+  <ellipse cx="138" cy="172" rx="8.5" ry="5.5" fill="#ffffff" stroke="#26443c" stroke-width="2" />
+
+  <!-- Left Ear -->
+  <path d="M 94,66 C 88,46 100,36 110,46 L 115,60 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M 98,60 C 94,47 101,41 106,47 L 110,57 Z" fill="#ebdcc9" />
+
+  <!-- Right Ear -->
+  <path d="M 146,66 C 152,46 140,36 130,46 L 125,60 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M 142,60 C 146,47 139,41 134,47 L 130,57 Z" fill="#ebdcc9" />
+
+  <!-- Head -->
+  <ellipse cx="120" cy="80" rx="31" ry="27" fill="#ffffff" stroke="#26443c" stroke-width="2.2" />
+
+  <!-- Cheeks -->
+  <ellipse cx="100" cy="86" rx="6" ry="4" fill="#f7c5ba" opacity="0.9" />
+  <ellipse cx="140" cy="86" rx="6" ry="4" fill="#f7c5ba" opacity="0.9" />
+
+  <!-- Whiskers -->
+  <path d="M 88,80 L 99,83 M 87,86 L 98,86" stroke="#54675f" stroke-width="1.3" stroke-linecap="round" />
+  <path d="M 152,80 L 141,83 M 153,86 L 142,86" stroke="#54675f" stroke-width="1.3" stroke-linecap="round" />
+
+  <!-- Eyes - Super happy smiling crescents -->
+  <path d="M 104,76 Q 110,83 116,76" stroke="#26443c" stroke-width="2.6" stroke-linecap="round" fill="none" />
+  <path d="M 124,76 Q 130,83 136,76" stroke="#26443c" stroke-width="2.6" stroke-linecap="round" fill="none" />
+
+  <!-- Nose & Open joyful mouth -->
+  <polygon points="118,83 122,83 120,86" fill="#e88d8d" />
+  <path d="M 115,87 Q 120,95 125,87 Z" fill="#e88d8d" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round" />
+
+  <!-- Neckerchief -->
+  <path d="M 104,102 Q 120,111 138,102 L 120,121 Z" fill="#4fa685" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+  <circle cx="120" cy="105" r="3.2" fill="#6dbd9f" stroke="#26443c" stroke-width="1.6" />
+
+  <!-- Both Paws Raised in Triumph (Hooray!) -->
+  <!-- Left raised arm & paw -->
+  <g class="raised-paw-left">
+    <path d="M 94,115 C 80,105 70,85 76,78 C 82,72 92,85 98,100 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+    <ellipse cx="76" cy="80" rx="4.5" ry="3.8" fill="#f7c5ba" />
+    <circle cx="72" cy="74" r="1.4" fill="#f7c5ba" />
+    <circle cx="77" cy="73" r="1.4" fill="#f7c5ba" />
+    <circle cx="82" cy="75" r="1.4" fill="#f7c5ba" />
+  </g>
+
+  <!-- Right raised arm & paw -->
+  <g class="raised-paw-right">
+    <path d="M 146,115 C 160,105 170,85 164,78 C 158,72 148,85 142,100 Z" fill="#ffffff" stroke="#26443c" stroke-width="2.2" stroke-linejoin="round" />
+    <ellipse cx="164" cy="80" rx="4.5" ry="3.8" fill="#f7c5ba" />
+    <circle cx="158" cy="75" r="1.4" fill="#f7c5ba" />
+    <circle cx="163" cy="73" r="1.4" fill="#f7c5ba" />
+    <circle cx="168" cy="74" r="1.4" fill="#f7c5ba" />
+  </g>
+</svg>

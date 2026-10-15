@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\EnglishPartner.Modules.Identity.Domain\EnglishPartner.Modules.Identity.Domain.csproj" />
-    <ProjectReference Include="..\..\..\Shared\EnglishPartner.SharedKernel.Application\EnglishPartner.SharedKernel.Application.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
-  </ItemGroup>
-</Project>

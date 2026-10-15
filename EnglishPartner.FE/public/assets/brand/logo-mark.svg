@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+  <!-- Soft Mint Badge Background -->
+  <rect x="2" y="2" width="44" height="44" rx="12" fill="#e2f3ee" stroke="#26443c" stroke-width="2"/>
+  
+  <!-- Left Ear -->
+  <path d="M 12,18 C 10,10 16,7 19,11 L 21,17 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M 14,16 C 13,11 16.5,9.5 18,11.5 L 20,16 Z" fill="#ebdcc9"/>
+  
+  <!-- Right Ear -->
+  <path d="M 36,18 C 38,10 32,7 29,11 L 27,17 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M 34,16 C 35,11 31.5,9.5 30,11.5 L 28,16 Z" fill="#ebdcc9"/>
+  
+  <!-- Cat Head -->
+  <ellipse cx="24" cy="24" rx="13" ry="11.5" fill="#ffffff" stroke="#26443c" stroke-width="2"/>
+  
+  <!-- Blush Cheeks -->
+  <ellipse cx="15.5" cy="26" rx="2.4" ry="1.6" fill="#f7c5ba"/>
+  <ellipse cx="32.5" cy="26" rx="2.4" ry="1.6" fill="#f7c5ba"/>
+  
+  <!-- Deep Green Expressive Eyes with Highlights -->
+  <ellipse cx="19" cy="22.5" rx="2" ry="2.8" fill="#26443c"/>
+  <circle cx="18.3" cy="21.3" r="0.9" fill="#ffffff"/>
+  <circle cx="19.8" cy="23.5" r="0.4" fill="#ffffff"/>
+  
+  <ellipse cx="29" cy="22.5" rx="2" ry="2.8" fill="#26443c"/>
+  <circle cx="28.3" cy="21.3" r="0.9" fill="#ffffff"/>
+  <circle cx="29.8" cy="23.5" r="0.4" fill="#ffffff"/>
+  
+  <!-- Nose & Cat Smile -->
+  <polygon points="23,25.8 25,25.8 24,27" fill="#e88d8d"/>
+  <path d="M 22,27.8 Q 24,29.2 24,27.5 Q 24,29.2 26,27.8" stroke="#26443c" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  
+  <!-- Open Book in Front -->
+  <path d="M 11,35 Q 18,33 24,35.5 Q 30,33 37,35 L 36.5,41 Q 30,38.5 24,40.5 Q 18,38.5 11.5,41 Z" fill="#ffffff" stroke="#26443c" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M 24,35.5 L 24,40.5" stroke="#26443c" stroke-width="1.6" stroke-linecap="round"/>
+  
+  <!-- Mint Neckerchief Peak above Book -->
+  <path d="M 21.5,31 L 24,34.5 L 26.5,31 Z" fill="#4fa685" stroke="#26443c" stroke-width="1.3" stroke-linejoin="round"/>
+</svg>
