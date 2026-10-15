@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Mic,
   PhoneOff,
@@ -36,6 +37,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
 
 export const LiveTutorPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const {
     apiKey,
     cefrLevel,
@@ -229,19 +231,19 @@ export const LiveTutorPage: React.FC = () => {
             onClick={() => setSetupModalOpen(true)}
             className="border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-900 font-bold"
           >
-            <Settings className="w-4 h-4 text-emerald-700" />
-            Thiết lập phiên luyện nói
+            <img src="/assets/icons/navigation/nav-settings.svg" alt="" className="w-4 h-4 object-contain" />
+            {t('tutor.setupModal')}
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={() => void handleSwitchNewConversation()}
-            title="Tạo cuộc hội thoại mới và làm mới khung chat"
+            title={t('tutor.newConversation')}
             className="border-slate-300 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-slate-800 hover:text-emerald-900 font-semibold"
           >
-            <MessageSquarePlus className="w-4 h-4 text-emerald-600" />
-            Hội thoại mới
+            <img src="/assets/icons/navigation/nav-conversations.svg" alt="" className="w-4 h-4 object-contain" />
+            {t('tutor.newConversation')}
           </Button>
 
           <Badge variant="emerald">CEFR {cefrLevel}</Badge>
@@ -250,7 +252,7 @@ export const LiveTutorPage: React.FC = () => {
           <Badge variant="amber">Speed: {speechSpeed.toFixed(2)}x</Badge>
           {topic && (
             <span className="hidden md:inline-block text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-full truncate max-w-xs">
-              Chủ đề: {topic}
+              {t('common.conversationTopic')}: {topic}
             </span>
           )}
         </div>
@@ -275,8 +277,8 @@ export const LiveTutorPage: React.FC = () => {
             size="sm"
             onClick={() => setHistoryDrawerOpen(true)}
           >
-            <History className="w-3.5 h-3.5" />
-            Lịch sử ({historyList.length})
+            <img src="/assets/icons/navigation/nav-history.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+            {t('tutor.historyModal')} ({historyList.length})
           </Button>
         </div>
       </div>
@@ -292,7 +294,7 @@ export const LiveTutorPage: React.FC = () => {
             onClick={clearError}
             className="font-bold text-rose-700 hover:underline cursor-pointer"
           >
-            Đóng
+            {t('common.close')}
           </button>
         </div>
       )}
@@ -309,22 +311,24 @@ export const LiveTutorPage: React.FC = () => {
                 )}
               />
               <span className="text-sm font-extrabold text-slate-800">
-                Hội thoại Song ngữ Trực tiếp (EN / VI)
+                {t('tutor.bilingualLiveStream')}
               </span>
               <Badge variant={activeConversationId ? 'sky' : 'emerald'}>
-                {activeConversationId ? 'Đang mở phiên đã lưu' : 'Phiên mới'}
+                {activeConversationId ? t('tutor.activeSavedSession') : t('tutor.freshSession')}
               </Badge>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-500">{turns.length} lượt thoại</span>
+              <span className="text-xs text-slate-500">
+                {turns.length} {t('tutor.turnsCount')}
+              </span>
               {(turns.length > 0 || activeConversationId) && (
                 <button
                   type="button"
                   onClick={() => void handleSwitchNewConversation()}
                   className="text-xs font-bold text-slate-600 hover:text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <MessageSquarePlus className="w-3.5 h-3.5 text-emerald-600" />
-                  Tạo mới
+                  <img src="/assets/icons/navigation/nav-conversations.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                  {t('tutor.newConversation')}
                 </button>
               )}
               <button
@@ -332,8 +336,8 @@ export const LiveTutorPage: React.FC = () => {
                 onClick={() => setSetupModalOpen(true)}
                 className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <Settings className="w-3.5 h-3.5" />
-                Đổi thiết lập
+                <img src="/assets/icons/navigation/nav-settings.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                {t('tutor.changeSettings')}
               </button>
             </div>
           </div>
@@ -380,15 +384,15 @@ export const LiveTutorPage: React.FC = () => {
                 variant="outline"
                 size="md"
                 onClick={() => void handleSwitchNewConversation()}
-                title="Chuyển sang cuộc hội thoại mới"
+                title={t('tutor.newConversation')}
               >
                 <MessageSquarePlus className="w-4 h-4" />
-                Hội thoại mới
+                {t('tutor.newConversation')}
               </Button>
 
               <Button variant="outline" size="md" onClick={() => setSetupModalOpen(true)}>
                 <Settings className="w-4 h-4" />
-                Thiết lập
+                {t('tutor.setupModal')}
               </Button>
 
               {!isSessionActive ? (
@@ -398,12 +402,12 @@ export const LiveTutorPage: React.FC = () => {
                   onClick={handleStartLive}
                 >
                   <Mic className="w-4 h-4" />
-                  Bắt đầu luyện nói
+                  {t('tutor.startSpeaking')}
                 </Button>
               ) : (
                 <Button variant="danger" size="md" onClick={() => void stopSession()}>
                   <PhoneOff className="w-4 h-4" />
-                  Kết thúc phiên ({phase})
+                  {t('tutor.stopSpeaking')} ({phase})
                 </Button>
               )}
             </div>
@@ -462,8 +466,14 @@ export const LiveTutorPage: React.FC = () => {
         isOpen={Boolean(selectedCorrectionModal)}
         onClose={() => setSelectedCorrectionModal(null)}
         maxWidth="lg"
-        icon={<Sparkles className="w-5 h-5" />}
-        title="Chi tiết Sửa lỗi Ngữ pháp & Nâng cấp câu"
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-rubrics.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
+        title={t('tutor.grammarModalTitle')}
         description={selectedCorrectionModal?.errorCategory || 'Grammar & Vocabulary'}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
@@ -472,7 +482,7 @@ export const LiveTutorPage: React.FC = () => {
               size="sm"
               onClick={() => setSelectedCorrectionModal(null)}
             >
-              Đóng
+              {t('common.close')}
             </Button>
           </div>
         }
@@ -482,7 +492,7 @@ export const LiveTutorPage: React.FC = () => {
             <div className="flex items-start justify-between gap-2 bg-rose-50/70 border border-rose-200 rounded-xl p-3">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">
-                  Câu gốc của bạn
+                  {t('tutor.originalSentence')}
                 </span>
                 <p className="text-rose-800 font-semibold text-sm leading-relaxed">
                   {selectedCorrectionModal.originalSentence}
@@ -497,7 +507,7 @@ export const LiveTutorPage: React.FC = () => {
                     englishLine1: selectedCorrectionModal.originalSentence,
                   })
                 }
-                title="Nghe lại giọng thu âm của bạn"
+                title="Replay user audio"
                 className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-100 shrink-0 cursor-pointer"
               >
                 {replayingTurnId === selectedCorrectionModal.turnId ? (
@@ -512,7 +522,7 @@ export const LiveTutorPage: React.FC = () => {
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
                   <ArrowRight className="w-3 h-3" />
-                  Câu chuẩn / Nâng cấp diễn đạt
+                  {t('tutor.correctedSentence')}
                 </span>
                 <p className="text-emerald-900 font-bold text-sm leading-relaxed">
                   {selectedCorrectionModal.correctedSentence}
@@ -521,7 +531,7 @@ export const LiveTutorPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => speakCorrectedSample(selectedCorrectionModal.correctedSentence)}
-                title="Nghe phát âm mẫu câu đã sửa"
+                title="Speak corrected sentence"
                 className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-100 shrink-0 cursor-pointer"
               >
                 <Volume2 className="w-4 h-4" />
@@ -530,14 +540,14 @@ export const LiveTutorPage: React.FC = () => {
 
             {selectedCorrectionModal.naturalAlternative && (
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 leading-relaxed text-slate-700">
-                <strong className="text-slate-900">Cách nói tự nhiên (Native):</strong>{' '}
+                <strong className="text-slate-900">{t('tutor.naturalAlternative')}</strong>{' '}
                 {selectedCorrectionModal.naturalAlternative}
               </div>
             )}
 
             {(selectedCorrectionModal.explanationVi || selectedCorrectionModal.overallTipVi) && (
               <div className="bg-white border border-slate-200 rounded-xl p-3 leading-relaxed text-slate-700">
-                <strong className="text-slate-900">Giải thích chi tiết:</strong>{' '}
+                <strong className="text-slate-900">{t('tutor.grammarExplanation')}</strong>{' '}
                 {selectedCorrectionModal.explanationVi || selectedCorrectionModal.overallTipVi}
               </div>
             )}

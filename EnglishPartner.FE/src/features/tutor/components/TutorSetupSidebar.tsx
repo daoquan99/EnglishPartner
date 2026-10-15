@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Volume2,
   Gauge,
@@ -62,6 +63,7 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
   onStartSpeaking,
   onApplyAndStart,
 }) => {
+  const { t } = useTranslation();
   const visible = Boolean(isOpen ?? open);
   const handleSave = onSaveSettings ?? onSaveOnly ?? onClose;
   const handleStart = onStartSpeaking ?? onApplyAndStart ?? onClose;
@@ -128,19 +130,28 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
         {/* Modal Header (Fixed) */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4 bg-slate-50/70 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Settings className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0 p-2">
+              <img
+                src="/assets/icons/navigation/nav-settings.svg"
+                alt=""
+                className="w-full h-full object-contain brightness-0 invert"
+              />
             </div>
             <div>
               <h2
                 id="tutor-setup-modal-title"
                 className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2"
               >
-                Thiết lập Phiên Luyện Nói
-                {isSessionActive && <Badge variant="amber">Đang trong phiên Live</Badge>}
+                {t('tutor.setupTitle', 'Thiết lập Phiên Luyện Nói')}
+                {isSessionActive && (
+                  <Badge variant="amber">{t('tutor.inLiveSession', 'Đang trong phiên Live')}</Badge>
+                )}
               </h2>
               <p className="text-xs text-slate-500">
-                Đồng bộ trực tiếp từ Database (19 Chế độ luyện nói · 30 Giọng Teacher · Tốc độ nói · 26+ Chủ đề gợi ý)
+                {t(
+                  'tutor.setupSubtitle',
+                  'Đồng bộ trực tiếp từ Database (19 Chế độ luyện nói · 30 Giọng Teacher · Tốc độ nói · 26+ Chủ đề gợi ý)'
+                )}
               </p>
             </div>
           </div>
@@ -148,7 +159,7 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            title="Đóng cửa sổ thiết lập (Esc)"
+            title={t('tutor.closeModal', 'Đóng cửa sổ thiết lập (Esc)')}
             className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -162,7 +173,7 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
             {/* 1. CEFR Level Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
-                1. Trình độ CEFR mục tiêu
+                {t('tutor.cefrTargetLabel', '1. Trình độ CEFR mục tiêu')}
               </label>
               <div className="grid grid-cols-6 gap-1.5">
                 {CEFR_LEVELS.map((lvl) => {
@@ -199,7 +210,10 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                   <MessageSquareCode className="w-3.5 h-3.5 text-emerald-600" />
-                  2. Chế độ luyện nói ({modes.length} DB Modes)
+                  {t('tutor.modeLabel', {
+                    count: modes.length,
+                    defaultValue: `2. Chế độ luyện nói (${modes.length} DB Modes)`,
+                  })}
                 </label>
                 <Badge variant="emerald">DB</Badge>
               </div>
@@ -210,7 +224,12 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               >
                 {workplaceModes.length > 0 && (
-                  <optgroup label="Giao tiếp & Công sở (Communication & Workplace)">
+                  <optgroup
+                    label={t(
+                      'tutor.modeGroupWorkplace',
+                      'Giao tiếp & Công sở (Communication & Workplace)'
+                    )}
+                  >
                     {workplaceModes.map((m) => (
                       <option key={m.modeCode} value={m.modeCode}>
                         {m.displayName}
@@ -219,7 +238,12 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                   </optgroup>
                 )}
                 {interviewModes.length > 0 && (
-                  <optgroup label="Phỏng vấn & Huấn luyện 1-1 (Interview & Coaching)">
+                  <optgroup
+                    label={t(
+                      'tutor.modeGroupInterview',
+                      'Phỏng vấn & Huấn luyện 1-1 (Interview & Coaching)'
+                    )}
+                  >
                     {interviewModes.map((m) => (
                       <option key={m.modeCode} value={m.modeCode}>
                         {m.displayName}
@@ -242,7 +266,10 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                   <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                  3. Giọng nói của Teacher ({allVoices.length} Google Voices)
+                  {t('tutor.voiceLabel', {
+                    count: allVoices.length,
+                    defaultValue: `3. Giọng nói của Teacher (${allVoices.length} Google Voices)`,
+                  })}
                 </label>
                 <button
                   type="button"
@@ -251,8 +278,11 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                 >
                   <Star className="w-3 h-3" />
                   {showOnlyFeaturedVoices
-                    ? `Hiện tất cả ${allVoices.length} giọng`
-                    : 'Chỉ hiện 6 giọng nổi bật'}
+                    ? t('tutor.showAllVoices', {
+                        count: allVoices.length,
+                        defaultValue: `Hiện tất cả ${allVoices.length} giọng`,
+                      })
+                    : t('tutor.showFeaturedVoices', 'Chỉ hiện 6 giọng nổi bật')}
                 </button>
               </div>
 
@@ -286,7 +316,8 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               {currentVoiceObj && (
                 <div className="text-[11px] text-slate-500 flex items-center justify-between px-1">
                   <span>
-                    Đang chọn: <strong className="text-slate-800">{currentVoiceObj.label}</strong> (
+                    {t('tutor.selectedVoice', 'Đang chọn:')}{' '}
+                    <strong className="text-slate-800">{currentVoiceObj.label}</strong> (
                     {currentVoiceObj.persona})
                   </span>
                   <span>{currentVoiceObj.gender}</span>
@@ -299,7 +330,7 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                   <Gauge className="w-3.5 h-3.5 text-emerald-600" />
-                  4. Tốc độ nói của Teacher
+                  {t('tutor.speedLabel', '4. Tốc độ nói của Teacher')}
                 </label>
                 <span className="text-xs font-bold text-emerald-700">
                   {speechSpeed.toFixed(2)}x
@@ -324,32 +355,41 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
           <div className="lg:col-span-6 space-y-5">
             {/* 5. Conversation Topic (DB Suggestions + Free Custom Input) */}
             <TopicCreatablePicker
-              label="5. Chủ đề cuộc trò chuyện (Topic)"
+              label={t('tutor.topicLabel', '5. Chủ đề cuộc trò chuyện (Topic)')}
               value={topic}
               onChange={setTopic}
               topics={conversationTopics}
               activeModeCode={conversationMode}
-              helperText="Chọn nhanh chủ đề gợi ý từ Database (tự động ưu tiên theo Chế độ luyện nói) hoặc tự gõ chủ đề bất kỳ."
+              helperText={t(
+                'tutor.topicHelper',
+                'Chọn nhanh chủ đề gợi ý từ Database (tự động ưu tiên theo Chế độ luyện nói) hoặc tự gõ chủ đề bất kỳ.'
+              )}
             />
 
             {/* 6. Custom System Prompt / JD / CV */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                6. Custom System Prompt / JD / CV (Tùy chọn)
+                {t('tutor.customPromptLabel', '6. Custom System Prompt / JD / CV (Tùy chọn)')}
               </label>
               <textarea
                 rows={4}
                 value={customSystemPrompt}
                 onChange={(e) => setCustomSystemPrompt(e.target.value)}
-                placeholder="Dán JD tuyển dụng, tóm tắt CV hoặc yêu cầu đóng vai cụ thể..."
+                placeholder={t(
+                  'tutor.customPromptPlaceholder',
+                  'Dán JD tuyển dụng, tóm tắt CV hoặc yêu cầu đóng vai cụ thể...'
+                )}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
 
               <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer">
                 <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                   <Brain className="w-4 h-4 text-violet-600 shrink-0" />
-                  Extended Thinking (Suy luận sâu cho C#, System Design)
+                  {t(
+                    'tutor.extendedThinkingLabel',
+                    'Extended Thinking (Suy luận sâu cho C#, System Design)'
+                  )}
                 </span>
                 <input
                   type="checkbox"
@@ -374,11 +414,13 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
           <div className="flex items-center gap-2.5 ml-auto">
             <Button variant="outline" size="md" onClick={handleSave}>
               <Save className="w-4 h-4" />
-              Lưu thiết lập
+              {t('tutor.saveSettings', 'Lưu thiết lập')}
             </Button>
             <Button variant="primary" size="md" onClick={handleStart}>
               <Mic className="w-4 h-4" />
-              {isSessionActive ? 'Áp dụng & Khởi động lại phiên' : 'Bắt đầu luyện nói'}
+              {isSessionActive
+                ? t('tutor.applyAndRestart', 'Áp dụng & Khởi động lại phiên')
+                : t('tutor.startSpeakingBtn', 'Bắt đầu luyện nói')}
             </Button>
           </div>
         </div>

@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Features.Learning.Commands.SubmitVocabularyRe
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetDailyVocabularyPlan;
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetLearningHistory;
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetLearningProgress;
+using MediatR;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -12,30 +13,57 @@ public static class DailyLearningEndpoints
 {
     public static IEndpointRouteBuilder MapDailyLearningEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/learning/flashcards");
+        var group = app.MapGroup("/api/learning/flashcards").RequireAuthorization();
 
         group.MapGet("/today", async (
             string? timeZoneId,
             int? target,
             ICurrentUser currentUser,
-            IQueryHandler<GetDailyVocabularyPlanQuery, DailyVocabularyPlanResponseDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var plan = await handler.HandleAsync(
-                new GetDailyVocabularyPlanQuery(currentUser.UserId!, timeZoneId, target),
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
+            string userId = currentUser.UserId!;
+            var plan = await sender.Send(
+                new GetDailyVocabularyPlanQuery(userId, timeZoneId, target),
                 ct);
+
+            if (plan is null)
+            {
+                plan = await sender.Send(
+                    new InitializeDailyVocabularyPlanCommand(
+                        userId,
+                        new InitializeDailyPlanRequest(
+                            ApiKey: null,
+                            NewVocabularyTarget: target ?? 20,
+                            TimeZoneId: timeZoneId ?? "Asia/Ho_Chi_Minh",
+                            GenerateWithAiIfNeeded: false)),
+                    ct);
+            }
+
             return Results.Ok(plan);
         });
 
         group.MapPost("/today/initialize", async (
             InitializeDailyPlanRequest req,
-            ICommandHandler<InitializeDailyVocabularyPlanCommand, DailyVocabularyPlanResponseDto> handler,
+            ICurrentUser currentUser,
+            ISender sender,
             CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                var plan = await handler.HandleAsync(
-                    new InitializeDailyVocabularyPlanCommand("default-learner", req),
+                string userId = currentUser.UserId!;
+                var plan = await sender.Send(
+                    new InitializeDailyVocabularyPlanCommand(userId, req),
                     ct);
                 return Results.Ok(plan);
             }
@@ -48,13 +76,45 @@ public static class DailyLearningEndpoints
         group.MapPost("/{itemId:guid}/review", async (
             Guid itemId,
             SubmitVocabularyReviewRequest req,
-            ICommandHandler<SubmitVocabularyReviewCommand, VocabularyFlashcardDto> handler,
+            ICurrentUser currentUser,
+            ISender sender,
             CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                var updatedCard = await handler.HandleAsync(
-                    new SubmitVocabularyReviewCommand("default-learner", itemId, req),
+                string userId = currentUser.UserId!;
+                var updatedCard = await sender.Send(
+                    new SubmitVocabularyReviewCommand(userId, itemId, req),
+                    ct);
+                return Results.Ok(updatedCard);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        group.MapPost("/review", async (
+            SubmitVocabularyReviewRequest req,
+            ICurrentUser currentUser,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                string userId = currentUser.UserId!;
+                var updatedCard = await sender.Send(
+                    new SubmitVocabularyReviewCommand(userId, null, req),
                     ct);
                 return Results.Ok(updatedCard);
             }
@@ -65,19 +125,33 @@ public static class DailyLearningEndpoints
         });
 
         group.MapGet("/progress", async (
-            IQueryHandler<GetLearningProgressQuery, object> handler,
+            ICurrentUser currentUser,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var summary = await handler.HandleAsync(new GetLearningProgressQuery("default-learner"), ct);
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
+            string userId = currentUser.UserId!;
+            var summary = await sender.Send(new GetLearningProgressQuery(userId), ct);
             return Results.Ok(summary);
         });
 
         group.MapGet("/history", async (
             int? limit,
-            IQueryHandler<GetLearningHistoryQuery, object> handler,
+            ICurrentUser currentUser,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var history = await handler.HandleAsync(new GetLearningHistoryQuery("default-learner", limit ?? 30), ct);
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
+            string userId = currentUser.UserId!;
+            var history = await sender.Send(new GetLearningHistoryQuery(userId, limit ?? 30), ct);
             return Results.Ok(history);
         });
 

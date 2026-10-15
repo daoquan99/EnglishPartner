@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SuccessToastIcon, ErrorToastIcon } from './ToastIcons';
 import { cn } from '@/shared/lib/cn';
 
 export interface FeedbackBannerProps {
@@ -20,9 +21,9 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ type, message, o
     >
       <div className="flex items-center gap-2">
         {type === 'success' ? (
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <SuccessToastIcon className="w-4 h-4 shrink-0" />
         ) : (
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <ErrorToastIcon className="w-4 h-4 shrink-0" />
         )}
         <span>{message}</span>
       </div>

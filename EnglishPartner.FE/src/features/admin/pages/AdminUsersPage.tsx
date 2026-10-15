@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Users, Plus, Save, Search } from 'lucide-react';
+import { Plus, Save, Search } from 'lucide-react';
 import {
   useAdminRolesQuery,
   useAdminUsersQuery,
@@ -270,8 +270,8 @@ export const AdminUsersPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <Users className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-account.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -351,7 +351,13 @@ export const AdminUsersPage: React.FC = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         maxWidth="xl"
-        icon={<Users className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-account.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingUserId ? `Chỉnh sửa Người dùng: @${username}` : 'Thêm mới Người dùng'}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">

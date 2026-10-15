@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Search, Check, Tag, X } from 'lucide-react';
 import type { TopicDto } from '@/shared/api/openapi.types';
 import { cn } from '@/shared/lib/cn';
@@ -25,11 +26,13 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
   value,
   onChange,
   topics,
-  placeholder = 'Nhập chủ đề bất kỳ hoặc chọn gợi ý từ Database bên dưới...',
+  placeholder,
   disabled = false,
   activeModeCode,
   helperText,
 }) => {
+  const { t } = useTranslation();
+  const effectivePlaceholder = placeholder ?? t('common.topicPlaceholder');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
 
@@ -63,7 +66,7 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
           {label}
         </label>
         <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-          DB Suggestions ({topics.length}) + Tự nhập
+          {t('common.dbSuggestions')} ({topics.length}) + {t('common.customInput')}
         </span>
       </div>
 
@@ -75,14 +78,14 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 disabled:bg-slate-100"
         />
         {value && !disabled && (
           <button
             type="button"
             onClick={() => onChange('')}
-            title="Xóa chủ đề"
+            title={t('common.deleteTopic')}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
           >
             <X className="w-3.5 h-3.5" />
@@ -108,7 +111,7 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               )}
             >
-              {cat === 'ALL' ? 'Tất cả chủ đề' : cat}
+              {cat === 'ALL' ? t('common.allTopics') : cat}
             </button>
           ))}
         </div>
@@ -141,7 +144,7 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
                   </span>
                   {isRecommendedForMode && (
                     <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                      <Sparkles className="w-2.5 h-2.5" /> Gợi ý cho Mode này
+                      <Sparkles className="w-2.5 h-2.5" /> {t('common.recommendedForMode')}
                     </span>
                   )}
                 </div>
@@ -160,8 +163,8 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
           className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
         >
           {showAllSuggestions
-            ? 'Thu gọn danh sách gợi ý'
-            : `Xem thêm ${sortedTopics.length - 6} chủ đề gợi ý từ Database...`}
+            ? t('common.collapseSuggestions')
+            : t('common.viewMoreSuggestions', { count: sortedTopics.length - 6 })}
         </button>
       )}
     </div>

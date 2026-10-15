@@ -32,9 +32,11 @@ public sealed class PronunciationCriterionScoreEntity : Entity<Guid>
         AssessmentId = assessmentId;
         CriterionCode = criterionCode?.Trim() ?? string.Empty;
         CriterionName = criterionName?.Trim() ?? string.Empty;
-        CriterionDescriptionSnapshot = criterionDescriptionSnapshot?.Trim() ?? string.Empty;
+        if (weightSnapshot < 0)
+            throw new InvalidOperationException("Trọng số tiêu chí không được âm.");
+
         WeightSnapshot = weightSnapshot;
-        RawScore = rawScore;
+        RawScore = Math.Clamp(rawScore, 0m, 100m);
         WeightedScore = weightedScore;
         Feedback = feedback?.Trim() ?? string.Empty;
     }

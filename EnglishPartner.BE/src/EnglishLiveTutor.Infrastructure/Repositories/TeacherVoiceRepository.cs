@@ -104,6 +104,16 @@ public sealed class TeacherVoiceRepository : ITeacherVoiceRepository
         return Task.CompletedTask;
     }
 
+    public async Task<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        string cleanId = id.Trim();
+        var voice = await _db.TeacherVoices.FirstOrDefaultAsync(v => v.Id == cleanId, ct);
+        if (voice is null) return false;
+        voice.SoftDelete(DateTimeOffset.UtcNow);
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
     public async Task SaveChangesAsync(CancellationToken ct = default)
     {
         await _db.SaveChangesAsync(ct);

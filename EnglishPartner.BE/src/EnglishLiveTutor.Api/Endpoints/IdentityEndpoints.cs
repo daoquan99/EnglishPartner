@@ -1,20 +1,25 @@
 using System.Security.Claims;
 using EnglishLiveTutor.Api.Security;
-using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
-using EnglishLiveTutor.Application.Features.Identity.Commands.AdminManageIdentity;
+using EnglishLiveTutor.Application.Features.Identity.Commands.AdminCreateUser;
+using EnglishLiveTutor.Application.Features.Identity.Commands.AdminUpdateUser;
 using EnglishLiveTutor.Application.Features.Identity.Commands.AssignUserRoles;
 using EnglishLiveTutor.Application.Features.Identity.Commands.CreatePermission;
 using EnglishLiveTutor.Application.Features.Identity.Commands.CreateRole;
+using EnglishLiveTutor.Application.Features.Identity.Commands.DeletePermission;
+using EnglishLiveTutor.Application.Features.Identity.Commands.DeleteRole;
+using EnglishLiveTutor.Application.Features.Identity.Commands.DeleteUser;
 using EnglishLiveTutor.Application.Features.Identity.Commands.Login;
 using EnglishLiveTutor.Application.Features.Identity.Commands.RefreshToken;
 using EnglishLiveTutor.Application.Features.Identity.Commands.RegisterUser;
 using EnglishLiveTutor.Application.Features.Identity.Commands.RevokeRefreshToken;
+using EnglishLiveTutor.Application.Features.Identity.Commands.UpdatePermission;
 using EnglishLiveTutor.Application.Features.Identity.Commands.UpdateRolePermissions;
 using EnglishLiveTutor.Application.Features.Identity.Queries.GetUserProfile;
 using EnglishLiveTutor.Application.Features.Identity.Queries.ListPermissions;
 using EnglishLiveTutor.Application.Features.Identity.Queries.ListRoles;
 using EnglishLiveTutor.Application.Features.Identity.Queries.ListUsers;
+using MediatR;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -29,13 +34,13 @@ public static class IdentityEndpoints
         authGroup.MapPost("/register", async (
             HttpContext httpContext,
             RegisterUserRequest req,
-            ICommandHandler<RegisterUserCommand, AuthResponseDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
                 string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await handler.HandleAsync(new RegisterUserCommand(req, ip), ct);
+                var result = await sender.Send(new RegisterUserCommand(req, ip), ct);
                 AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
                 return Results.Ok(result);
             }
@@ -43,18 +48,18 @@ public static class IdentityEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
+        }).AllowAnonymous();
 
         authGroup.MapPost("/login", async (
             HttpContext httpContext,
             LoginRequest req,
-            ICommandHandler<LoginCommand, AuthResponseDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
                 string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await handler.HandleAsync(new LoginCommand(req, ip), ct);
+                var result = await sender.Send(new LoginCommand(req, ip), ct);
                 AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
                 return Results.Ok(result);
             }
@@ -62,12 +67,12 @@ public static class IdentityEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
+        }).AllowAnonymous();
 
         authGroup.MapPost("/refresh", async (
             HttpContext httpContext,
             RefreshTokenRequest? req,
-            ICommandHandler<RefreshTokenCommand, AuthResponseDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
@@ -83,7 +88,7 @@ public static class IdentityEndpoints
 
                 string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
                 var effectiveReq = new RefreshTokenRequest(rawToken, req?.DeviceInfo ?? "Browser");
-                var result = await handler.HandleAsync(new RefreshTokenCommand(effectiveReq, ip), ct);
+                var result = await sender.Send(new RefreshTokenCommand(effectiveReq, ip), ct);
                 AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
                 return Results.Ok(result);
             }
@@ -92,12 +97,12 @@ public static class IdentityEndpoints
                 DeleteRefreshTokenCookie(httpContext);
                 return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status401Unauthorized);
             }
-        });
+        }).AllowAnonymous();
 
         authGroup.MapPost("/revoke", async (
             HttpContext httpContext,
             RevokeTokenRequest? req,
-            ICommandHandler<RevokeRefreshTokenCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
@@ -113,7 +118,7 @@ public static class IdentityEndpoints
                     return Results.Ok(new { revoked = true });
                 }
 
-                bool revoked = await handler.HandleAsync(
+                bool revoked = await sender.Send(
                     new RevokeRefreshTokenCommand(new RevokeTokenRequest(rawToken, req?.Reason ?? "User logout")),
                     ct);
                 return Results.Ok(new { revoked });
@@ -122,11 +127,11 @@ public static class IdentityEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
+        }).AllowAnonymous();
 
         authGroup.MapGet("/me", async (
             HttpContext httpContext,
-            IQueryHandler<GetUserProfileQuery, UserProfileDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             if (httpContext.User?.Identity?.IsAuthenticated != true)
@@ -142,12 +147,12 @@ public static class IdentityEndpoints
                 return Results.Unauthorized();
             }
 
-            var profile = await handler.HandleAsync(new GetUserProfileQuery(userId), ct);
+            var profile = await sender.Send(new GetUserProfileQuery(userId), ct);
             return profile is null ? Results.NotFound() : Results.Ok(profile);
-        });
+        }).RequireAuthorization();
 
         // Users Management (Admin RBAC Protected)
-        var usersGroup = app.MapGroup("/api/users");
+        var usersGroup = app.MapGroup("/api/users").RequireAuthorization();
 
         usersGroup.MapGet("/", async (
             HttpContext httpContext,
@@ -155,31 +160,31 @@ public static class IdentityEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IQueryHandler<ListUsersQuery, PagedResultDto<UserProfileDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var pagedUsers = await handler.HandleAsync(new ListUsersQuery(search, page, pageSize), ct);
+            var pagedUsers = await sender.Send(new ListUsersQuery(search, page, pageSize), ct);
             return pagedUsers.ToHttpResult(httpContext, paged);
         }).RequirePermission("users.read");
 
         usersGroup.MapGet("/{id:guid}", async (
             Guid id,
-            IQueryHandler<GetUserProfileQuery, UserProfileDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var profile = await handler.HandleAsync(new GetUserProfileQuery(id), ct);
+            var profile = await sender.Send(new GetUserProfileQuery(id), ct);
             return profile is null ? Results.NotFound() : Results.Ok(profile);
         }).RequirePermission("users.read");
 
         usersGroup.MapPut("/{id:guid}/roles", async (
             Guid id,
             AssignUserRolesRequest req,
-            ICommandHandler<AssignUserRolesCommand, UserProfileDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var updated = await handler.HandleAsync(new AssignUserRolesCommand(id, req), ct);
+                var updated = await sender.Send(new AssignUserRolesCommand(id, req), ct);
                 return Results.Ok(updated);
             }
             catch (InvalidOperationException ex)
@@ -190,12 +195,12 @@ public static class IdentityEndpoints
 
         usersGroup.MapPost("/", async (
             AdminCreateUserRequest req,
-            ICommandHandler<AdminCreateUserCommand, UserProfileDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var created = await handler.HandleAsync(new AdminCreateUserCommand(req), ct);
+                var created = await sender.Send(new AdminCreateUserCommand(req), ct);
                 return Results.Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -207,12 +212,12 @@ public static class IdentityEndpoints
         usersGroup.MapPut("/{id:guid}", async (
             Guid id,
             AdminUpdateUserRequest req,
-            ICommandHandler<AdminUpdateUserCommand, UserProfileDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var updated = await handler.HandleAsync(new AdminUpdateUserCommand(id, req), ct);
+                var updated = await sender.Send(new AdminUpdateUserCommand(id, req), ct);
                 return updated is null
                     ? Results.NotFound(new { error = "Không tìm thấy người dùng." })
                     : Results.Ok(updated);
@@ -225,15 +230,15 @@ public static class IdentityEndpoints
 
         usersGroup.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeleteUserCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            bool deleted = await handler.HandleAsync(new DeleteUserCommand(id), ct);
+            bool deleted = await sender.Send(new DeleteUserCommand(id), ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("users.manage");
 
         // Roles Management
-        var rolesGroup = app.MapGroup("/api/roles");
+        var rolesGroup = app.MapGroup("/api/roles").RequireAuthorization();
 
         rolesGroup.MapGet("/", async (
             HttpContext httpContext,
@@ -241,21 +246,21 @@ public static class IdentityEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IQueryHandler<ListRolesQuery, PagedResultDto<RoleDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var pagedRoles = await handler.HandleAsync(new ListRolesQuery(search, page, pageSize), ct);
+            var pagedRoles = await sender.Send(new ListRolesQuery(search, page, pageSize), ct);
             return pagedRoles.ToHttpResult(httpContext, paged);
         }).RequirePermission("roles.manage");
 
         rolesGroup.MapPost("/", async (
             CreateRoleRequest req,
-            ICommandHandler<CreateRoleCommand, RoleDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var created = await handler.HandleAsync(new CreateRoleCommand(req), ct);
+                var created = await sender.Send(new CreateRoleCommand(req), ct);
                 return Results.Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -267,12 +272,12 @@ public static class IdentityEndpoints
         rolesGroup.MapPut("/{id:guid}/permissions", async (
             Guid id,
             UpdateRolePermissionsRequest req,
-            ICommandHandler<UpdateRolePermissionsCommand, RoleDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var updated = await handler.HandleAsync(new UpdateRolePermissionsCommand(id, req), ct);
+                var updated = await sender.Send(new UpdateRolePermissionsCommand(id, req), ct);
                 return Results.Ok(updated);
             }
             catch (InvalidOperationException ex)
@@ -283,12 +288,12 @@ public static class IdentityEndpoints
 
         rolesGroup.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeleteRoleCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                bool deleted = await handler.HandleAsync(new DeleteRoleCommand(id), ct);
+                bool deleted = await sender.Send(new DeleteRoleCommand(id), ct);
                 return deleted ? Results.NoContent() : Results.NotFound();
             }
             catch (InvalidOperationException ex)
@@ -298,7 +303,7 @@ public static class IdentityEndpoints
         }).RequirePermission("roles.manage");
 
         // Permissions Management
-        var permissionsGroup = app.MapGroup("/api/permissions");
+        var permissionsGroup = app.MapGroup("/api/permissions").RequireAuthorization();
 
         permissionsGroup.MapGet("/", async (
             HttpContext httpContext,
@@ -306,21 +311,21 @@ public static class IdentityEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IQueryHandler<ListPermissionsQuery, PagedResultDto<PermissionDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var pagedPerms = await handler.HandleAsync(new ListPermissionsQuery(search, page, pageSize), ct);
+            var pagedPerms = await sender.Send(new ListPermissionsQuery(search, page, pageSize), ct);
             return pagedPerms.ToHttpResult(httpContext, paged);
         }).RequirePermission("roles.manage");
 
         permissionsGroup.MapPost("/", async (
             CreatePermissionRequest req,
-            ICommandHandler<CreatePermissionCommand, PermissionDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var created = await handler.HandleAsync(new CreatePermissionCommand(req), ct);
+                var created = await sender.Send(new CreatePermissionCommand(req), ct);
                 return Results.Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -332,19 +337,19 @@ public static class IdentityEndpoints
         permissionsGroup.MapPut("/{id:guid}", async (
             Guid id,
             AdminUpdatePermissionRequest req,
-            ICommandHandler<UpdatePermissionCommand, PermissionDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var updated = await handler.HandleAsync(new UpdatePermissionCommand(id, req), ct);
+            var updated = await sender.Send(new UpdatePermissionCommand(id, req), ct);
             return updated is null ? Results.NotFound() : Results.Ok(updated);
         }).RequirePermission("roles.manage");
 
         permissionsGroup.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeletePermissionCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            bool deleted = await handler.HandleAsync(new DeletePermissionCommand(id), ct);
+            bool deleted = await sender.Send(new DeletePermissionCommand(id), ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("roles.manage");
 

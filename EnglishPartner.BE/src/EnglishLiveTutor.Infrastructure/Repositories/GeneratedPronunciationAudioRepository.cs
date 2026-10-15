@@ -36,7 +36,6 @@ public sealed class GeneratedPronunciationAudioRepository : IGeneratedPronunciat
                 a.TextHash == textHash &&
                 a.IsValid &&
                 !a.IsDeleted &&
-                a.AudioData != null &&
                 EF.Functions.DataLength(a.AudioData) > 0)
             .OrderByDescending(a => a.UpdatedAtUtc ?? a.CreatedAtUtc)
             .ThenByDescending(a => a.CreatedAtUtc)
@@ -44,10 +43,9 @@ public sealed class GeneratedPronunciationAudioRepository : IGeneratedPronunciat
             .FirstOrDefaultAsync(ct);
     }
 
-    public Task AddAsync(GeneratedPronunciationAudioEntity entity, CancellationToken ct = default)
+    public async Task AddAsync(GeneratedPronunciationAudioEntity entity, CancellationToken ct = default)
     {
-        _db.GeneratedPronunciationAudios.Add(entity);
-        return Task.CompletedTask;
+        await _db.GeneratedPronunciationAudios.AddAsync(entity);
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);

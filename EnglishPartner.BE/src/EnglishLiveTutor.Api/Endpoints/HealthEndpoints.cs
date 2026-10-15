@@ -24,7 +24,7 @@ public static class HealthEndpoints
                 "/hubs/transcribe (gemini-3.5-transcribe-live)",
                 "/hubs/translate (gemini-3.5-live-translate-preview - text only)"
             }
-        }));
+        })).AllowAnonymous();
 
         return app;
     }

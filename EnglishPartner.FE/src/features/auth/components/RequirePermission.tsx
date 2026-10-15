@@ -31,9 +31,11 @@ export const RequirePermission: React.FC<RequirePermissionProps> = ({
     return (
       <div className="min-h-[65vh] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-3xl border border-rose-200 shadow-lg p-8 text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
-            <ShieldAlert className="w-7 h-7" />
-          </div>
+          <img
+            src="/assets/illustrations/illustration-load-error.svg"
+            alt=""
+            className="w-36 h-36 object-contain mx-auto select-none pointer-events-none"
+          />
           <h2 className="text-xl font-bold text-slate-900">Không đủ quyền truy cập (403)</h2>
           <p className="text-sm text-slate-600 leading-relaxed">
             Tài khoản <strong className="text-slate-900">{user?.username ?? 'Guest'}</strong> không có quyền{' '}

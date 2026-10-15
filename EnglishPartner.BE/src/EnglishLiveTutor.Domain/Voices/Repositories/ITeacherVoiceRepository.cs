@@ -13,5 +13,6 @@ public interface ITeacherVoiceRepository
         int? pageSize = null,
         CancellationToken ct = default);
     Task AddAsync(TeacherVoiceEntity voice, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string id, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

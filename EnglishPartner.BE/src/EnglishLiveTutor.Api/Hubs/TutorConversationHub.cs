@@ -1,14 +1,14 @@
 using EnglishLiveTutor.Application.Common.Models;
-using EnglishLiveTutor.Infrastructure.Realtime;
+using EnglishLiveTutor.Application.Features.Conversations.Ports;
 using Microsoft.AspNetCore.SignalR;
 
 namespace EnglishLiveTutor.Api.Hubs;
 
 public sealed class TutorConversationHub : Hub
 {
-    private readonly GeminiLiveConnectionManager _manager;
+    private readonly ILiveSessionService _manager;
 
-    public TutorConversationHub(GeminiLiveConnectionManager manager) => _manager = manager;
+    public TutorConversationHub(ILiveSessionService manager) => _manager = manager;
 
     public async Task InitializeTutorSession(StartTutorSessionRequest request)
     {

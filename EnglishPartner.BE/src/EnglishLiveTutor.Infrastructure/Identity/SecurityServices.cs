@@ -152,9 +152,27 @@ public sealed class HmacJwtTokenService : IJwtTokenService
             using var doc = JsonDocument.Parse(payloadBytes);
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("exp", out var expEl) && expEl.TryGetInt64(out long expUnix))
+            if (!root.TryGetProperty("exp", out var expEl) || !expEl.TryGetInt64(out long expUnix))
             {
-                if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= expUnix)
+                return null;
+            }
+
+            if (_timeProvider.GetUtcNow().ToUnixTimeSeconds() >= expUnix)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_issuer))
+            {
+                if (!root.TryGetProperty("iss", out var issEl) || issEl.GetString() != _issuer)
+                {
+                    return null;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(_audience))
+            {
+                if (!root.TryGetProperty("aud", out var audEl) || audEl.GetString() != _audience)
                 {
                     return null;
                 }

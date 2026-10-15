@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Sparkles,
   CheckCircle2,
@@ -30,6 +31,9 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
   onAnalyzeLatestTurn,
   onReplayUserTurnAudio,
 }) => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+
   const speakEnglish = (text: string) => {
     if (!('speechSynthesis' in window) || !text) return;
     window.speechSynthesis.cancel();
@@ -42,21 +46,27 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
   if (corrections.length === 0) {
     return (
       <div className="bg-white rounded-3xl border border-slate-200/90 p-5 text-center space-y-3 shadow-xs">
-        <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto p-2 shadow-2xs">
           {isAnalyzing ? (
-            <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
           ) : (
-            <CheckCircle2 className="w-5 h-5" />
+            <img src="/assets/icons/navigation/nav-rubrics.svg" alt="" className="w-7 h-7 object-contain" />
           )}
         </div>
         <div className="space-y-1">
           <h3 className="text-sm font-extrabold text-slate-800">
-            Sửa lỗi Ngữ pháp & Từ vựng Realtime
+            {t('tutor.grammarRealtimeTitle', 'Sửa lỗi Ngữ pháp & Từ vựng Realtime')}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
             {isAnalyzing
-              ? 'AI đang phân tích câu nói vừa rồi của bạn để gợi ý ngữ pháp & từ vựng...'
-              : 'Khi bạn nói tiếng Anh, AI sẽ tự động phân tích ngữ pháp, cấu trúc câu và gợi ý cách diễn đạt tự nhiên hơn tại đây.'}
+              ? t(
+                  'tutor.analyzingMsg',
+                  'AI đang phân tích câu nói vừa rồi của bạn để gợi ý ngữ pháp & từ vựng...'
+                )
+              : t(
+                  'tutor.idleGrammarMsg',
+                  'Khi bạn nói tiếng Anh, AI sẽ tự động phân tích ngữ pháp, cấu trúc câu và gợi ý cách diễn đạt tự nhiên hơn tại đây.'
+                )}
           </p>
         </div>
 
@@ -70,7 +80,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
               className="mx-auto border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-amber-900 font-bold"
             >
               <Wand2 className="w-3.5 h-3.5 text-amber-700" />
-              Phân tích lượt nói gần nhất
+              {t('tutor.analyzeLatestBtn', 'Phân tích lượt nói gần nhất')}
             </Button>
           </div>
         )}
@@ -82,14 +92,17 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
     <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 flex flex-col h-[calc(100vh-9.5rem)] min-h-[540px] shadow-xs">
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 shrink-0">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+          <img src="/assets/icons/navigation/nav-rubrics.svg" alt="" className="w-4 h-4 object-contain shrink-0" />
           <h3 className="text-sm font-extrabold text-slate-900">
-            Sửa lỗi Ngữ pháp & Từ vựng ({corrections.length})
+            {t('tutor.grammarListTitle', {
+              count: corrections.length,
+              defaultValue: `Sửa lỗi Ngữ pháp & Từ vựng (${corrections.length})`,
+            })}
           </h3>
           {isAnalyzing && (
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
               <Loader2 className="w-3 h-3 animate-spin" />
-              Đang chấm...
+              {t('tutor.gradingBadge', 'Đang chấm...')}
             </span>
           )}
         </div>
@@ -102,7 +115,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
             className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
           >
             <Wand2 className="w-3 h-3" />
-            Chấm lại
+            {t('tutor.reanalyzeBtn', 'Chấm lại')}
           </button>
         )}
       </div>
@@ -122,7 +135,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
               <div className="flex items-center justify-between gap-2">
                 <Badge variant="amber">{item.errorCategory || 'Grammar & Vocabulary'}</Badge>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
+                  {new Date(item.timestamp).toLocaleTimeString(dateLocale)}
                 </span>
               </div>
 
@@ -130,7 +143,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
               <div className="flex items-start justify-between gap-2 bg-rose-50/70 border border-rose-200/70 rounded-xl px-3 py-2">
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">
-                    Câu gốc của bạn
+                    {t('tutor.originalSentence', 'Câu gốc của bạn')}
                   </span>
                   <p
                     className={
@@ -153,8 +166,11 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
                   }}
                   title={
                     isReplayingOriginal
-                      ? 'Dừng phát lại'
-                      : 'Nghe lại câu gốc (Giọng thu âm của bạn)'
+                      ? t('tutor.stopReplayShort', 'Dừng phát lại')
+                      : t(
+                          'tutor.replayUserAudioShort',
+                          'Nghe lại câu gốc (Giọng thu âm của bạn)'
+                        )
                   }
                   className="p-1 rounded-lg text-rose-600 hover:bg-rose-100 shrink-0 cursor-pointer"
                 >
@@ -171,7 +187,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
                     <ArrowRight className="w-3 h-3" />
-                    Câu chuẩn / Nâng cấp diễn đạt
+                    {t('tutor.correctedSentence', 'Câu chuẩn / Nâng cấp diễn đạt')}
                   </span>
                   <p className="text-emerald-900 font-bold leading-relaxed">
                     {item.correctedSentence}
@@ -180,7 +196,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => speakEnglish(item.correctedSentence)}
-                  title="Nghe phát âm mẫu câu đã sửa"
+                  title={t('tutor.listenCorrectedSpeech', 'Nghe phát âm mẫu câu đã sửa')}
                   className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-100 shrink-0 cursor-pointer"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
@@ -189,14 +205,18 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
 
               {item.naturalAlternative && (
                 <div className="text-slate-700 bg-white/90 rounded-xl p-2.5 border border-amber-100 leading-relaxed">
-                  <strong className="text-slate-900">Cách nói tự nhiên (Native):</strong>{' '}
+                  <strong className="text-slate-900">
+                    {t('tutor.naturalAlternative', 'Cách nói tự nhiên (Native):')}
+                  </strong>{' '}
                   {item.naturalAlternative}
                 </div>
               )}
 
               {(item.explanationVi || item.overallTipVi) && (
                 <p className="text-slate-700 leading-relaxed bg-white/75 rounded-xl px-3 py-2 border border-slate-200/70">
-                  <strong className="text-slate-900">Giải thích:</strong>{' '}
+                  <strong className="text-slate-900">
+                    {t('tutor.explanationPrefix', 'Giải thích:')}
+                  </strong>{' '}
                   {item.explanationVi || item.overallTipVi}
                 </p>
               )}

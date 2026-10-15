@@ -17,6 +17,7 @@ public sealed class UserRepository : IUserRepository
     public async Task<UserEntity?> GetByIdWithRolesAndTokensAsync(Guid id, CancellationToken ct = default)
     {
         return await _db.Users
+            .AsSplitQuery()
             .Include(u => u.UserRoles)
             .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
@@ -28,6 +29,7 @@ public sealed class UserRepository : IUserRepository
         string normEmail = UserEntity.NormalizeEmail(trimmed);
 
         return await _db.Users
+            .AsSplitQuery()
             .Include(u => u.UserRoles)
             .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normEmail || u.Username == trimmed, ct);
@@ -37,6 +39,7 @@ public sealed class UserRepository : IUserRepository
     {
         string cleanToken = refreshToken.Trim();
         return await _db.Users
+            .AsSplitQuery()
             .Include(u => u.UserRoles)
             .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == cleanToken), ct);

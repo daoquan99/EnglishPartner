@@ -48,6 +48,53 @@ public static class IdentityProjectionHelper
         return (roleCodes, permissionCodes);
     }
 
+    public static async Task<Dictionary<Guid, (List<string> RoleCodes, List<string> PermissionCodes)>> ResolveUsersRolesAndPermissionsBatchAsync(
+        IAppDbContext db,
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken ct = default)
+    {
+        var result = userIds.ToDictionary(id => id, _ => (new List<string>(), new List<string>()));
+        if (userIds.Count == 0) return result;
+
+        var userRoles = await (
+            from ur in db.UserRoles.AsNoTracking()
+            join r in db.Roles.AsNoTracking() on ur.RoleId equals r.Id
+            where userIds.Contains(ur.UserId) && r.IsActive
+            select new { ur.UserId, r.Id, r.Code }
+        ).ToListAsync(ct);
+
+        if (userRoles.Count == 0) return result;
+
+        var activeRoleIds = userRoles.Select(ur => ur.Id).Distinct().ToList();
+
+        var rolePermissions = await (
+            from rp in db.RolePermissions.AsNoTracking()
+            join p in db.Permissions.AsNoTracking() on rp.PermissionId equals p.Id
+            where activeRoleIds.Contains(rp.RoleId)
+            select new { rp.RoleId, p.Code }
+        ).ToListAsync(ct);
+
+        var rolePermissionMap = rolePermissions
+            .GroupBy(rp => rp.RoleId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Code).ToHashSet());
+
+        var userRoleGroups = userRoles.GroupBy(ur => ur.UserId);
+        foreach (var ug in userRoleGroups)
+        {
+            var roleCodes = ug.Select(x => x.Code).Distinct().OrderBy(c => c).ToList();
+            var permCodes = ug
+                .Where(x => rolePermissionMap.ContainsKey(x.Id))
+                .SelectMany(x => rolePermissionMap[x.Id])
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+
+            result[ug.Key] = (roleCodes, permCodes);
+        }
+
+        return result;
+    }
+
     public static UserProfileDto MapToProfileDto(
         UserEntity user,
         List<string> roleCodes,

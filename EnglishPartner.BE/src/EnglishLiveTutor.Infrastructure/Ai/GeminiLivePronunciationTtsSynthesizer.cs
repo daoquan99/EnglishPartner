@@ -40,8 +40,7 @@ public sealed class GeminiLivePronunciationTtsSynthesizer : ILivePronunciationTt
 
         string voiceName = string.IsNullOrWhiteSpace(request.VoiceName) ? "Aoede" : request.VoiceName.Trim();
         double speed = Math.Clamp(request.SpeechSpeed <= 0 ? 1.0 : request.SpeechSpeed, 0.5, 2.0);
-        string targetType = string.Equals(request.TargetType, "sentence", StringComparison.OrdinalIgnoreCase) ||
-                            request.Text.Trim().Contains(' ')
+        string targetType = string.Equals(request.TargetType, "sentence", StringComparison.OrdinalIgnoreCase)
             ? "sentence"
             : "word";
 

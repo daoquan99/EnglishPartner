@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Code Prompt Window Body -->
+  <rect x="2.5" y="3.5" width="19" height="17" rx="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.8" />
+  
+  <!-- Window Header Bar -->
+  <path d="M 2.5 7.5 H 21.5" stroke="#94a3b8" stroke-width="1.2" />
+  <circle cx="5.5" cy="5.5" r="1" fill="#f43f5e" />
+  <circle cx="8" cy="5.5" r="1" fill="#f59e0b" />
+  <circle cx="10.5" cy="5.5" r="1" fill="#10b981" />
+
+  <!-- Terminal Command Prompt Prompt Characters -->
+  <!-- Greater than '>' prompt chevron -->
+  <path d="M 6 11 L 8.5 13 L 6 15" stroke="#059669" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Underline Cursor -->
+  <line x1="10.5" y1="15" x2="14.5" y2="15" stroke="#2563eb" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Code sparkles in top right -->
+  <path d="M 17 10 L 17.5 11 L 18.5 11.5 L 17.5 12 L 17 13 L 16.5 12 L 15.5 11.5 L 16.5 11 Z" fill="#d97706" />
+</svg>

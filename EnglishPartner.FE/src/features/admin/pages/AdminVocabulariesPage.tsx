@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen, Plus, Save, Search } from 'lucide-react';
+import { Plus, Save, Search } from 'lucide-react';
 import {
   useAdminVocabulariesQuery,
   useCreateVocabularyAdminMutation,
@@ -15,6 +15,7 @@ import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { DataTable, type DataTableColumn } from '@/shared/components/ui/DataTable';
 import { FormField } from '@/shared/components/ui/FormField';
 import { FeedbackBanner } from '@/shared/components/ui/FeedbackBanner';
+import { toast } from '@/shared/lib/toast';
 import type { CefrLevel } from '@/shared/api/openapi.types';
 
 export const AdminVocabulariesPage: React.FC = () => {
@@ -216,12 +217,14 @@ export const AdminVocabulariesPage: React.FC = () => {
       } else {
         setLocalItems([localCard, ...items]);
       }
+      const successMsg = editingId
+        ? `Đã cập nhật từ vựng "${payload.word}".`
+        : `Đã tạo mới từ vựng "${payload.word}".`;
       setFeedback({
         type: 'success',
-        message: editingId
-          ? `Đã cập nhật từ vựng "${payload.word}".`
-          : `Đã tạo mới từ vựng "${payload.word}".`,
+        message: successMsg,
       });
+      toast.success(successMsg);
     }
 
     setIsDialogOpen(false);
@@ -236,10 +239,12 @@ export const AdminVocabulariesPage: React.FC = () => {
       // ignore offline
     }
     setLocalItems(items.filter((x) => x.vocabularyId !== deleteTarget.vocabularyId));
+    const deleteMsg = `Đã xóa từ vựng "${deleteTarget.word}" khỏi danh sách.`;
     setFeedback({
       type: 'success',
-      message: `Đã xóa từ vựng "${deleteTarget.word}" khỏi danh sách.`,
+      message: deleteMsg,
     });
+    toast.success(deleteMsg);
     setDeleteTarget(null);
   };
 
@@ -327,8 +332,8 @@ export const AdminVocabulariesPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <BookOpen className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-reviews.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -415,7 +420,13 @@ export const AdminVocabulariesPage: React.FC = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         maxWidth="3xl"
-        icon={<BookOpen className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-reviews.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingId ? `Chỉnh sửa Flashcard: ${word}` : 'Thêm mới Từ vựng / Flashcard'}
         description="Điền thông tin từ vựng, phiên âm IPA Anh-Anh / Anh-Mỹ, nghĩa Tiếng Việt và câu ví dụ"
         footer={

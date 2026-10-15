@@ -28,6 +28,21 @@ public sealed class DailyVocabularyPlanRepository : IDailyVocabularyPlanReposito
             .FirstOrDefaultAsync(p => p.Id == planId, ct);
     }
 
+    public async Task<DailyVocabularyPlanEntity?> GetByItemIdWithItemsAsync(Guid itemId, CancellationToken ct = default)
+    {
+        return await _db.DailyVocabularyPlans
+            .Include(p => p.Items)
+            .FirstOrDefaultAsync(p => p.Items.Any(i => i.Id == itemId), ct);
+    }
+
+    public async Task<DailyVocabularyPlanEntity?> GetByUserAndSenseIdWithItemsAsync(string userId, Guid senseId, CancellationToken ct = default)
+    {
+        return await _db.DailyVocabularyPlans
+            .Include(p => p.Items)
+            .OrderByDescending(p => p.LearningDate)
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.Items.Any(i => i.SenseId == senseId), ct);
+    }
+
     public Task AddAsync(DailyVocabularyPlanEntity plan, CancellationToken ct = default)
     {
         _db.DailyVocabularyPlans.Add(plan);

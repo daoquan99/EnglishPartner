@@ -9,14 +9,14 @@ namespace EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
 public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly TimeProvider _timeProvider;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentUser? _currentUser;
 
     public AuditingSaveChangesInterceptor(
         TimeProvider? timeProvider = null,
         ICurrentUser? currentUser = null)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _currentUser = currentUser ?? SystemCurrentUser.Instance;
+        _currentUser = currentUser;
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -44,7 +44,7 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
         }
 
         DateTimeOffset utcNow = _timeProvider.GetUtcNow();
-        string actor = string.IsNullOrWhiteSpace(_currentUser.UserId)
+        string actor = string.IsNullOrWhiteSpace(_currentUser?.UserId)
             ? "system"
             : _currentUser.UserId!.Trim();
 
@@ -70,7 +70,26 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
             {
                 if (childEntry.State == EntityState.Deleted && childEntry.Entity is not ISoftDeletable)
                 {
-                    childEntry.State = EntityState.Unchanged;
+                    bool isDescendantOfSoftDeletedRoot = false;
+                    foreach (var fk in childEntry.Metadata.GetForeignKeys())
+                    {
+                        var matchingRoot = softDeletedRoots.FirstOrDefault(r => r.Metadata == fk.PrincipalEntityType);
+                        if (matchingRoot is not null && fk.Properties.Count > 0 && fk.PrincipalKey.Properties.Count > 0)
+                        {
+                            var childFkVal = childEntry.Property(fk.Properties[0].Name).CurrentValue;
+                            var rootPkVal = matchingRoot.Property(fk.PrincipalKey.Properties[0].Name).CurrentValue;
+                            if (childFkVal != null && Equals(childFkVal, rootPkVal))
+                            {
+                                isDescendantOfSoftDeletedRoot = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isDescendantOfSoftDeletedRoot)
+                    {
+                        childEntry.State = EntityState.Unchanged;
+                    }
                 }
             }
         }
@@ -104,17 +123,5 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
                 updatedByProp.IsModified = true;
             }
         }
-    }
-}
-
-public sealed class SystemCurrentUser : ICurrentUser
-{
-    public static readonly SystemCurrentUser Instance = new("system");
-
-    public string? UserId { get; }
-
-    public SystemCurrentUser(string? userId = "system")
-    {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "system" : userId.Trim();
     }
 }

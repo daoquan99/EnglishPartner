@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { AuthResponseDto } from './openapi.types';
+import { toast } from '@/shared/lib/toast';
 
 /**
  * Resolve backend base URL cleanly in development & production.
@@ -69,8 +70,74 @@ httpClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
  */
 let singleFlightRefreshPromise: Promise<string | null> | null = null;
 
-interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+export interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
+  skipErrorToast?: boolean;
+}
+
+/**
+ * Extracts a human-friendly error message from ASP.NET ProblemDetails or Axios error
+ */
+export function extractApiErrorMessage(error: AxiosError): string {
+  if (!error.response) {
+    if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
+      return 'Yêu cầu kết nối quá thời gian chờ (Timeout). Vui lòng thử lại.';
+    }
+    return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền hoặc Backend API.';
+  }
+
+  const rawData = error.response.data;
+
+  if (typeof rawData === 'string') {
+    const trimmed = rawData.trim();
+    if (trimmed) return trimmed;
+  } else if (rawData && typeof rawData === 'object') {
+    const data = rawData as {
+      detail?: unknown;
+      message?: unknown;
+      title?: unknown;
+      errors?: Record<string, unknown>;
+    };
+
+    if (typeof data.detail === 'string' && data.detail.trim()) {
+      return data.detail.trim();
+    }
+    if (typeof data.message === 'string' && data.message.trim()) {
+      return data.message.trim();
+    }
+    if (data.errors && typeof data.errors === 'object') {
+      const firstKey = Object.keys(data.errors)[0];
+      if (firstKey) {
+        const messages = data.errors[firstKey];
+        if (Array.isArray(messages) && messages.length > 0 && typeof messages[0] === 'string') {
+          return messages[0];
+        }
+        if (typeof messages === 'string') {
+          return messages;
+        }
+      }
+    }
+    if (typeof data.title === 'string' && data.title.trim()) {
+      return data.title.trim();
+    }
+  }
+  if (error.response.status === 400) {
+    return 'Dữ liệu gửi lên không hợp lệ (400 Bad Request).';
+  }
+  if (error.response.status === 401) {
+    return 'Phiên đăng nhập đã hết hạn hoặc thông tin không hợp lệ.';
+  }
+  if (error.response.status === 403) {
+    return 'Bạn không có quyền thực hiện thao tác này (403 Forbidden).';
+  }
+  if (error.response.status === 404) {
+    return 'Không tìm thấy tài nguyên yêu cầu (404 Not Found).';
+  }
+  if (error.response.status >= 500) {
+    return 'Máy chủ gặp sự cố nội bộ (500 Server Error). Vui lòng thử lại sau.';
+  }
+
+  return error.message || 'Yêu cầu API thất bại. Vui lòng thử lại.';
 }
 
 export async function performSingleFlightTokenRefresh(): Promise<string | null> {
@@ -132,6 +199,21 @@ httpClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return httpClient(originalRequest);
       }
+    }
+
+    // Automatically trigger error notification toast for failed API calls
+    const isSilentRefresh = originalRequest.url?.includes('/api/auth/refresh');
+    const shouldSkipToast = Boolean(originalRequest.skipErrorToast || isSilentRefresh);
+
+    if (!shouldSkipToast) {
+      const errorMsg = extractApiErrorMessage(error);
+      const status = error.response?.status;
+      const title = status ? `Lỗi API (${status})` : 'Lỗi kết nối';
+      const toastKey = `api-err-${status ?? 'net'}-${errorMsg.slice(0, 50)}`;
+      toast.error(errorMsg, {
+        id: toastKey,
+        title,
+      });
     }
 
     return Promise.reject(error);

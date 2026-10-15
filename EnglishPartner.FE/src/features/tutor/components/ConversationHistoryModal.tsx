@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   History,
   Play,
@@ -41,6 +42,8 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
   onStartNewConversation,
   onDeleteConversation,
 }) => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
   const visible = Boolean(isOpen ?? open);
   const handleResumeCallback = onResumeConversation ?? onSelectAndResume;
 
@@ -112,13 +115,28 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
           onClose();
         }}
         maxWidth="4xl"
-        icon={<History className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-history.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={
           selectedDetail
-            ? `Chi tiết Hội thoại: ${selectedDetail.title}`
-            : `Lịch sử Cuộc trò chuyện (${conversations.length})`
+            ? t('tutor.historyModalTitleDetail', {
+                title: selectedDetail.title,
+                defaultValue: `Chi tiết Hội thoại: ${selectedDetail.title}`,
+              })
+            : t('tutor.historyModalTitle', {
+                count: conversations.length,
+                defaultValue: `Lịch sử Cuộc trò chuyện (${conversations.length})`,
+              })
         }
-        description="Xem lại chi tiết nội dung song ngữ, chuyển sang cuộc hội thoại mới, tiếp tục phiên cũ hoặc xóa lịch sử"
+        description={t(
+          'tutor.historyModalDesc',
+          'Xem lại chi tiết nội dung song ngữ, chuyển sang cuộc hội thoại mới, tiếp tục phiên cũ hoặc xóa lịch sử'
+        )}
         footer={
           <div className="flex items-center justify-between w-full flex-wrap gap-2">
             {selectedDetail ? (
@@ -129,7 +147,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                   onClick={() => setSelectedDetail(null)}
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Quay lại danh sách
+                  {t('tutor.backToList', 'Quay lại danh sách')}
                 </Button>
                 <div className="flex items-center gap-2">
                   <Button
@@ -142,7 +160,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     }}
                   >
                     <MessageSquarePlus className="w-4 h-4 text-emerald-700" />
-                    Tạo cuộc hội thoại mới
+                    {t('tutor.createNewConversation', 'Tạo cuộc hội thoại mới')}
                   </Button>
                   <Button
                     variant="primary"
@@ -154,14 +172,17 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     }}
                   >
                     <Play className="w-4 h-4" />
-                    Tiếp tục phiên hội thoại này
+                    {t('tutor.resumeThisConversation', 'Tiếp tục phiên hội thoại này')}
                   </Button>
                 </div>
               </>
             ) : (
               <>
                 <span className="text-xs text-slate-500">
-                  Tổng cộng <strong>{conversations.length}</strong> phiên hội thoại đã lưu
+                  {t('tutor.totalSavedSessions', {
+                    count: conversations.length,
+                    defaultValue: `Tổng cộng ${conversations.length} phiên hội thoại đã lưu`,
+                  })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -173,10 +194,10 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     }}
                   >
                     <MessageSquarePlus className="w-4 h-4" />
-                    Tạo cuộc hội thoại mới
+                    {t('tutor.createNewConversation', 'Tạo cuộc hội thoại mới')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={onClose}>
-                    Đóng (ESC)
+                    {t('tutor.closeEsc', 'Đóng (ESC)')}
                   </Button>
                 </div>
               </>
@@ -194,21 +215,31 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                 <Badge variant="amber">{selectedDetail.speechSpeed.toFixed(2)}x</Badge>
                 {selectedDetail.topic && (
                   <span className="font-semibold text-slate-700">
-                    Chủ đề: {selectedDetail.topic}
+                    {t('tutor.topicBadge', {
+                      topic: selectedDetail.topic,
+                      defaultValue: `Chủ đề: ${selectedDetail.topic}`,
+                    })}
                   </span>
                 )}
               </div>
               <span className="text-slate-500">
-                {new Date(selectedDetail.updatedAtUtc || selectedDetail.createdAtUtc).toLocaleString(
-                  'vi-VN'
-                )}
+                {new Date(
+                  selectedDetail.updatedAtUtc || selectedDetail.createdAtUtc
+                ).toLocaleString(dateLocale)}
               </span>
             </div>
 
             {selectedDetail.messages.length === 0 ? (
               <EmptyState
-                title="Phiên hội thoại này chưa có lượt tin nhắn nào"
-                description="Nhấn 'Tiếp tục phiên hội thoại này' ở góc dưới để bắt đầu nói chuyện."
+                illustration="no-plan"
+                title={t(
+                  'tutor.emptyTurnTitle',
+                  'Phiên hội thoại này chưa có lượt tin nhắn nào'
+                )}
+                description={t(
+                  'tutor.emptyTurnDesc',
+                  'Nhấn "Tiếp tục phiên hội thoại này" ở góc dưới để bắt đầu nói chuyện.'
+                )}
               />
             ) : (
               <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
@@ -222,8 +253,14 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     }`}
                   >
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                      <span>{m.speaker === 'user' ? 'Bạn (Học viên)' : 'AI Teacher'}</span>
-                      <span>{new Date(m.createdAtUtc).toLocaleTimeString('vi-VN')}</span>
+                      <span>
+                        {m.speaker === 'user'
+                          ? t('tutor.youLearner', 'Bạn (Học viên)')
+                          : t('tutor.aiTeacherSpeaker', 'AI Teacher')}
+                      </span>
+                      <span>
+                        {new Date(m.createdAtUtc).toLocaleTimeString(dateLocale)}
+                      </span>
                     </div>
                     <p className="font-bold text-slate-900 text-sm">{m.transcriptLine1}</p>
                     {m.translationLine2 && (
@@ -236,8 +273,12 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
           </div>
         ) : conversations.length === 0 ? (
           <EmptyState
-            title="Chưa có lịch sử cuộc trò chuyện nào"
-            description="Khi bạn bắt đầu luyện nói cùng Gia Sư AI, toàn bộ nội dung hội thoại song ngữ và sửa lỗi ngữ pháp sẽ được lưu tự động tại đây."
+            illustration="welcome"
+            title={t('tutor.emptyHistoryTitle', 'Chưa có lịch sử cuộc trò chuyện nào')}
+            description={t(
+              'tutor.emptyHistoryDesc',
+              'Khi bạn bắt đầu luyện nói cùng Gia Sư AI, toàn bộ nội dung hội thoại song ngữ và sửa lỗi ngữ pháp sẽ được lưu tự động tại đây.'
+            )}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -246,7 +287,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
               return (
                 <div
                   key={conv.id}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 shadow-2xs ${
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 shadow-2xs overflow-hidden ${
                     isCurrentActive
                       ? 'border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-400/50'
                       : 'border-slate-200 hover:border-emerald-400 bg-white'
@@ -258,7 +299,9 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                         {conv.title || `${conv.conversationMode} (${conv.cefrLevel})`}
                       </h3>
                       <div className="flex items-center gap-1 shrink-0">
-                        {isCurrentActive && <Badge variant="emerald">Đang mở</Badge>}
+                        {isCurrentActive && (
+                          <Badge variant="emerald">{t('tutor.currentlyOpen', 'Đang mở')}</Badge>
+                        )}
                         <Badge variant="emerald">CEFR {conv.cefrLevel}</Badge>
                       </div>
                     </div>
@@ -282,27 +325,29 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     )}
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
-                      <span className="inline-flex items-center gap-1">
+                  <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 text-[11px] text-slate-500 font-medium flex-wrap min-w-0">
+                      <span className="inline-flex items-center gap-1 shrink-0">
                         <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                        {conv.messageCount} lượt
+                        {conv.messageCount} {t('tutor.turnsUnit', 'lượt')}
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 shrink-0">
                         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                        {conv.correctionCount} sửa lỗi
+                        {conv.correctionCount} {t('tutor.correctionsUnit', 'sửa lỗi')}
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 shrink-0">
                         <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {new Date(conv.updatedAtUtc || conv.createdAtUtc).toLocaleDateString('vi-VN')}
+                        {new Date(conv.updatedAtUtc || conv.createdAtUtc).toLocaleDateString(
+                          dateLocale
+                        )}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                       <IconButton
                         action="view"
                         size="sm"
-                        label="Xem chi tiết hội thoại"
+                        label={t('tutor.viewDetailAria', 'Xem chi tiết hội thoại')}
                         disabled={loadingDetailId === conv.id}
                         onClick={() => void handleViewDetail(conv)}
                       />
@@ -313,12 +358,15 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                         onClick={() => void handleResume(conv)}
                       >
                         <Play className="w-3.5 h-3.5" />
-                        Tiếp tục
+                        {t('tutor.resumeShort', 'Tiếp tục')}
                       </Button>
                       <IconButton
                         action="delete"
                         size="sm"
-                        label={`Xóa hội thoại ${conv.title}`}
+                        label={t('tutor.deleteConvAria', {
+                          title: conv.title,
+                          defaultValue: `Xóa hội thoại ${conv.title}`,
+                        })}
                         onClick={() => setDeleteTarget(conv)}
                       />
                     </div>
@@ -335,9 +383,15 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => void handleConfirmDelete()}
         isLoading={isDeleting}
-        title="Xóa lịch sử cuộc trò chuyện"
-        targetName={deleteTarget?.title || 'Phiên hội thoại đã chọn'}
-        description="Toàn bộ tin nhắn song ngữ và lịch sử sửa lỗi ngữ pháp của phiên này sẽ bị xóa khỏi danh sách."
+        title={t('tutor.deleteConfirmTitle', 'Xóa lịch sử cuộc trò chuyện')}
+        targetName={
+          deleteTarget?.title ||
+          t('tutor.deleteConfirmTargetFallback', 'Phiên hội thoại đã chọn')
+        }
+        description={t(
+          'tutor.deleteConfirmDesc',
+          'Toàn bộ tin nhắn song ngữ và lịch sử sửa lỗi ngữ pháp của phiên này sẽ bị xóa khỏi danh sách.'
+        )}
       />
     </>
   );

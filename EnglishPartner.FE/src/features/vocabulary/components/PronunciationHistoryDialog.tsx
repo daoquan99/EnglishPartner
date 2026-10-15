@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   History,
   Mic,
@@ -39,6 +40,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
   selectedExampleIndex,
   recentAssessmentResult,
 }) => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'pronunciation' | 'flashcard'>('pronunciation');
 
   if (!card) return null;
@@ -47,23 +49,23 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
   const hasExample = !isWordTarget && Boolean(selectedExample);
 
   const title = isWordTarget
-    ? `Lịch sử luyện tập: Từ "${card.word}"`
+    ? `${t('vocab.historyModalTitle')}: ${t('vocab.historyTargetWord')} "${card.word}"`
     : selectedExample
-      ? `Lịch sử luyện tập: Câu ví dụ #${selectedExampleIndex + 1}`
-      : 'Lịch sử luyện tập: Câu ví dụ';
+      ? `${t('vocab.historyModalTitle')}: ${t('vocab.historyTargetExample')} #${selectedExampleIndex + 1}`
+      : `${t('vocab.historyModalTitle')}: ${t('vocab.historyTargetExample')}`;
 
   const description = isWordTarget
-    ? `Nghĩa: ${card.meaningVi || card.definitionEn} · Trình độ CEFR ${card.cefrLevel}`
+    ? `${t('vocab.vietnameseMeaning')}: ${card.meaningVi || card.definitionEn} · ${t('common.cefrLevel')} ${card.cefrLevel}`
     : selectedExample
       ? `"${selectedExample.sentenceEn}"`
-      : 'Từ này hiện chưa có câu ví dụ để xem lịch sử.';
+      : t('vocab.noExamples');
 
   // Format date helper with user's local timezone
   const formatLocalDate = (isoString?: string | null): string => {
-    if (!isoString) return 'Chưa có dữ liệu';
+    if (!isoString) return t('vocab.noSchedule');
     try {
       const date = new Date(isoString);
-      return new Intl.DateTimeFormat('vi-VN', {
+      return new Intl.DateTimeFormat(i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
       }).format(date);
@@ -86,7 +88,13 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
         isOpen={isOpen}
         onClose={onClose}
         maxWidth="3xl"
-        icon={<History className="w-5 h-5 text-emerald-600" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-history.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={title}
         description={description}
         footer={
@@ -96,7 +104,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
               <span className="font-mono text-slate-700">{card.senseId.slice(0, 8)}...</span>
             </span>
             <Button variant="outline" size="sm" onClick={onClose}>
-              Đóng hộp thoại
+              {t('common.closeDialog')}
             </Button>
           </div>
         }
@@ -115,8 +123,8 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 )}
               >
-                <Mic className="w-3.5 h-3.5" />
-                Lịch sử phát âm ({card.word})
+                <img src="/assets/icons/navigation/nav-voices.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                {t('vocab.pronunciationTab')} ({card.word})
               </button>
               <button
                 type="button"
@@ -128,15 +136,15 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 )}
               >
-                <BookOpen className="w-3.5 h-3.5" />
-                Lịch sử học từ (Flashcard SM-2)
+                <img src="/assets/icons/navigation/nav-study.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                {t('vocab.flashcardTab')}
               </button>
             </div>
           ) : (
             <div className="flex border-b border-slate-200 gap-2">
               <div className="flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 border-emerald-600 text-emerald-700 text-xs">
-                <Mic className="w-3.5 h-3.5" />
-                Lịch sử phát âm câu ví dụ
+                <img src="/assets/icons/navigation/nav-sentences.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                {t('vocab.historyTargetExample')}
               </div>
             </div>
           )}
@@ -146,10 +154,10 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
             <div className="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
               <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
               <div className="text-sm font-bold text-slate-800">
-                Từ này chưa có câu ví dụ
+                {t('vocab.noExamples')}
               </div>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Không thể xem lịch sử phát âm câu ví dụ vì từ vựng này chưa có dữ liệu ví dụ. Vui lòng chọn chế độ Từ đơn để xem lịch sử của từ.
+                {t('vocab.noExampleHistory')}
               </p>
             </div>
           ) : (
@@ -161,7 +169,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     <Clock className="w-4 h-4" />
                   </div>
                   <div className="font-extrabold text-xs sm:text-sm text-amber-950">
-                    Lịch sử đang chờ Backend hỗ trợ
+                    {t('vocab.historyPending')}
                   </div>
                   <Badge variant="amber" className="ml-auto text-[10px]">
                     Contract Pending
@@ -169,20 +177,20 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                 </div>
                 <p className="text-xs text-amber-900 leading-relaxed">
                   {activeTab === 'pronunciation'
-                    ? 'Endpoint phát âm `/api/pronunciation/assessments/history` hiện tại ở Backend chỉ nhận vocabularyId chung, chưa có bộ lọc theo nghĩa (senseId), câu ví dụ cụ thể (targetId) hoặc phân trang người dùng cá nhân.'
-                    : 'Endpoint học từ `/api/learning/flashcards/history` hiện tại ở Backend chỉ lấy dữ liệu cố định của default-learner và chưa lọc theo từng từ/nghĩa.'}
+                    ? t('vocab.historyPendingDescPronunciation')
+                    : t('vocab.historyPendingDescFlashcard')}
                 </p>
                 <div className="pt-1.5 border-t border-amber-200/80 text-[11px] text-amber-800 flex flex-wrap gap-x-4 gap-y-1">
                   <span>
-                    🎯 Mục tiêu:{' '}
+                    🎯 {t('vocab.targetLabel')}{' '}
                     <strong>
                       {isWordTarget
-                        ? `Từ "${card.word}" (Word)`
-                        : `Câu ví dụ #${selectedExampleIndex + 1} (Sentence)`}
+                        ? `${t('vocab.historyTargetWord')} "${card.word}" (Word)`
+                        : `${t('vocab.historyTargetExample')} #${selectedExampleIndex + 1} (Sentence)`}
                     </strong>
                   </span>
                   <span>
-                    📋 Quy chuẩn:{' '}
+                    📋 {t('vocab.standardDoc')}{' '}
                     <code className="px-1 py-0.5 rounded bg-amber-100 text-[10px]">
                       pronunciation-learning-history-be.md
                     </code>
@@ -197,7 +205,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span className="font-extrabold text-xs text-emerald-950">
-                        Kết quả chấm phát âm vừa thực hiện trong phiên
+                        {t('vocab.recentSessionResult')}
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-500">
@@ -215,22 +223,21 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                       <div>
                         <div className="font-extrabold text-slate-900 text-xs">
                           {recentAssessmentResult.overallScore === null
-                            ? 'Không thể chấm điểm bản ghi này'
-                            : `Tổng điểm: ${recentAssessmentResult.overallScore}/100`}
+                            ? t('vocab.cannotScore')
+                            : `${t('vocab.totalScore')} ${recentAssessmentResult.overallScore}/100`}
                         </div>
                         <div className="text-[10px] text-slate-500">
-                          Model: {recentAssessmentResult.modelCodeUsed} · Ngữ điệu:{' '}
-                          {recentAssessmentResult.accent || 'US'} · Trạng thái: {recentAssessmentResult.status}
+                          Model: {recentAssessmentResult.modelCodeUsed} · {t('common.status')}: {recentAssessmentResult.status}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="emerald">Phiên hiện tại</Badge>
+                    <Badge variant="emerald">{t('vocab.currentSession')}</Badge>
                   </div>
 
                   {/* Transcript */}
                   {recentAssessmentResult.recognizedTranscript && (
                     <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs">
-                      <span className="font-bold text-slate-700">Văn bản nhận diện AI:</span>{' '}
+                      <span className="font-bold text-slate-700">{t('vocab.aiTranscript')}</span>{' '}
                       <span className="italic text-slate-600">
                         &ldquo;{recentAssessmentResult.recognizedTranscript}&rdquo;
                       </span>
@@ -250,7 +257,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                               {c.criterionName || c.criterionCode}: {c.score}/100
                             </div>
                             <div className="text-[10px] text-emerald-700 font-semibold">
-                              Trọng số: {c.weight}%
+                              Weight: {c.weight}%
                             </div>
                             {c.feedbackVi && (
                               <div className="text-[11px] text-slate-600 mt-0.5">
@@ -268,7 +275,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
                       {recentAssessmentResult.phonemeAndStressFeedbackVi && (
                         <p>
-                          <strong className="text-slate-800">Nhận xét âm vị:</strong>{' '}
+                          <strong className="text-slate-800">{t('vocab.phonemeFeedback')}</strong>{' '}
                           <span className="text-slate-600">
                             {recentAssessmentResult.phonemeAndStressFeedbackVi}
                           </span>
@@ -276,7 +283,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                       )}
                       {recentAssessmentResult.coachingSuggestionVi && (
                         <p>
-                          <strong className="text-emerald-800">Gợi ý luyện tập:</strong>{' '}
+                          <strong className="text-emerald-800">{t('vocab.coachingSuggestion')}</strong>{' '}
                           <span className="text-slate-600">
                             {recentAssessmentResult.coachingSuggestionVi}
                           </span>
@@ -293,13 +300,13 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                     <div className="font-bold text-slate-800 flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-emerald-600" />
-                      Thông số ôn tập Flashcard (Thuật toán SM-2 hiện tại)
+                      {t('vocab.sm2RatingTitle')}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
                       <div className="p-2.5 rounded-xl bg-white border border-slate-200">
                         <div className="text-[10px] text-slate-500 font-bold uppercase">
-                          Trạng thái
+                          {t('common.status')}
                         </div>
                         <div className="text-sm font-extrabold text-slate-900 mt-0.5">
                           {card.learningStatus || 'Learning'}
@@ -307,7 +314,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                       </div>
                       <div className="p-2.5 rounded-xl bg-white border border-slate-200">
                         <div className="text-[10px] text-slate-500 font-bold uppercase">
-                          Lần lặp lại
+                          {t('vocab.repetitionCount')}
                         </div>
                         <div className="text-sm font-extrabold text-slate-900 mt-0.5">
                           {card.repetitionCount}
@@ -315,15 +322,15 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                       </div>
                       <div className="p-2.5 rounded-xl bg-white border border-slate-200">
                         <div className="text-[10px] text-slate-500 font-bold uppercase">
-                          Khoảng cách ôn
+                          {t('vocab.intervalDays')}
                         </div>
                         <div className="text-sm font-extrabold text-slate-900 mt-0.5">
-                          {card.intervalDays} ngày
+                          {card.intervalDays} {t('vocab.days')}
                         </div>
                       </div>
                       <div className="p-2.5 rounded-xl bg-white border border-slate-200">
                         <div className="text-[10px] text-slate-500 font-bold uppercase">
-                          Hệ số dễ (Ease)
+                          {t('vocab.easeFactor')}
                         </div>
                         <div className="text-sm font-extrabold text-emerald-700 mt-0.5">
                           {card.easeFactor}
@@ -332,7 +339,7 @@ export const PronunciationHistoryDialog: React.FC<PronunciationHistoryDialogProp
                     </div>
 
                     <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Thời gian ôn tập tiếp theo:</span>
+                      <span className="text-slate-600">{t('vocab.nextReviewTime')}</span>
                       <strong className="text-slate-900">
                         {formatLocalDate(card.nextReviewAtUtc)}
                       </strong>

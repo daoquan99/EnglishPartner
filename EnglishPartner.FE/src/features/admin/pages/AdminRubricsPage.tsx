@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Award,
-  Cpu,
   CheckCircle2,
   XCircle,
   Plus,
@@ -291,8 +289,8 @@ export const AdminRubricsPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <Award className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-rubrics.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -392,7 +390,13 @@ export const AdminRubricsPage: React.FC = () => {
         isOpen={isRubricDialogOpen}
         onClose={() => setIsRubricDialogOpen(false)}
         maxWidth="2xl"
-        icon={<Award className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-rubrics.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={`Cấu hình Rubric Chấm Phát Âm (${activeRubric?.code ?? 'ENGLISH_PRONUNCIATION_V1'})`}
         description={`Tổng trọng số các tiêu chí phải bằng 100% (Hiện tại: ${totalWeight}%)`}
         footer={
@@ -468,7 +472,13 @@ export const AdminRubricsPage: React.FC = () => {
         isOpen={isModelDialogOpen}
         onClose={() => setIsModelDialogOpen(false)}
         maxWidth="xl"
-        icon={<Cpu className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-rubrics.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingModelId ? `Chỉnh sửa AI Model: ${modelCode}` : 'Thêm mới AI Model vào Database'}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">

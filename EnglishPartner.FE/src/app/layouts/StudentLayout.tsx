@@ -19,6 +19,7 @@ import { CanAccess, useCurrentUser, useLogoutMutation } from '@/features/auth';
 import { useTutorSessionStore } from '@/features/tutor';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
+import { toast } from '@/shared/lib/toast';
 
 const ADMIN_ANY_PERMISSIONS = [
   'users.read',
@@ -65,6 +66,7 @@ export const StudentLayout: React.FC = () => {
   const toggleLanguage = () => {
     const next = i18n.language === 'vi' ? 'en' : 'vi';
     void i18n.changeLanguage(next);
+    toast.info(next === 'vi' ? 'Đã đổi ngôn ngữ sang Tiếng Việt' : 'Language switched to English');
   };
 
   const handleLogout = async () => {
@@ -94,8 +96,12 @@ export const StudentLayout: React.FC = () => {
               title={`${t('appTitle')} — ${t('studentPortal')}`}
               className="flex items-center gap-2.5 min-w-0"
             >
-              <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center shadow-xs shrink-0 p-1">
+                <img
+                  src="/assets/brand/logo-mark.svg"
+                  alt="LingoMint"
+                  className="w-8 h-8 object-contain"
+                />
               </div>
               {!isStudentSidebarCollapsed && (
                 <div className="min-w-0">
@@ -114,8 +120,8 @@ export const StudentLayout: React.FC = () => {
               onClick={toggleStudentSidebar}
               title={
                 isStudentSidebarCollapsed
-                  ? 'Mở rộng Left Menu'
-                  : 'Thu gọn Left Menu (Chỉ hiện Icon)'
+                  ? t('nav.expandMenu')
+                  : t('nav.collapseMenu')
               }
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
             >
@@ -131,7 +137,7 @@ export const StudentLayout: React.FC = () => {
           <nav className="space-y-1.5">
             <NavLink
               to="/student/tutor"
-              title={t('liveTutorNav')}
+              title={t('nav.liveTutor')}
               className={({ isActive }) =>
                 cn(
                   'flex items-center rounded-2xl transition-all',
@@ -144,12 +150,16 @@ export const StudentLayout: React.FC = () => {
                 )
               }
             >
-              <Mic className="w-5 h-5 shrink-0" />
+              <img
+                src="/assets/icons/navigation/nav-conversations.svg"
+                alt=""
+                className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
+              />
               {!isStudentSidebarCollapsed && (
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold truncate">{t('liveTutorNav')}</div>
+                  <div className="text-xs font-bold truncate">{t('nav.liveTutor')}</div>
                   <div className="text-[10px] opacity-80 truncate">
-                    3 SignalR Hubs · 19 Modes · 30 Voices
+                    {t('nav.liveTutorSub')}
                   </div>
                 </div>
               )}
@@ -157,7 +167,7 @@ export const StudentLayout: React.FC = () => {
 
             <NavLink
               to="/student/vocabulary"
-              title={t('dailyVocabNav')}
+              title={t('nav.dailyVocab')}
               className={({ isActive }) =>
                 cn(
                   'flex items-center rounded-2xl transition-all',
@@ -170,12 +180,16 @@ export const StudentLayout: React.FC = () => {
                 )
               }
             >
-              <BookOpen className="w-5 h-5 shrink-0" />
+              <img
+                src="/assets/icons/navigation/nav-study.svg"
+                alt=""
+                className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
+              />
               {!isStudentSidebarCollapsed && (
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold truncate">{t('dailyVocabNav')}</div>
+                  <div className="text-xs font-bold truncate">{t('nav.dailyVocab')}</div>
                   <div className="text-[10px] opacity-80 truncate">
-                    Flashcards SM-2 · AI Audio Scoring
+                    {t('nav.dailyVocabSub')}
                   </div>
                 </div>
               )}
@@ -190,8 +204,8 @@ export const StudentLayout: React.FC = () => {
                 onClick={toggleStudentSidebar}
                 title={
                   apiKey.trim()
-                    ? 'Google AI Studio API Key: Đã cấu hình (Nhấn để xem/sửa)'
-                    : 'Chưa nhập Google AI Studio API Key (Nhấn để mở ô nhập)'
+                    ? `${t('common.apiKey')}: ${t('common.apiKeySaved')}`
+                    : `${t('common.apiKey')}: ${t('common.apiKeyMissing')}`
                 }
                 className={cn(
                   'w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors cursor-pointer',
@@ -200,15 +214,15 @@ export const StudentLayout: React.FC = () => {
                     : 'bg-amber-50 border-amber-300 text-amber-600 animate-pulse'
                 )}
               >
-                <KeyRound className="w-5 h-5" />
+                <img src="/assets/icons/navigation/nav-roles.svg" alt="" className="w-5 h-5 object-contain" />
               </button>
             </div>
           ) : (
             <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                  <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-                  Google AI Studio API Key
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <img src="/assets/icons/navigation/nav-roles.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                  {t('common.apiKey')}
                 </label>
                 <span
                   className={cn(
@@ -218,7 +232,7 @@ export const StudentLayout: React.FC = () => {
                       : 'bg-amber-100 text-amber-800'
                   )}
                 >
-                  {apiKey.trim() ? 'Đã lưu' : 'Chưa nhập'}
+                  {apiKey.trim() ? t('common.apiKeySaved') : t('common.apiKeyMissing')}
                 </span>
               </div>
               <div className="relative flex items-center">
@@ -256,7 +270,11 @@ export const StudentLayout: React.FC = () => {
                   : 'gap-2.5 px-3.5 py-2.5'
               )}
             >
-              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+              <img
+                src="/assets/icons/navigation/nav-admin.svg"
+                alt=""
+                className="w-4 h-4 shrink-0 object-contain drop-shadow-2xs"
+              />
               {!isStudentSidebarCollapsed && <span className="truncate">{t('adminPortal')}</span>}
             </Link>
           </CanAccess>
@@ -264,7 +282,7 @@ export const StudentLayout: React.FC = () => {
           <button
             type="button"
             onClick={toggleLanguage}
-            title={`Ngôn ngữ hiện tại: ${i18n.language.toUpperCase()} (Nhấn để đổi VI/EN)`}
+            title={`${t('common.language')}: ${i18n.language.toUpperCase()}`}
             className={cn(
               'w-full flex items-center rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer',
               isStudentSidebarCollapsed
@@ -274,7 +292,7 @@ export const StudentLayout: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 shrink-0 text-emerald-600" />
-              {!isStudentSidebarCollapsed && <span>Ngôn ngữ giao diện</span>}
+              {!isStudentSidebarCollapsed && <span>{t('common.language')}</span>}
             </div>
             {!isStudentSidebarCollapsed && (
               <Badge variant="default">{i18n.language.toUpperCase()}</Badge>
@@ -284,7 +302,11 @@ export const StudentLayout: React.FC = () => {
           {user && !isStudentSidebarCollapsed && (
             <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-slate-100/80 text-xs">
               <div className="flex items-center gap-2 min-w-0">
-                <UserIcon className="w-4 h-4 text-slate-500 shrink-0" />
+                <img
+                  src="/assets/mascot/cat/cat-avatar.svg"
+                  alt=""
+                  className="w-5 h-5 rounded-full object-contain shrink-0"
+                />
                 <span className="font-bold text-slate-800 truncate">{user.username}</span>
               </div>
               <Badge variant="emerald">{user.roles[0] || 'LEARNER'}</Badge>
@@ -294,7 +316,7 @@ export const StudentLayout: React.FC = () => {
           <button
             type="button"
             onClick={handleLogout}
-            title={`${t('logout')} (${user?.username ?? ''})`}
+            title={`${t('common.logout')} (${user?.username ?? ''})`}
             className={cn(
               'w-full flex items-center rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer',
               isStudentSidebarCollapsed
@@ -303,7 +325,7 @@ export const StudentLayout: React.FC = () => {
             )}
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            {!isStudentSidebarCollapsed && <span className="truncate">{t('logout')}</span>}
+            {!isStudentSidebarCollapsed && <span className="truncate">{t('common.logout')}</span>}
           </button>
         </div>
       </aside>

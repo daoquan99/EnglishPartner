@@ -19,9 +19,10 @@ public class CqrsDependencyInjectionTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<ICurrentUser>(new FakeCurrentUser());
         services.AddApplicationServices();
         services.AddInfrastructureServices(configuration);
-        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
     }
 
     [Fact]
@@ -55,9 +56,9 @@ public class CqrsDependencyInjectionTests
         foreach (var handlerType in handlerTypes)
         {
             var contract = handlerType.GetInterfaces().Single(i => i.IsGenericType &&
-                (i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>) ||
-                 i.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)));
-            Assert.IsType(handlerType, scope.ServiceProvider.GetRequiredService(contract));
+                i.GetGenericTypeDefinition() == typeof(MediatR.IRequestHandler<,>));
+            var resolved = scope.ServiceProvider.GetRequiredService(contract);
+            Assert.IsType(handlerType, resolved);
         }
     }
 
@@ -88,4 +89,19 @@ public class CqrsDependencyInjectionTests
         var factory = provider.GetRequiredService<IHttpClientFactory>();
         Assert.Throws<OptionsValidationException>(() => factory.CreateClient(nameof(IVocabularyAiGenerator)));
     }
+
+    [Fact]
+    public async Task CreateAiModelConfig_WhenModelCodeIsEmpty_ShouldThrowValidationException()
+    {
+        using var provider = CreateProvider();
+        using var scope = provider.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<MediatR.ISender>();
+
+        var cmd = new EnglishLiveTutor.Application.Features.AiModels.Commands.CreateAiModelConfig.CreateAiModelConfigCommand(
+            new EnglishLiveTutor.Application.Common.Models.UpsertAiModelConfigRequest("Display", ""));
+
+        var ex = await Assert.ThrowsAsync<EnglishLiveTutor.Application.Common.Validation.ValidationException>(() => sender.Send(cmd));
+        Assert.Contains("Mã Model (ModelCode) không được để trống.", ex.Message);
+    }
 }
+

@@ -18,6 +18,7 @@ public sealed class VocabularyRepository : IVocabularyRepository
     public async Task<VocabularyEntity?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
     {
         return await _db.Vocabularies
+            .AsSplitQuery()
             .Include(v => v.Pronunciations)
             .Include(v => v.WordFamilies)
             .Include(v => v.Senses).ThenInclude(s => s.Relations)

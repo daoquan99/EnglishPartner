@@ -1,21 +1,45 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
-using EnglishLiveTutor.Domain.Conversations.Repositories;
 
 namespace EnglishLiveTutor.Application.Features.Conversations.Queries.GetConversationHistory;
 
-public sealed record GetConversationHistoryQuery(string Id) : IQuery<object?>;
+public sealed record ChatMessageDto(
+    string Id,
+    string ConversationId,
+    string TurnId,
+    string Speaker,
+    string TranscriptLine1,
+    string TranslationLine2,
+    bool IsFinal,
+    int SequenceOrder,
+    DateTimeOffset CreatedAtUtc
+);
 
-public sealed class GetConversationHistoryQueryHandler : IQueryHandler<GetConversationHistoryQuery, object?>
-{
-    private readonly IConversationRepository _repo;
+public sealed record LanguageCorrectionDto(
+    string Id,
+    string ConversationId,
+    string TurnId,
+    string OriginalText,
+    string CorrectedText,
+    string ErrorCategory,
+    string ExplanationVi,
+    string CefrTip,
+    DateTimeOffset CreatedAtUtc
+);
 
-    public GetConversationHistoryQueryHandler(IConversationRepository repo)
-    {
-        _repo = repo;
-    }
+public sealed record ConversationDetailDto(
+    string Id,
+    string Title,
+    string CefrLevel,
+    bool ExtendedThinking,
+    string VoiceName,
+    double SpeechSpeed,
+    string ConversationMode,
+    string Topic,
+    string? CustomSystemPrompt,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? UpdatedAtUtc,
+    List<ChatMessageDto> Messages,
+    List<LanguageCorrectionDto> Corrections
+);
 
-    public async Task<object?> HandleAsync(GetConversationHistoryQuery query, CancellationToken ct = default)
-    {
-        return await _repo.GetConversationWithHistoryAsync(query.Id, ct);
-    }
-}
+public sealed record GetConversationHistoryQuery(string Id) : IQuery<ConversationDetailDto?>;

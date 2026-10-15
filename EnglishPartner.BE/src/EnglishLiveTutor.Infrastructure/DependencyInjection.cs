@@ -1,4 +1,5 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.AiCatalog.Repositories;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
 using EnglishLiveTutor.Domain.Identity.Repositories;
@@ -8,6 +9,7 @@ using EnglishLiveTutor.Domain.Pronunciation.Repositories;
 using EnglishLiveTutor.Domain.Vocabulary.Repositories;
 using EnglishLiveTutor.Domain.Topics.Repositories;
 using EnglishLiveTutor.Domain.Voices.Repositories;
+using EnglishLiveTutor.Application.Features.Conversations.Ports;
 using EnglishLiveTutor.Infrastructure.Ai;
 using EnglishLiveTutor.Infrastructure.Identity;
 using EnglishLiveTutor.Infrastructure.Persistence;
@@ -33,17 +35,22 @@ public static class DependencyInjection
             ?? "Server=localhost;Database=LingoMint;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;";
 
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<ICurrentUser>(SystemCurrentUser.Instance);
+        services.TryAddSingleton<IPermissionChecker>(EnglishLiveTutor.Infrastructure.Security.AllowAllPermissionChecker.Instance);
+        services.TryAddSingleton<ILiveSessionRealtimeNotifier>(NullLiveSessionRealtimeNotifier.Instance);
         services.AddSingleton<AuditingSaveChangesInterceptor>();
 
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
-            options.UseSqlServer(connectionString);
+            options.UseSqlServer(connectionString, sqlOptions =>
+            {
+                sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            });
             options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
         });
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IAppDbContextFactory, AppDbContextFactoryWrapper>();
 
         // Security & Token Services
@@ -89,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<ILivePronunciationTtsSynthesizer, GeminiLivePronunciationTtsSynthesizer>();
         services.AddSingleton<IPronunciationSynthesisLock, PronunciationSynthesisLock>();
         services.AddSingleton<GeminiLiveConnectionManager>();
+        services.AddSingleton<ILiveSessionService>(sp => sp.GetRequiredService<GeminiLiveConnectionManager>());
 
         return services;
     }

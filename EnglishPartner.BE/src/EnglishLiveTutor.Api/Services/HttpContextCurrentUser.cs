@@ -16,17 +16,16 @@ public sealed class HttpContextCurrentUser : ICurrentUser
     {
         get
         {
-            var context = _httpContextAccessor.HttpContext;
-            if (context is null)
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user?.Identity?.IsAuthenticated != true)
             {
-                return "system";
+                return null;
             }
 
-            string? claimUserId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? context.User?.FindFirstValue("sub")
-                ?? context.Request.Headers["X-User-Id"].FirstOrDefault();
+            string? claimUserId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? user.FindFirstValue("sub");
 
-            return string.IsNullOrWhiteSpace(claimUserId) ? "default-learner" : claimUserId.Trim();
+            return string.IsNullOrWhiteSpace(claimUserId) ? null : claimUserId.Trim();
         }
     }
 }

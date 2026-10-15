@@ -37,7 +37,13 @@ public sealed class ScoringRubricCriterionEntity : Entity<Guid>
         RubricId = rubricId;
         Code = code.Trim();
         Name = string.IsNullOrWhiteSpace(name) ? code.Trim() : name.Trim();
-        Description = description?.Trim() ?? string.Empty;
+        if (weight < 0)
+            throw new InvalidOperationException("Trọng số tiêu chí không được âm.");
+        if (minimumScore < 0 || maximumScore < 0)
+            throw new InvalidOperationException("Điểm không được âm.");
+        if (minimumScore > maximumScore)
+            throw new InvalidOperationException("Điểm tối thiểu không được lớn hơn điểm tối đa.");
+
         Weight = weight;
         MinimumScore = minimumScore;
         MaximumScore = maximumScore;

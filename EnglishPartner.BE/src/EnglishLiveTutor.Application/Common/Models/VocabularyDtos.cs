@@ -108,6 +108,9 @@ public sealed record GenerateVocabularyRequest(
 
 public sealed record SubmitVocabularyReviewRequest(
     string Rating, // Again | Hard | Good | Easy
+    Guid? VocabularyId = null,
+    Guid? SenseId = null,
+    int? ResponseTimeMs = null,
     string TimeZoneId = "Asia/Ho_Chi_Minh"
 );
 

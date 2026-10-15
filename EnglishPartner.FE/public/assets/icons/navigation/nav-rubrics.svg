@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Ribbon Tail in Emerald -->
+  <path d="M 8.5 14 L 8.5 21 L 12 19 L 15.5 21 L 15.5 14" fill="#e2f3ee" stroke="#059669" stroke-width="1.6" stroke-linejoin="round" />
+
+  <!-- Circular Medal Badge -->
+  <circle cx="12" cy="9.5" r="7.5" fill="#fef3c7" stroke="#d97706" stroke-width="1.8" />
+  <circle cx="12" cy="9.5" r="5.8" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 1.5" />
+
+  <!-- Center Star of Excellence -->
+  <polygon points="12,5.8 13.1,8.2 15.5,8.5 13.7,10.1 14.2,12.5 12,11.2 9.8,12.5 10.3,10.1 8.5,8.5 10.9,8.2" fill="#f59e0b" stroke="#b45309" stroke-width="1" stroke-linejoin="round" />
+</svg>

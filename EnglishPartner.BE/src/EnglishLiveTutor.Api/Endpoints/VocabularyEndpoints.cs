@@ -5,12 +5,13 @@ using EnglishLiveTutor.Application.Features.Vocabulary.Commands.CreateVocabulary
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.DeleteVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
-using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.UpdateVocabulary;
+using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyFlashcard;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyGenerationModels;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.ListVocabularyFlashcards;
 using EnglishLiveTutor.Domain.AiCatalog;
+using MediatR;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -18,13 +19,13 @@ public static class VocabularyEndpoints
 {
     public static IEndpointRouteBuilder MapVocabularyEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/vocabularies");
+        var group = app.MapGroup("/api/vocabularies").RequireAuthorization();
 
         group.MapGet("/models/generation", async (
-            IQueryHandler<GetVocabularyGenerationModelsQuery, List<AiModelConfigEntity>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var models = await handler.HandleAsync(new GetVocabularyGenerationModelsQuery(), ct);
+            var models = await sender.Send(new GetVocabularyGenerationModelsQuery(), ct);
             return Results.Ok(models);
         });
 
@@ -37,11 +38,11 @@ public static class VocabularyEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IQueryHandler<ListVocabularyFlashcardsQuery, PagedResultDto<VocabularyFlashcardDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             int? effectivePage = page ?? (paged == true ? 1 : null);
-            var result = await handler.HandleAsync(new ListVocabularyFlashcardsQuery(search, cefrLevel, topicCategory, effectivePage, pageSize), ct);
+            var result = await sender.Send(new ListVocabularyFlashcardsQuery(search, cefrLevel, topicCategory, effectivePage, pageSize), ct);
             return result.ToHttpResult(httpContext, paged);
         });
 
@@ -49,11 +50,21 @@ public static class VocabularyEndpoints
             Guid vocabularyId,
             Guid? senseId,
             string? userId,
-            IQueryHandler<GetVocabularyFlashcardQuery, VocabularyFlashcardDto?> handler,
+            ICurrentUser currentUser,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var dto = await handler.HandleAsync(
-                new GetVocabularyFlashcardQuery(vocabularyId, senseId, userId ?? "default-learner"),
+            string effectiveUserId = !string.IsNullOrWhiteSpace(userId)
+                ? userId.Trim()
+                : (currentUser.UserId ?? "");
+
+            if (string.IsNullOrWhiteSpace(effectiveUserId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var dto = await sender.Send(
+                new GetVocabularyFlashcardQuery(vocabularyId, senseId, effectiveUserId),
                 ct);
             return dto is null ? Results.NotFound() : Results.Ok(dto);
         });
@@ -61,13 +72,18 @@ public static class VocabularyEndpoints
         group.MapPost("/generate", async (
             GenerateVocabularyRequest req,
             ICurrentUser currentUser,
-            ICommandHandler<GenerateVocabularyCommand, List<VocabularyFlashcardDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                string userId = string.IsNullOrWhiteSpace(currentUser.UserId) ? "default-learner" : currentUser.UserId!;
-                var cards = await handler.HandleAsync(new GenerateVocabularyCommand(userId, req), ct);
+                string userId = currentUser.UserId!;
+                var cards = await sender.Send(new GenerateVocabularyCommand(userId, req), ct);
                 return Results.Ok(cards);
             }
             catch (InvalidOperationException ex)
@@ -78,12 +94,12 @@ public static class VocabularyEndpoints
 
         group.MapPost("/generation/prompt", async (
             BuildVocabularyGenerationPromptRequest req,
-            IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                return Results.Ok(await handler.HandleAsync(new(req), ct));
+                return Results.Ok(await sender.Send(new BuildVocabularyGenerationPromptQuery(req), ct));
             }
             catch (InvalidOperationException ex)
             {
@@ -94,13 +110,18 @@ public static class VocabularyEndpoints
         group.MapPost("/generation/import", async (
             ImportVocabularyJsonRequest req,
             ICurrentUser currentUser,
-            ICommandHandler<ImportVocabularyJsonCommand, List<VocabularyFlashcardDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
+            {
+                return Results.Unauthorized();
+            }
+
             try
             {
-                string userId = string.IsNullOrWhiteSpace(currentUser.UserId) ? "default-learner" : currentUser.UserId!;
-                return Results.Ok(await handler.HandleAsync(new(userId, req), ct));
+                string userId = currentUser.UserId!;
+                return Results.Ok(await sender.Send(new ImportVocabularyJsonCommand(userId, req), ct));
             }
             catch (InvalidOperationException ex)
             {
@@ -111,12 +132,12 @@ public static class VocabularyEndpoints
         // Admin Create Vocabulary Flashcard
         group.MapPost("/", async (
             UpsertVocabularyAdminRequest req,
-            ICommandHandler<CreateVocabularyCommand, VocabularyFlashcardDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var result = await handler.HandleAsync(new CreateVocabularyCommand(req), ct);
+                var result = await sender.Send(new CreateVocabularyCommand(req), ct);
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -129,12 +150,12 @@ public static class VocabularyEndpoints
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpsertVocabularyAdminRequest req,
-            ICommandHandler<UpdateVocabularyCommand, VocabularyFlashcardDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var result = await handler.HandleAsync(new UpdateVocabularyCommand(id, req), ct);
+                var result = await sender.Send(new UpdateVocabularyCommand(id, req), ct);
                 return result is null ? Results.NotFound(new { error = "Không tìm thấy từ vựng cần cập nhật." }) : Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -146,10 +167,10 @@ public static class VocabularyEndpoints
         // Admin Delete Vocabulary Flashcard
         group.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeleteVocabularyCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            bool deleted = await handler.HandleAsync(new DeleteVocabularyCommand(id), ct);
+            bool deleted = await sender.Send(new DeleteVocabularyCommand(id), ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("vocabularies.manage");
 

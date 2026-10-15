@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Tags,
   MessageSquareCode,
@@ -21,6 +22,7 @@ import {
 } from '../hooks/useAdminQueries';
 
 export const AdminDashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const { data: vocabularies = [] } = useAdminVocabulariesQuery();
   const { data: topics = [] } = useAdminTopicsQuery();
   const { data: modes = [] } = useConversationModesQuery();
@@ -32,71 +34,76 @@ export const AdminDashboardPage: React.FC = () => {
 
   const cards = [
     {
-      title: 'Từ vựng / Flashcards (CRUD)',
-      value: `${vocabularies.length} thẻ từ`,
-      sub: 'Quản lý Sense, UK/US IPA, Synonyms, Collocations & Examples',
+      title: t('nav.adminVocabularies'),
+      value: `${vocabularies.length} ${t('vocab.wordsUnit')}`,
+      sub: t('nav.adminVocabulariesSub'),
       to: '/admin/vocabularies',
-      icon: <BookOpen className="w-5 h-5 text-emerald-600" />,
+      icon: <img src="/assets/icons/navigation/nav-reviews.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: 'Topics Aggregate (CRUD)',
-      value: `${topics.length} chủ đề`,
-      sub: `${topics.filter((t) => t.supportsConversation).length} Hội thoại · ${topics.filter((t) => t.supportsVocabulary).length} Từ vựng`,
+      title: t('nav.adminTopics'),
+      value: `${topics.length} topics`,
+      sub: t('nav.adminTopicsSub'),
       to: '/admin/topics',
-      icon: <Tags className="w-5 h-5 text-teal-600" />,
+      icon: <img src="/assets/icons/navigation/nav-topics.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: 'CEFR, 19 Modes & Tốc độ nói (CRUD)',
+      title: t('nav.adminPrompts'),
       value: `${modes.length} Modes · ${speeds.length} Speeds`,
-      sub: 'CefrLevelPrompts, ConversationModes & SpeechSpeeds trong DB',
+      sub: t('nav.adminPromptsSub'),
       to: '/admin/prompts',
-      icon: <MessageSquareCode className="w-5 h-5 text-sky-600" />,
+      icon: <img src="/assets/icons/navigation/nav-prompts.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: '30 Giọng đọc Teacher (CRUD)',
+      title: t('nav.adminVoices'),
       value: `${voices.length} Voices`,
-      sub: `${voices.filter((v) => v.isFeatured).length} giọng Featured ưu tiên`,
+      sub: t('nav.adminVoicesSub'),
       to: '/admin/voices',
-      icon: <Volume2 className="w-5 h-5 text-violet-600" />,
+      icon: <img src="/assets/icons/navigation/nav-voices.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: 'Rubric & AI Models (CRUD)',
+      title: t('nav.adminRubrics'),
       value: `${aiModels.length} AI Models`,
-      sub: 'ENGLISH_PRONUNCIATION_V1 & AiModelCatalog trong DB',
+      sub: t('nav.adminRubricsSub'),
       to: '/admin/rubrics',
-      icon: <Award className="w-5 h-5 text-amber-600" />,
+      icon: <img src="/assets/icons/navigation/nav-rubrics.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: 'Người dùng & Phân quyền (CRUD)',
-      value: `${users.length} tài khoản`,
-      sub: 'Tạo, sửa, khóa/mở khóa & gán Role cho Users',
+      title: t('nav.adminUsers'),
+      value: `${users.length} users`,
+      sub: t('nav.adminUsersSub'),
       to: '/admin/users',
-      icon: <Users className="w-5 h-5 text-rose-600" />,
+      icon: <img src="/assets/icons/navigation/nav-account.svg" alt="" className="w-5 h-5 object-contain" />,
     },
     {
-      title: 'Ma trận Roles & Permissions (CRUD)',
+      title: t('nav.adminRoles'),
       value: `${roles.length} Roles`,
-      sub: 'ADMIN · TEACHER · LEARNER',
+      sub: t('nav.adminRolesSub'),
       to: '/admin/roles',
-      icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />,
+      icon: <img src="/assets/icons/navigation/nav-roles.svg" alt="" className="w-5 h-5 object-contain" />,
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
-        <h1 className="text-xl font-extrabold text-slate-900">
-          Trung tâm Quản trị Hệ thống (Admin Portal — Full CRUD)
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Quản lý đầy đủ Create / Read / Update / Delete cho toàn bộ các Aggregate trong Database: Flashcards, Topics, CEFR, 19 Modes, Speech Speeds, 30 Teacher Voices, Rubrics, AI Models, Users, Roles & Permissions.
-        </p>
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+          <img src="/assets/icons/navigation/nav-dashboard.svg" alt="" className="w-6 h-6 object-contain" />
+        </div>
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">
+            {t('admin.dashboardTitle')}
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            {t('admin.dashboardSubtitle')}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {cards.map((c) => (
           <Link
-            key={c.title}
+            key={c.to}
             to={c.to}
             className="bg-white rounded-3xl border border-slate-200 p-5 hover:border-emerald-500 hover:shadow-md transition-all space-y-2"
           >

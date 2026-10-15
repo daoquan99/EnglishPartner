@@ -70,6 +70,34 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
             id: id);
 
         _items.Add(item);
+
+        if (Status == "Completed")
+        {
+            Status = "InProgress";
+            CompletedAt = null;
+        }
+
+        return item;
+    }
+
+    public DailyVocabularyItemEntity CompleteItem(Guid itemId, DateTimeOffset now)
+    {
+        var item = _items.FirstOrDefault(i => i.Id == itemId);
+        if (item is null)
+            throw new InvalidOperationException($"Mục học tập '{itemId}' không thuộc về kế hoạch '{Id}'.");
+
+        item.Complete(now);
+
+        if (_items.Count > 0 && _items.All(i => i.Status == "Completed"))
+        {
+            Status = "Completed";
+            CompletedAt = now;
+        }
+        else
+        {
+            Status = "InProgress";
+        }
+
         return item;
     }
 

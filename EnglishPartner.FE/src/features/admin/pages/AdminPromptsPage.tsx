@@ -1,11 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-  MessageSquareCode,
   Eye,
   Sparkles,
   Plus,
   Save,
-  Gauge,
   Search,
 } from 'lucide-react';
 import {
@@ -458,8 +456,8 @@ export const AdminPromptsPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <MessageSquareCode className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-prompts.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -506,7 +504,7 @@ export const AdminPromptsPage: React.FC = () => {
               setPage(1);
             }}
           >
-            <MessageSquareCode className="w-4 h-4" />
+            <img src="/assets/icons/navigation/nav-prompts.svg" alt="" className="w-4 h-4 object-contain" />
             Chế độ Luyện nói ({displayedModes.length})
           </Button>
           <Button
@@ -517,7 +515,7 @@ export const AdminPromptsPage: React.FC = () => {
               setPage(1);
             }}
           >
-            <Sparkles className="w-4 h-4" />
+            <img src="/assets/icons/navigation/nav-study.svg" alt="" className="w-4 h-4 object-contain" />
             Trình độ CEFR ({displayedCefr.length})
           </Button>
           <Button
@@ -528,7 +526,7 @@ export const AdminPromptsPage: React.FC = () => {
               setPage(1);
             }}
           >
-            <Gauge className="w-4 h-4" />
+            <img src="/assets/icons/navigation/nav-voices.svg" alt="" className="w-4 h-4 object-contain" />
             Tốc độ nói ({displayedSpeeds.length})
           </Button>
         </div>
@@ -601,7 +599,13 @@ export const AdminPromptsPage: React.FC = () => {
         isOpen={isModeDialogOpen}
         onClose={() => setIsModeDialogOpen(false)}
         maxWidth="2xl"
-        icon={<MessageSquareCode className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-prompts.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingModeCode ? `Chỉnh sửa Mode: ${editingModeCode}` : 'Thêm mới Chế độ Luyện nói'}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
@@ -665,7 +669,13 @@ export const AdminPromptsPage: React.FC = () => {
         isOpen={isCefrDialogOpen}
         onClose={() => setIsCefrDialogOpen(false)}
         maxWidth="xl"
-        icon={<Sparkles className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-study.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={`Cấu hình Hướng dẫn Sư phạm CEFR ${cefrCode}`}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
@@ -720,7 +730,13 @@ export const AdminPromptsPage: React.FC = () => {
         isOpen={isSpeedDialogOpen}
         onClose={() => setIsSpeedDialogOpen(false)}
         maxWidth="xl"
-        icon={<Gauge className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-voices.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={
           editingSpeedId
             ? `Chỉnh sửa Tốc độ nói: ${speedCode}`
@@ -806,7 +822,13 @@ export const AdminPromptsPage: React.FC = () => {
         isOpen={isPreviewDialogOpen}
         onClose={() => setIsPreviewDialogOpen(false)}
         maxWidth="3xl"
-        icon={<Eye className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-prompts.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title="Trình tạo thử System Instruction (POST /api/prompts/preview)"
         description="Kiểm tra kết quả ghép nối CEFR Level Guidance + Conversation Mode + Teacher Voice từ Database"
         footer={

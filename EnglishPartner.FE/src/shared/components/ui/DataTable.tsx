@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { EmptyState } from './EmptyState';
@@ -34,8 +35,8 @@ export function DataTable<T>({
   data,
   rowKey,
   isLoading = false,
-  emptyTitle = 'Chưa có dữ liệu phù hợp',
-  emptyDescription = 'Hãy thử thay đổi bộ lọc tìm kiếm hoặc nhấn nút Thêm mới để tạo bản ghi đầu tiên.',
+  emptyTitle,
+  emptyDescription,
   emptyAction,
   page = 1,
   pageSize = 10,
@@ -43,6 +44,9 @@ export function DataTable<T>({
   onPageChange,
   onPageSizeChange,
 }: DataTableProps<T>) {
+  const { t } = useTranslation();
+  const effectiveEmptyTitle = emptyTitle ?? t('common.noMatchingData');
+  const effectiveEmptyDescription = emptyDescription ?? t('common.tryAdjustingFilters');
   const effectiveTotal = totalCount ?? data.length;
   const totalPages = Math.max(1, Math.ceil(effectiveTotal / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -62,8 +66,9 @@ export function DataTable<T>({
         <LoadingState />
       ) : rows.length === 0 ? (
         <EmptyState
-          title={emptyTitle}
-          description={emptyDescription}
+          illustration="searching"
+          title={effectiveEmptyTitle}
+          description={effectiveEmptyDescription}
           action={emptyAction}
         />
       ) : (
@@ -101,9 +106,9 @@ export function DataTable<T>({
         <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <span>
-              Hiển thị <strong className="text-slate-900">{startIdx}</strong>–
-              <strong className="text-slate-900">{endIdx}</strong> trên tổng{' '}
-              <strong className="text-slate-900">{effectiveTotal}</strong> bản ghi
+              {t('common.showing')} <strong className="text-slate-900">{startIdx}</strong>–
+              <strong className="text-slate-900">{endIdx}</strong> {t('common.of')}{' '}
+              <strong className="text-slate-900">{effectiveTotal}</strong> {t('common.totalRecords')}
             </span>
             {onPageSizeChange && (
               <select
@@ -112,13 +117,13 @@ export function DataTable<T>({
                   onPageSizeChange(Number(e.target.value));
                   onPageChange(1);
                 }}
-                aria-label="Số dòng mỗi trang"
+                aria-label={t('common.rowsPerPage')}
                 className="ml-2 px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700"
               >
-                <option value={6}>6 / trang</option>
-                <option value={10}>10 / trang</option>
-                <option value={20}>20 / trang</option>
-                <option value={50}>50 / trang</option>
+                <option value={6}>6 {t('common.perPage')}</option>
+                <option value={10}>10 {t('common.perPage')}</option>
+                <option value={20}>20 {t('common.perPage')}</option>
+                <option value={50}>50 {t('common.perPage')}</option>
               </select>
             )}
           </div>
@@ -131,10 +136,10 @@ export function DataTable<T>({
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              Trước
+              {t('common.previous')}
             </button>
             <span className="px-2.5 py-1 font-bold text-slate-800">
-              Trang {safePage} / {totalPages}
+              {t('common.page')} {safePage} / {totalPages}
             </span>
             <button
               type="button"
@@ -142,7 +147,7 @@ export function DataTable<T>({
               onClick={() => onPageChange(safePage + 1)}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
             >
-              Sau
+              {t('common.next')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

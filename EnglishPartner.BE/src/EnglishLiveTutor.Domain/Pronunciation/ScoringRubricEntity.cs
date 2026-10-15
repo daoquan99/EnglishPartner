@@ -76,6 +76,38 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
         string? description,
         IEnumerable<(string Code, string Name, string Description, decimal Weight)> criteria)
     {
+        var criteriaList = criteria?.ToList() ?? new();
+        if (criteriaList.Count == 0)
+            throw new InvalidOperationException("Rubric phải có ít nhất 1 tiêu chí chấm điểm.");
+
+        var candidateList = new List<ScoringRubricCriterionEntity>();
+        int order = 1;
+        foreach (var c in criteriaList)
+        {
+            candidateList.Add(new ScoringRubricCriterionEntity(
+                rubricId: Id,
+                code: c.Code,
+                name: c.Name,
+                description: c.Description,
+                weight: c.Weight,
+                displayOrder: order++));
+        }
+
+        var duplicateCodes = candidateList
+            .GroupBy(c => c.Code.ToUpperInvariant())
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+        if (duplicateCodes.Count > 0)
+            throw new InvalidOperationException($"Mã tiêu chí bị trùng lặp: {string.Join(", ", duplicateCodes)}.");
+
+        if (candidateList.Any(c => c.Weight < 0))
+            throw new InvalidOperationException("Trọng số tiêu chí không được âm.");
+
+        decimal totalWeight = candidateList.Sum(c => c.Weight);
+        if (Math.Abs(totalWeight - 100.00m) > 0.01m)
+            throw new InvalidOperationException($"Tổng trọng số các tiêu chí phải bằng 100% (hiện tại: {totalWeight}%).");
+
         if (!string.IsNullOrWhiteSpace(name))
         {
             Name = name.Trim();
@@ -87,19 +119,24 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
         }
 
         _criteria.Clear();
-        int order = 1;
-        foreach (var c in criteria)
-        {
-            AddCriterion(c.Code, c.Name, c.Description, c.Weight, order++);
-        }
-
-        ValidateWeights();
+        _criteria.AddRange(candidateList);
     }
 
     public void ValidateWeights()
     {
         if (_criteria is null || _criteria.Count == 0)
             throw new InvalidOperationException("Rubric phải có ít nhất 1 tiêu chí chấm điểm.");
+
+        var duplicateCodes = _criteria
+            .GroupBy(c => c.Code.ToUpperInvariant())
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+        if (duplicateCodes.Count > 0)
+            throw new InvalidOperationException($"Mã tiêu chí bị trùng lặp: {string.Join(", ", duplicateCodes)}.");
+
+        if (_criteria.Any(c => c.Weight < 0))
+            throw new InvalidOperationException("Trọng số tiêu chí không được âm.");
 
         decimal totalWeight = _criteria.Sum(c => c.Weight);
         if (Math.Abs(totalWeight - 100.00m) > 0.01m)

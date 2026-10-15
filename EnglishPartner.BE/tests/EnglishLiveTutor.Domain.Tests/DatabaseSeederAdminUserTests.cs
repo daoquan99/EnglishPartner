@@ -12,7 +12,7 @@
 //{
 //    private static AppDbContext CreateInMemoryContext(string dbName)
 //    {
-//        var interceptor = new AuditingSaveChangesInterceptor(TimeProvider.System, SystemCurrentUser.Instance);
+//        var interceptor = new AuditingSaveChangesInterceptor(TimeProvider.System, null);
 //        var options = new DbContextOptionsBuilder<AppDbContext>()
 //            .UseInMemoryDatabase(dbName)
 //            .AddInterceptors(interceptor)

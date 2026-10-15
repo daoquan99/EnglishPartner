@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Volume2, Star, Plus, Save, Search } from 'lucide-react';
+import { Star, Plus, Save, Search } from 'lucide-react';
 import {
   useAdminVoicesQuery,
   useDeleteTeacherVoiceMutation,
@@ -227,8 +227,8 @@ export const AdminVoicesPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <Volume2 className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-voices.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -305,7 +305,13 @@ export const AdminVoicesPage: React.FC = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         maxWidth="xl"
-        icon={<Volume2 className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-voices.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingId ? `Chỉnh sửa Giọng Teacher: ${editingId}` : 'Thêm mới Giọng Teacher'}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">

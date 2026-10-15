@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Key Bow Head (Circular Ring with Golden Tone) -->
+  <circle cx="8" cy="12" r="5.5" fill="#fef3c7" stroke="#d97706" stroke-width="1.8" />
+  <circle cx="8" cy="12" r="2.5" fill="#ffffff" stroke="#b45309" stroke-width="1.4" />
+
+  <!-- Key Shaft (Extending Right) -->
+  <path d="M 13.5 12 L 21 12" stroke="#d97706" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Key Bits / Teeth Downward -->
+  <path d="M 17 12 L 17 15.5 M 20 12 L 20 16.5" stroke="#b45309" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- Small Shield Guard in Cyan/Emerald -->
+  <path d="M 12.5 7 L 15 5.5 V 8.5 Z" fill="#10b981" />
+</svg>

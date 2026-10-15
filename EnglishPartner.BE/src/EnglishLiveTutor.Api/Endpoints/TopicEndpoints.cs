@@ -1,10 +1,10 @@
 using EnglishLiveTutor.Api.Security;
-using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Topics.Commands.DeleteTopic;
 using EnglishLiveTutor.Application.Features.Topics.Commands.UpsertTopic;
 using EnglishLiveTutor.Application.Features.Topics.Queries.GetTopicById;
 using EnglishLiveTutor.Application.Features.Topics.Queries.ListTopics;
+using MediatR;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -12,7 +12,7 @@ public static class TopicEndpoints
 {
     public static IEndpointRouteBuilder MapTopicEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/topics");
+        var group = app.MapGroup("/api/topics").RequireAuthorization();
 
         group.MapGet("/", async (
             HttpContext httpContext,
@@ -25,10 +25,10 @@ public static class TopicEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IQueryHandler<ListTopicsQuery, PagedResultDto<TopicDto>> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var pagedTopics = await handler.HandleAsync(
+            var pagedTopics = await sender.Send(
                 new ListTopicsQuery(
                     OnlyActive: onlyActive ?? true,
                     SupportsConversation: supportsConversation,
@@ -44,21 +44,21 @@ public static class TopicEndpoints
 
         group.MapGet("/{id:guid}", async (
             Guid id,
-            IQueryHandler<GetTopicByIdQuery, TopicDto?> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var topic = await handler.HandleAsync(new GetTopicByIdQuery(id), ct);
+            var topic = await sender.Send(new GetTopicByIdQuery(id), ct);
             return topic is null ? Results.NotFound() : Results.Ok(topic);
         });
 
         group.MapPost("/", async (
             UpsertTopicRequest req,
-            ICommandHandler<UpsertTopicCommand, TopicDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var saved = await handler.HandleAsync(new UpsertTopicCommand(null, req), ct);
+                var saved = await sender.Send(new UpsertTopicCommand(null, req), ct);
                 return Results.Ok(saved);
             }
             catch (InvalidOperationException ex)
@@ -70,12 +70,12 @@ public static class TopicEndpoints
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpsertTopicRequest req,
-            ICommandHandler<UpsertTopicCommand, TopicDto> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
             try
             {
-                var saved = await handler.HandleAsync(new UpsertTopicCommand(id, req), ct);
+                var saved = await sender.Send(new UpsertTopicCommand(id, req), ct);
                 return Results.Ok(saved);
             }
             catch (InvalidOperationException ex)
@@ -86,10 +86,10 @@ public static class TopicEndpoints
 
         group.MapDelete("/{id:guid}", async (
             Guid id,
-            ICommandHandler<DeleteTopicCommand, bool> handler,
+            ISender sender,
             CancellationToken ct) =>
         {
-            bool deleted = await handler.HandleAsync(new DeleteTopicCommand(id), ct);
+            bool deleted = await sender.Send(new DeleteTopicCommand(id), ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("topics.manage");
 

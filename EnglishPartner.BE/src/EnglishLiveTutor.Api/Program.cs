@@ -14,13 +14,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Current User & HttpContext Accessor
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<ICurrentUser, HttpContextCurrentUser>();
+builder.Services.AddScoped<IPermissionChecker, ClaimsPermissionChecker>();
 
 // Register Clean Architecture Core Layers
-builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration["MediatR:LicenseKey"]);
 
 // Register Realtime Notifier Adapter for SignalR (Singleton to match IHubContext and GeminiLiveConnectionManager)
 builder.Services.AddSingleton<ILiveSessionRealtimeNotifier, SignalRLiveSessionRealtimeNotifier>();
+
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Configure CORS
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -45,6 +47,15 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = true;
 });
 
+// Configure Authentication & Authorization
+builder.Services.AddAuthentication("Bearer")
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, EltAuthenticationHandler>("Bearer", null);
+
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
+
 var app = builder.Build();
 
 // Ensure SQL Server Schema & Seed Starter Data Safely on Startup
@@ -60,6 +71,8 @@ catch (Exception ex)
 
 app.UseCors("FrontendPolicy");
 app.UseMiddleware<JwtAndCsrfMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map Minimal API Endpoints (CQRS Handlers)
 app.MapHealthEndpoints();
@@ -71,10 +84,11 @@ app.MapConversationEndpoints();
 app.MapVocabularyEndpoints();
 app.MapDailyLearningEndpoints();
 app.MapPronunciationEndpoints();
+app.MapAiModelEndpoints();
 
 // Map Realtime SignalR Hubs
-app.MapHub<TutorConversationHub>("/hubs/tutor");
-app.MapHub<TranscribeLiveHub>("/hubs/transcribe");
-app.MapHub<TranslateLiveHub>("/hubs/translate");
+app.MapHub<TutorConversationHub>("/hubs/tutor").RequireAuthorization();
+app.MapHub<TranscribeLiveHub>("/hubs/transcribe").RequireAuthorization();
+app.MapHub<TranslateLiveHub>("/hubs/translate").RequireAuthorization();
 
 app.Run();

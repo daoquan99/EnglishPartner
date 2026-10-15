@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Dashboard Card 1 (Top Left Metric Widget) -->
+  <rect x="3" y="3.5" width="8" height="7" rx="2" fill="#ecfdf5" stroke="#059669" stroke-width="1.6" />
+  <line x1="5.5" y1="7" x2="8.5" y2="7" stroke="#047857" stroke-width="1.4" stroke-linecap="round" />
+
+  <!-- Dashboard Card 2 (Top Right Analytics Chart Widget) -->
+  <rect x="13" y="3.5" width="8" height="9" rx="2" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6" />
+  <path d="M 15 10 L 17 7.5 L 19 8.5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Dashboard Card 3 (Bottom Left Bar Chart Widget) -->
+  <rect x="3" y="12.5" width="8" height="8" rx="2" fill="#fef3c7" stroke="#d97706" stroke-width="1.6" />
+  <line x1="5" y1="18" x2="5" y2="15.5" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="7" y1="18" x2="7" y2="14" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="9" y1="18" x2="9" y2="16.5" stroke="#b45309" stroke-width="1.5" stroke-linecap="round" />
+
+  <!-- Dashboard Card 4 (Bottom Right Settings/Live Pulse Widget) -->
+  <rect x="13" y="14.5" width="8" height="6" rx="2" fill="#fdf2f8" stroke="#db2777" stroke-width="1.6" />
+  <circle cx="17" cy="17.5" r="1.5" fill="#ec4899" />
+</svg>

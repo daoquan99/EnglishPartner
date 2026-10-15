@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Save, Tags, Search } from 'lucide-react';
+import { Plus, Save, Search } from 'lucide-react';
 import {
   useAdminTopicsQuery,
   useCreateTopicMutation,
@@ -248,8 +248,8 @@ export const AdminTopicsPage: React.FC = () => {
       {/* 1. Page Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-            <Tags className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center p-1.5 shadow-2xs shrink-0">
+            <img src="/assets/icons/navigation/nav-topics.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
@@ -331,7 +331,13 @@ export const AdminTopicsPage: React.FC = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         maxWidth="2xl"
-        icon={<Tags className="w-5 h-5" />}
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-topics.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
         title={editingId ? `Chỉnh sửa Topic: ${code}` : 'Thêm mới Topic vào Database'}
         description="Thiết lập thông tin chủ đề, gắn kết với Mode luyện nói và phạm vi gợi ý"
         footer={

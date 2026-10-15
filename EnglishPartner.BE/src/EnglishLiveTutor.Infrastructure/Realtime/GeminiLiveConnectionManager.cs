@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Domain.Conversations.Entities;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
+using EnglishLiveTutor.Application.Features.Conversations.Ports;
 using EnglishLiveTutor.Infrastructure.Ai;
 
 namespace EnglishLiveTutor.Infrastructure.Realtime;
@@ -34,7 +35,7 @@ public sealed class ConversationTurnState
     public Dictionary<string, CancellationTokenSource> GrammarDebounceByTurn { get; } = new();
 }
 
-public sealed class GeminiLiveConnectionManager
+public sealed class GeminiLiveConnectionManager : ILiveSessionService
 {
     private readonly ILiveSessionRealtimeNotifier _notifier;
     private readonly IConversationRepository _repo;
@@ -902,6 +903,8 @@ public sealed class GeminiLiveConnectionManager
         {
             await RemoveBridgeIfExistsAsync(k);
         }
+        _sessionApiKeys.TryRemove(conversationId, out _);
+        _turnStates.TryRemove(conversationId, out _);
     }
 
     private static LanguageCorrectionEntity MapToCorrectionEntity(LanguageCorrectionDto dto) =>

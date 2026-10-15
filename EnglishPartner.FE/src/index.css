@@ -139,3 +139,13 @@ body,
   color: var(--admin-text);
   font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
 }
+
+/* Toast Auto-Dismiss Progress Bar Keyframes */
+@keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

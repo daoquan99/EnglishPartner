@@ -1,5 +1,5 @@
 using EnglishLiveTutor.Application.Common.Models;
-using EnglishLiveTutor.Infrastructure.Realtime;
+using EnglishLiveTutor.Application.Features.Conversations.Ports;
 using Microsoft.AspNetCore.SignalR;
 
 namespace EnglishLiveTutor.Api.Hubs;
@@ -10,9 +10,9 @@ namespace EnglishLiveTutor.Api.Hubs;
 /// </summary>
 public sealed class TranscribeLiveHub : Hub
 {
-    private readonly GeminiLiveConnectionManager _manager;
+    private readonly ILiveSessionService _manager;
 
-    public TranscribeLiveHub(GeminiLiveConnectionManager manager) => _manager = manager;
+    public TranscribeLiveHub(ILiveSessionService manager) => _manager = manager;
 
     public async Task InitializeTranscribeSession(StartSubHubSessionRequest request)
     {

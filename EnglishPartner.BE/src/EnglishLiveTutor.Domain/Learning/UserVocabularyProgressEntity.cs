@@ -50,11 +50,18 @@ public sealed class UserVocabularyProgressEntity : AggregateRoot<Guid>
 
     public string ApplyReview(string? ratingRaw, DateTimeOffset now)
     {
-        string rating = (ratingRaw ?? "Good").Trim();
+        string input = (ratingRaw ?? "Good").Trim();
+        string normalized = input.ToLowerInvariant();
+        if (normalized is not ("again" or "hard" or "good" or "easy"))
+        {
+            throw new ArgumentException($"Đánh giá ôn tập không hợp lệ: '{ratingRaw}'. Chỉ chấp nhận 'Again', 'Hard', 'Good', hoặc 'Easy'.", nameof(ratingRaw));
+        }
+
         ReviewCount += 1;
         LastReviewedAt = now;
 
-        switch (rating.ToLowerInvariant())
+        string rating;
+        switch (normalized)
         {
             case "again":
                 rating = "Again";

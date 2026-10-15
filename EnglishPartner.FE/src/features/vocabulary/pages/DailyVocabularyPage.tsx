@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import {
   BookOpen,
@@ -54,6 +55,7 @@ import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicke
 import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
+import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { cn } from '@/shared/lib/cn';
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -70,6 +72,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export const DailyVocabularyPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { apiKey, requestFocusLeftMenuApiKey } = useTutorSessionStore();
 
   const { data: plan, isLoading } = useDailyVocabularyPlanQuery(10);
@@ -390,9 +393,7 @@ export const DailyVocabularyPage: React.FC = () => {
   const handleGenerateMoreWords = async () => {
     if (!apiKey.trim()) {
       setIsAiGeneratorModalOpen(false);
-      setApiKeyWarning(
-        'Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái trước khi tạo từ vựng AI.'
-      );
+      setApiKeyWarning(t('vocab.apiKeyMissingNotice'));
       requestFocusLeftMenuApiKey();
       return;
     }
@@ -416,7 +417,7 @@ export const DailyVocabularyPage: React.FC = () => {
       setApiKeyWarning(
         err?.response?.data?.error ||
           err?.message ||
-          'Không thể tạo từ vựng AI. Hãy kiểm tra API Key và kết nối Backend.'
+          t('vocab.genAiFailed')
       );
     }
   };
@@ -434,7 +435,7 @@ export const DailyVocabularyPage: React.FC = () => {
       setManualError(
         err?.response?.data?.error ||
           err?.message ||
-          'Không thể tạo prompt. Hãy kiểm tra kết nối Backend.'
+          t('vocab.buildPromptFailed')
       );
     }
   };
@@ -452,7 +453,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
   const handleImportManualJson = async () => {
     if (!manualJsonInput.trim()) {
-      setManualError('Vui lòng dán nội dung JSON từ Web AI vào ô nhập liệu.');
+      setManualError(t('vocab.enterJsonNotice'));
       return;
     }
     setManualError(null);
@@ -601,7 +602,7 @@ export const DailyVocabularyPage: React.FC = () => {
   if (isLoading && cards.length === 0) {
     return (
       <div className="p-8 text-center text-sm text-slate-500">
-        Đang tải kế hoạch từ vựng hằng ngày...
+        {t('vocab.loadingPlan')}
       </div>
     );
   }
@@ -611,22 +612,22 @@ export const DailyVocabularyPage: React.FC = () => {
       {/* Top Toolbar: Progress Badges + Settings Button (TTS Modal) + "Tạo từ vựng bằng AI" Button */}
       <div className="bg-white rounded-3xl border border-slate-200/90 px-5 py-4 flex flex-wrap items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
-            <BookOpen className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+            <img src="/assets/icons/navigation/nav-study.svg" alt="" className="w-5 h-5 object-contain" />
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-extrabold text-slate-900">
-              Từ Vựng Hằng Ngày & Chấm Phát Âm AI (SM-2)
+              {t('vocab.pageTitle')}
             </h1>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <Badge variant="emerald">
-                Hoàn thành: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} từ
+                {t('vocab.completedBadge')}: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} {t('vocab.wordsUnit')}
               </Badge>
               <Badge variant="sky">
-                Thẻ: {cards.length > 0 ? currentIndex + 1 : 0}/{cards.length}
+                {t('vocab.cardBadge')}: {cards.length > 0 ? currentIndex + 1 : 0}/{cards.length}
               </Badge>
               <Badge variant="violet">
-                Giọng mẫu: {ttsVoiceName} ({ttsAccent} · {ttsSpeed.toFixed(2)}x)
+                {t('vocab.teacherVoiceBadge')}: {ttsVoiceName} ({ttsAccent} · {ttsSpeed.toFixed(2)}x)
               </Badge>
             </div>
           </div>
@@ -639,8 +640,8 @@ export const DailyVocabularyPage: React.FC = () => {
             size="sm"
             onClick={() => setIsTtsSettingsModalOpen(true)}
           >
-            <Settings className="w-4 h-4 text-emerald-700" />
-            Cấu hình phát âm mẫu
+            <img src="/assets/icons/navigation/nav-settings.svg" alt="" className="w-4 h-4 object-contain" />
+            {t('vocab.configTts')}
           </Button>
 
           <Button
@@ -654,7 +655,7 @@ export const DailyVocabularyPage: React.FC = () => {
             }}
           >
             <Sparkles className="w-4 h-4" />
-            Tạo từ vựng bằng AI
+            {t('vocab.generateWithAi')}
           </Button>
         </div>
       </div>
@@ -670,13 +671,40 @@ export const DailyVocabularyPage: React.FC = () => {
             onClick={() => setApiKeyWarning(null)}
             className="font-bold hover:underline cursor-pointer"
           >
-            Đóng
+            {t('common.close')}
           </button>
         </div>
       )}
 
       {/* Main 2-Column Layout: Left 55% (Flashcard) — Right 45% (Phòng Chấm Phát Âm Audio AI) */}
-      <div className="grid grid-cols-1 lg:grid-cols-20 gap-5 items-start">
+      {cards.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-xs">
+          <EmptyState
+            illustration="no-plan"
+            title={t('vocab.emptyPlanTitle', 'Chưa có kế hoạch từ vựng cho hôm nay')}
+            description={t(
+              'vocab.emptyPlanDesc',
+              'Nhấn "Tạo từ vựng bằng AI" ở góc trên bên phải để hệ thống tự động tạo bộ từ vựng theo chủ đề bạn chọn!'
+            )}
+            action={
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  if (!apiKey.trim()) {
+                    setGenMode('manual');
+                  }
+                  setIsAiGeneratorModalOpen(true);
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                {t('vocab.generateWithAi')}
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-20 gap-5 items-start">
         {/* Left Column (55% -> 11/20 cols on desktop): Sense Flashcard */}
         <div className="lg:col-span-11 space-y-4">
           {currentCard && (
@@ -708,7 +736,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     onClick={() => setIsFlipped((f) => !f)}
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                    {isFlipped ? 'Mặt trước' : 'Lật mặt sau'}
+                    {isFlipped ? t('vocab.cardFront') : t('vocab.cardBack')}
                   </Button>
                   <Button
                     variant="outline"
@@ -821,14 +849,14 @@ export const DailyVocabularyPage: React.FC = () => {
                     onClick={() => setIsFlipped(true)}
                     className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
                   >
-                    Nhấn để xem nghĩa Tiếng Việt, Collocations, Word Family & Cấu trúc ngữ pháp →
+                    {t('vocab.clickToSeeBack')}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200">
                     <div className="text-xs font-bold uppercase text-amber-800">
-                      Nghĩa Tiếng Việt
+                      {t('vocab.vietnameseMeaning')}
                     </div>
                     <div className="text-lg font-extrabold text-slate-900 mt-0.5">
                       {currentCard.meaningVi}
@@ -840,7 +868,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <div className="text-xs font-bold text-slate-700 mb-1">
-                        Từ đồng nghĩa (Synonyms)
+                        {t('vocab.synonyms')}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {currentCard.synonyms.length > 0 ? (
@@ -850,13 +878,13 @@ export const DailyVocabularyPage: React.FC = () => {
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400">Không có</span>
+                          <span className="text-xs text-slate-400">{t('vocab.none')}</span>
                         )}
                       </div>
                     </div>
                     <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <div className="text-xs font-bold text-slate-700 mb-1">
-                        Từ trái nghĩa (Antonyms)
+                        {t('vocab.antonyms')}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {currentCard.antonyms.length > 0 ? (
@@ -866,7 +894,7 @@ export const DailyVocabularyPage: React.FC = () => {
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400">Không có</span>
+                          <span className="text-xs text-slate-400">{t('vocab.none')}</span>
                         )}
                       </div>
                     </div>
@@ -876,7 +904,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   {currentCard.collocations.length > 0 && (
                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                       <div className="text-xs font-bold text-slate-700">
-                        Cụm từ cố định (Collocations)
+                        {t('vocab.collocations')}
                       </div>
                       {currentCard.collocations.map((col) => (
                         <div key={col.id} className="text-xs text-slate-700">
@@ -941,7 +969,7 @@ export const DailyVocabularyPage: React.FC = () => {
               {/* SM-2 Spaced Repetition Rating Buttons */}
               <div className="pt-4 border-t border-slate-100">
                 <div className="text-xs font-bold text-slate-500 mb-2 text-center">
-                  Đánh giá mức độ nhớ từ (Thuật toán lặp lại ngắt quãng SM-2):
+                  {t('vocab.sm2RatingTitle')}
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {(['Again', 'Hard', 'Good', 'Easy'] as ReviewRating[]).map((rating) => (
@@ -961,7 +989,13 @@ export const DailyVocabularyPage: React.FC = () => {
                           'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200'
                       )}
                     >
-                      {rating}
+                      {rating === 'Again'
+                        ? t('vocab.ratingAgain')
+                        : rating === 'Hard'
+                        ? t('vocab.ratingHard')
+                        : rating === 'Good'
+                        ? t('vocab.ratingGood')
+                        : t('vocab.ratingEasy')}
                     </button>
                   ))}
                 </div>
@@ -977,11 +1011,12 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                    <Mic className="w-4 h-4 text-emerald-600" />
-                    Phòng Chấm Phát Âm Audio AI
+                    <img src="/assets/icons/navigation/nav-voices.svg" alt="" className="w-5 h-5 object-contain" />
+                    {t('vocab.pronunciationStudio')}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Đồng bộ với thẻ đang học: <strong className="text-slate-900">{currentCard.word}</strong>
+                    {t('vocab.syncedWithCard')}{' '}
+                    <strong className="text-slate-900">{currentCard.word}</strong>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -989,10 +1024,10 @@ export const DailyVocabularyPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsHistoryModalOpen(true)}
-                    title="Xem lịch sử luyện tập phát âm & học từ"
+                    title={t('vocab.viewHistory')}
                   >
-                    <History className="w-3.5 h-3.5 text-emerald-600" />
-                    Xem lịch sử
+                    <img src="/assets/icons/navigation/nav-history.svg" alt="" className="w-3.5 h-3.5 object-contain" />
+                    {t('vocab.viewHistory')}
                   </Button>
                   <Badge variant="emerald">
                     <ShieldCheck className="w-3 h-3" /> Audio Input ({audioModels.length} Models)
@@ -1004,7 +1039,7 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">
-                    Model Chấm Phát Âm Audio (Từ Database)
+                    {t('vocab.audioModelLabel')}
                   </label>
                   <select
                     value={selectedAudioModel}
@@ -1021,7 +1056,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">
-                    Chế độ luyện phát âm
+                    {t('vocab.practiceMode')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -1039,7 +1074,7 @@ export const DailyVocabularyPage: React.FC = () => {
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       )}
                     >
-                      Từ đơn ({currentCard.word})
+                      {t('vocab.singleWord')} ({currentCard.word})
                     </button>
                     <button
                       type="button"
@@ -1056,7 +1091,7 @@ export const DailyVocabularyPage: React.FC = () => {
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       )}
                     >
-                      Câu ví dụ {hasExamples ? `(${examples.length})` : ''}
+                      {t('vocab.exampleSentence')} {hasExamples ? `(${examples.length})` : ''}
                     </button>
                   </div>
                 </div>
@@ -1066,12 +1101,12 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                    Nội dung mẫu cần đọc:
+                    {t('vocab.sampleContent')}
                   </div>
                   {targetType === 'example' && examples.length > 1 && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-semibold text-slate-600">
-                        Câu {selectedExampleIndex + 1}/{examples.length}
+                        {t('vocab.sentenceIndex')} {selectedExampleIndex + 1}/{examples.length}
                       </span>
                       <Button
                         type="button"
@@ -1080,10 +1115,10 @@ export const DailyVocabularyPage: React.FC = () => {
                         className="h-7 px-2 text-xs"
                         disabled={selectedExampleIndex === 0}
                         onClick={() => handleSelectExampleIndex(selectedExampleIndex - 1)}
-                        title="Câu trước"
+                        title={t('vocab.prevSentence')}
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Câu trước</span>
+                        <span className="hidden sm:inline">{t('vocab.prevSentence')}</span>
                       </Button>
                       <Button
                         type="button"
@@ -1092,9 +1127,9 @@ export const DailyVocabularyPage: React.FC = () => {
                         className="h-7 px-2 text-xs"
                         disabled={selectedExampleIndex >= examples.length - 1}
                         onClick={() => handleSelectExampleIndex(selectedExampleIndex + 1)}
-                        title="Câu tiếp"
+                        title={t('vocab.nextSentence')}
                       >
-                        <span className="hidden sm:inline">Câu tiếp</span>
+                        <span className="hidden sm:inline">{t('vocab.nextSentence')}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -1120,7 +1155,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   ) : (
                     <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>Từ này chưa có câu ví dụ.</span>
+                      <span>{t('vocab.noExamples')}</span>
                     </div>
                   )}
                 </div>
@@ -1153,7 +1188,7 @@ export const DailyVocabularyPage: React.FC = () => {
                       }}
                     >
                       <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Mẫu US
+                      {t('vocab.sampleUs')}
                     </Button>
                     <Button
                       variant="outline"
@@ -1181,7 +1216,7 @@ export const DailyVocabularyPage: React.FC = () => {
                       }}
                     >
                       <Volume2 className="w-3.5 h-3.5 text-sky-600" />
-                      Mẫu UK
+                      {t('vocab.sampleUk')}
                     </Button>
                   </div>
 
@@ -1195,12 +1230,12 @@ export const DailyVocabularyPage: React.FC = () => {
                       onClick={() => void startRecording()}
                     >
                       <Mic className="w-3.5 h-3.5" />
-                      {assessMutation.isPending ? 'Đang chấm điểm...' : 'Thu âm & Chấm điểm'}
+                      {assessMutation.isPending ? t('vocab.scoring') : t('vocab.recordAndScore')}
                     </Button>
                   ) : (
                     <Button variant="danger" size="sm" onClick={stopRecording}>
                       <Square className="w-3.5 h-3.5" />
-                      Dừng thu âm
+                      {t('vocab.stopRecording')}
                     </Button>
                   )}
                 </div>
@@ -1209,7 +1244,7 @@ export const DailyVocabularyPage: React.FC = () => {
               {/* Scoring Rubric Breakdown (Accuracy 40% · Clarity 30% · Fluency 30%) */}
               <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                  <span>Tiêu chuẩn Rubric: {activeRubric?.code ?? 'ENGLISH_PRONUNCIATION_V1'}</span>
+                  <span>{t('vocab.rubricStandard')} {activeRubric?.code ?? 'ENGLISH_PRONUNCIATION_V1'}</span>
                   <span>Accuracy 40% · Clarity 30% · Fluency 30%</span>
                 </div>
 
@@ -1226,8 +1261,8 @@ export const DailyVocabularyPage: React.FC = () => {
                         <Award className="w-5 h-5" />
                         <span className="text-sm font-extrabold">
                           {assessmentResult.overallScore === null
-                            ? 'Không thể chấm điểm bản ghi này'
-                            : `Tổng điểm: ${assessmentResult.overallScore}/100`}
+                            ? t('vocab.cannotScore')
+                            : `${t('vocab.totalScore')} ${assessmentResult.overallScore}/100`}
                         </span>
                       </div>
                       <span className="text-xs font-bold bg-white/20 px-2.5 py-0.5 rounded-full">
@@ -1245,7 +1280,7 @@ export const DailyVocabularyPage: React.FC = () => {
                             {c.criterionCode}: {c.score}/100
                           </div>
                           <div className="text-[10px] text-emerald-700 font-semibold">
-                            Trọng số: {c.weight}%
+                            Weight: {c.weight}%
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5">{c.feedbackVi}</div>
                         </div>
@@ -1254,18 +1289,17 @@ export const DailyVocabularyPage: React.FC = () => {
 
                     <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200 space-y-1">
                       <p>
-                        <strong>Nhận xét âm vị:</strong>{' '}
+                        <strong>{t('vocab.phonemeFeedback')}</strong>{' '}
                         {assessmentResult.phonemeAndStressFeedbackVi}
                       </p>
                       <p className="text-emerald-800 font-medium">
-                        <strong>Gợi ý huấn luyện:</strong> {assessmentResult.coachingSuggestionVi}
+                        <strong>{t('vocab.coachingSuggestion')}</strong> {assessmentResult.coachingSuggestionVi}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <p className="text-[11px] text-slate-500">
-                    Nhấn <strong>Mẫu US / Mẫu UK</strong> để nghe giáo viên AI đọc mẫu, sau đó nhấn{' '}
-                    <strong>Thu âm & Chấm điểm</strong> để nhận phân tích chi tiết theo 3 tiêu chí.
+                    {t('vocab.audioTtsGuide')}
                   </p>
                 )}
               </div>
@@ -1273,19 +1307,26 @@ export const DailyVocabularyPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* MODAL 1: Cấu hình Phát Âm Mẫu AI (Opened via Settings button on toolbar) */}
       <Dialog
         isOpen={isTtsSettingsModalOpen}
         onClose={() => setIsTtsSettingsModalOpen(false)}
         maxWidth="2xl"
-        icon={<Settings className="w-5 h-5" />}
-        title="Cấu hình Phát Âm Mẫu AI (Gemini 3.8 Live)"
-        description="Tùy chỉnh Model phát âm, chọn 1 trong 30 Giọng nói của Teacher từ Database, ngữ điệu US/UK và tốc độ đọc"
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-settings.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
+        title={t('vocab.ttsModalTitle')}
+        description={t('vocab.ttsModalDesc')}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
             <Button size="sm" onClick={() => setIsTtsSettingsModalOpen(false)}>
-              Lưu & Đóng
+              {t('vocab.saveAndClose')}
             </Button>
           </div>
         }
@@ -1294,7 +1335,7 @@ export const DailyVocabularyPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">
-                1. Model Phát Âm Live
+                {t('vocab.liveTtsModelLabel')}
               </label>
               <select
                 value={ttsModelCode}
@@ -1305,16 +1346,16 @@ export const DailyVocabularyPage: React.FC = () => {
                 }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
               >
-                <option value="gemini-3.8-live">Gemini 3.8 Live (Tốc độ tức thì)</option>
+                <option value="gemini-3.8-live">{t('vocab.liveSpeedInstant')}</option>
                 <option value="gemini-3.8-live-extended-thinking">
-                  Gemini 3.8 Live Extended Thinking (Ngữ điệu sâu)
+                  {t('vocab.liveExtendedThinking')}
                 </option>
               </select>
             </div>
 
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">
-                2. Giọng nói của Teacher ({allVoices.length} giọng Google từ DB)
+                {t('vocab.teacherVoiceCount', { count: allVoices.length })}
               </label>
               <select
                 value={ttsVoiceName}
@@ -1331,7 +1372,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">
-                3. Ngữ điệu mặc định (Accent US / UK)
+                {t('vocab.defaultAccentLabel')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {(['US', 'UK'] as const).map((acc) => (
@@ -1354,7 +1395,7 @@ export const DailyVocabularyPage: React.FC = () => {
 
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">
-                4. Tốc độ đọc mẫu (Từ Database)
+                {t('vocab.sampleSpeedLabel')}
               </label>
               <select
                 value={ttsSpeed}
@@ -1384,7 +1425,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
                 >
                   <Code2 className="w-3.5 h-3.5" />
-                  {showSystemPromptUsed ? 'Ẩn System Prompt' : 'Xem System Prompt'}
+                  {showSystemPromptUsed ? t('vocab.hideSystemPrompt') : t('vocab.viewSystemPrompt')}
                 </button>
               </div>
               <audio
@@ -1408,9 +1449,15 @@ export const DailyVocabularyPage: React.FC = () => {
         isOpen={isAiGeneratorModalOpen}
         onClose={() => setIsAiGeneratorModalOpen(false)}
         maxWidth="2xl"
-        icon={<Sparkles className="w-5 h-5" />}
-        title="Tạo Từ Vựng Thông Minh bằng AI"
-        description="Sinh từ vựng tự động bằng AI qua Google API hoặc qua Web AI (ChatGPT, Claude, Gemini Web) miễn phí"
+        icon={
+          <img
+            src="/assets/icons/navigation/nav-study.svg"
+            alt=""
+            className="w-5 h-5 object-contain"
+          />
+        }
+        title={t('vocab.aiGeneratorTitle')}
+        description={t('vocab.aiGeneratorDesc')}
         footer={
           <div className="flex items-center justify-end gap-2.5 w-full">
             <Button
@@ -1419,7 +1466,7 @@ export const DailyVocabularyPage: React.FC = () => {
               onClick={() => setIsAiGeneratorModalOpen(false)}
               disabled={generateMutation.isPending || importJsonMutation.isPending}
             >
-              Hủy
+              {t('vocab.cancelBtn')}
             </Button>
             {genMode === 'direct' ? (
               <Button
@@ -1430,8 +1477,8 @@ export const DailyVocabularyPage: React.FC = () => {
               >
                 <Sparkles className="w-4 h-4" />
                 {generateMutation.isPending
-                  ? `Đang tạo với ${selectedVocabModel}...`
-                  : 'Tạo thêm từ vựng vào bộ thẻ'}
+                  ? t('vocab.creatingWithModel', { model: selectedVocabModel })
+                  : t('vocab.addWordsToDeck')}
               </Button>
             ) : (
               <Button
@@ -1441,7 +1488,7 @@ export const DailyVocabularyPage: React.FC = () => {
                 onClick={() => void handleImportManualJson()}
               >
                 <Sparkles className="w-4 h-4" />
-                {importJsonMutation.isPending ? 'Đang lưu vào DB...' : 'Nhập Từ Vựng Vào Bộ Thẻ'}
+                {importJsonMutation.isPending ? t('vocab.savingToDb') : t('vocab.importWordsToDeck')}
               </Button>
             )}
           </div>
@@ -1461,7 +1508,7 @@ export const DailyVocabularyPage: React.FC = () => {
               )}
             >
               <Cpu className="w-3.5 h-3.5" />
-              Gọi AI Trực Tiếp (API Key)
+              {t('vocab.genModeDirect')}
             </button>
             <button
               type="button"
@@ -1474,9 +1521,9 @@ export const DailyVocabularyPage: React.FC = () => {
               )}
             >
               <FileText className="w-3.5 h-3.5" />
-              Web AI: Copy Prompt & Nhập JSON
+              {t('vocab.genModeManual')}
               <Badge variant="emerald" className="text-[10px] py-0 px-1.5 ml-1">
-                Miễn phí
+                {t('vocab.freeBadge')}
               </Badge>
             </button>
           </div>
@@ -1487,7 +1534,7 @@ export const DailyVocabularyPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <label className="font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                     <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                    Model Tạo Từ Vựng AI (Gemini & Gemma 4)
+                    {t('vocab.vocabModelLabel')}
                   </label>
                   <Badge variant="emerald">DB ({vocabModels.length})</Badge>
                 </div>
@@ -1499,7 +1546,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   {vocabModels.map((m) => (
                     <option key={m.modelCode} value={m.modelCode}>
                       {m.displayName} —{' '}
-                      {m.supportsAudioInput ? 'Đa phương thức' : 'Text Generation Only'}
+                      {m.supportsAudioInput ? t('vocab.multimodal') : t('vocab.textOnly')}
                     </option>
                   ))}
                 </select>
@@ -1513,7 +1560,7 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    Trình độ CEFR
+                    {t('vocab.cefrLevelLabel')}
                   </label>
                   <select
                     value={genCefr}
@@ -1529,28 +1576,28 @@ export const DailyVocabularyPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    Số lượng từ tạo mới
+                    {t('vocab.wordsCountLabel')}
                   </label>
                   <select
                     value={genCount}
                     onChange={(e) => setGenCount(Number(e.target.value))}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
                   >
-                    <option value={2}>2 từ vựng chuyên sâu</option>
-                    <option value={3}>3 từ vựng chuyên sâu</option>
-                    <option value={5}>5 từ vựng chuyên sâu</option>
-                    <option value={10}>10 từ vựng chuyên sâu</option>
+                    <option value={2}>{t('vocab.intensiveWords', { count: 2 })}</option>
+                    <option value={3}>{t('vocab.intensiveWords', { count: 3 })}</option>
+                    <option value={5}>{t('vocab.intensiveWords', { count: 5 })}</option>
+                    <option value={10}>{t('vocab.intensiveWords', { count: 10 })}</option>
                   </select>
                 </div>
               </div>
 
               <TopicCreatablePicker
-                label="Chủ đề tạo thêm từ (DB Suggestions + Tự nhập)"
+                label={t('vocab.genTopicLabel')}
                 value={genTopic}
                 onChange={setGenTopic}
                 topics={vocabTopics}
-                placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý bên dưới..."
-                helperText="Gợi ý chủ đề từ vựng được lấy trực tiếp từ bảng Topics trong Database, đồng thời hỗ trợ tự nhập chủ đề tùy ý."
+                placeholder={t('vocab.genTopicPlaceholder')}
+                helperText={t('vocab.genTopicHelper')}
               />
             </>
           ) : (
@@ -1558,7 +1605,7 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    Trình độ CEFR
+                    {t('vocab.cefrLevelLabel')}
                   </label>
                   <select
                     value={genCefr}
@@ -1574,34 +1621,35 @@ export const DailyVocabularyPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    Số lượng từ mong muốn
+                    {t('vocab.wordsCountDesired')}
                   </label>
                   <select
                     value={genCount}
                     onChange={(e) => setGenCount(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-xs"
                   >
-                    <option value={2}>2 từ vựng</option>
-                    <option value={3}>3 từ vựng</option>
-                    <option value={5}>5 từ vựng</option>
-                    <option value={10}>10 từ vựng</option>
+                    <option value={2}>{t('vocab.wordsSimple', { count: 2 })}</option>
+                    <option value={3}>{t('vocab.wordsSimple', { count: 3 })}</option>
+                    <option value={5}>{t('vocab.wordsSimple', { count: 5 })}</option>
+                    <option value={10}>{t('vocab.wordsSimple', { count: 10 })}</option>
                   </select>
                 </div>
               </div>
 
               <TopicCreatablePicker
-                label="Chủ đề từ vựng"
+                label={t('vocab.genTopicLabel')}
                 value={genTopic}
                 onChange={setGenTopic}
                 topics={vocabTopics}
-                placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý..."
+                placeholder={t('vocab.genTopicPlaceholder')}
+                helperText={t('vocab.genTopicHelper')}
               />
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-700 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    Bước 1: Lấy Prompt cho Web AI
+                    {t('vocab.step1PromptTitle')}
                   </span>
                   <Button
                     type="button"
@@ -1613,10 +1661,10 @@ export const DailyVocabularyPage: React.FC = () => {
                     {buildPromptMutation.isPending ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Đang tạo prompt...
+                        {t('vocab.buildingPrompt')}
                       </>
                     ) : (
-                      'Tạo Prompt'
+                      t('vocab.buildPromptBtn')
                     )}
                   </Button>
                 </div>
@@ -1638,18 +1686,18 @@ export const DailyVocabularyPage: React.FC = () => {
                         {isPromptCopied ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            Đã chép!
+                            {t('vocab.copiedPrompt')}
                           </>
                         ) : (
                           <>
                             <Copy className="w-3.5 h-3.5" />
-                            Sao chép Prompt
+                            {t('vocab.copyPrompt')}
                           </>
                         )}
                       </button>
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      💡 Sao chép prompt trên dán vào ChatGPT, Claude, Gemini Web hoặc DeepSeek. Sau đó copy JSON kết quả dán vào Bước 2 bên dưới.
+                      {t('vocab.copyPromptHint')}
                     </p>
                   </div>
                 )}
@@ -1659,7 +1707,7 @@ export const DailyVocabularyPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-700 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                    Bước 2: Nhập JSON kết quả từ Web AI
+                    {t('vocab.step2JsonTitle')}
                   </span>
                   <Badge variant="sky">Nguồn: manual-web-ai</Badge>
                 </div>
@@ -1668,7 +1716,7 @@ export const DailyVocabularyPage: React.FC = () => {
                   value={manualJsonInput}
                   onChange={(e) => setManualJsonInput(e.target.value)}
                   rows={4}
-                  placeholder="Dán mảng JSON hoặc cả khối ```json ... ``` từ Web AI vào đây..."
+                  placeholder={t('vocab.jsonInputPlaceholder')}
                   className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-mono text-[11px] placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
 
@@ -1679,7 +1727,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     onChange={(e) => setAssignToTodayPlan(e.target.checked)}
                     className="w-4 h-4 rounded-sm border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  Gán các từ vựng này vào kế hoạch học tập hôm nay (Daily Plan)
+                  {t('vocab.assignToTodayCheckbox')}
                 </label>
               </div>
 

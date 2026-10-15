@@ -12,7 +12,7 @@ public sealed class ConversationRepository : IConversationRepository
 {
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly TimeProvider _timeProvider;
-    private readonly ICurrentUser _currentUser;
+    private readonly ICurrentUser? _currentUser;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
     public ConversationRepository(
@@ -22,16 +22,16 @@ public sealed class ConversationRepository : IConversationRepository
     {
         _dbFactory = dbFactory;
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _currentUser = currentUser ?? SystemCurrentUser.Instance;
+        _currentUser = currentUser;
     }
 
-    public async Task<List<object>> ListConversationsAsync(CancellationToken ct = default)
+    public async Task<List<ConversationSummary>> ListConversationsAsync(CancellationToken ct = default)
     {
         var (items, _) = await ListConversationsPagedAsync(null, null, null, ct);
         return items;
     }
 
-    public async Task<(List<object> Items, int TotalCount)> ListConversationsPagedAsync(
+    public async Task<(List<ConversationSummary> Items, int TotalCount)> ListConversationsPagedAsync(
         string? search = null,
         int? page = null,
         int? pageSize = null,
@@ -55,8 +55,7 @@ public sealed class ConversationRepository : IConversationRepository
 
         var projected = query
             .OrderByDescending(c => c.UpdatedAtUtc ?? c.CreatedAtUtc)
-            .Select(c => new
-            {
+            .Select(c => new ConversationSummary(
                 c.Id,
                 c.Title,
                 c.CefrLevel,
@@ -66,18 +65,18 @@ public sealed class ConversationRepository : IConversationRepository
                 c.ConversationMode,
                 c.Topic,
                 c.CustomSystemPrompt,
-                CreatedAt = c.CreatedAtUtc,
-                UpdatedAt = c.UpdatedAtUtc ?? c.CreatedAtUtc,
+                c.CreatedAtUtc,
+                c.UpdatedAtUtc ?? c.CreatedAtUtc,
                 c.CreatedAtUtc,
                 c.UpdatedAtUtc,
-                MessageCount = c.Messages.Count(m => m.TranscriptLine1 != "" || m.TranslationLine2 != ""),
-                CorrectionCount = c.Corrections.Count(),
-                LastMessagePreview = c.Messages
+                c.Messages.Count(m => m.TranscriptLine1 != "" || m.TranslationLine2 != ""),
+                c.Corrections.Count(),
+                c.Messages
                     .Where(m => m.TranscriptLine1 != "")
                     .OrderByDescending(m => m.SequenceOrder)
                     .Select(m => m.TranscriptLine1)
                     .FirstOrDefault() ?? "Chưa có tin nhắn"
-            });
+            ));
 
         bool hasPaging = page.HasValue || pageSize.HasValue;
         if (hasPaging)
@@ -88,11 +87,11 @@ public sealed class ConversationRepository : IConversationRepository
                 .Skip((effPage - 1) * effSize)
                 .Take(effSize)
                 .ToListAsync(ct);
-            return (pagedItems.Cast<object>().ToList(), totalCount);
+            return (pagedItems, totalCount);
         }
 
         var items = await projected.ToListAsync(ct);
-        return (items.Cast<object>().ToList(), totalCount);
+        return (items, totalCount);
     }
 
     public async Task<ConversationEntity?> GetConversationWithHistoryAsync(string id, CancellationToken ct = default)
@@ -100,6 +99,7 @@ public sealed class ConversationRepository : IConversationRepository
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var conv = await db.Conversations
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(c => c.Messages
                 .Where(m => m.TranscriptLine1 != "" || m.TranslationLine2 != "")
                 .OrderBy(m => m.SequenceOrder))
@@ -312,7 +312,8 @@ public sealed class ConversationRepository : IConversationRepository
             if (conv is null)
                 return false;
 
-            conv.SoftDelete(_timeProvider.GetUtcNow(), _currentUser.UserIdOrSystem);
+            string actor = string.IsNullOrWhiteSpace(_currentUser?.UserId) ? "system" : _currentUser.UserId!.Trim();
+            conv.SoftDelete(_timeProvider.GetUtcNow(), actor);
             await db.SaveChangesAsync(ct);
             return true;
         }

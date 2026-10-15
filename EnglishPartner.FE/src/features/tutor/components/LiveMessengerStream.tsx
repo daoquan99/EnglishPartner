@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Volume2, Square, User, Bot, Sparkles, CheckCircle2, Wand2 } from 'lucide-react';
 import type { BilingualTurnItem, GrammarCorrectionItem } from '../types/tutor.types';
 import { cn } from '@/shared/lib/cn';
@@ -20,6 +21,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
   onSelectCorrection,
   onAnalyzeTurn,
 }) => {
+  const { t } = useTranslation();
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -42,16 +44,19 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
   if (turns.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-4 shadow-xs">
-          <Sparkles className="w-8 h-8" />
-        </div>
+        <img
+          src="/assets/illustrations/illustration-welcome.svg"
+          alt=""
+          className="w-44 h-44 object-contain mb-3 drop-shadow-xs select-none pointer-events-none"
+        />
         <h3 className="text-lg font-extrabold text-slate-800">
-          Sẵn sàng bắt đầu phiên hội thoại song ngữ
+          {t('tutor.readyTitle', 'Sẵn sàng bắt đầu phiên hội thoại song ngữ')}
         </h3>
         <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
-          Nhập <strong>Google AI Studio API Key</strong> ở cột Thiết lập bên trái rồi nhấn{' '}
-          <strong>Bắt đầu luyện nói</strong> để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI
-          24kHz), Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp Realtime), và Hub 3 (Dịch Tiếng Việt tức thì).
+          {t(
+            'tutor.readyDesc',
+            'Nhập Google AI Studio API Key ở cột Thiết lập bên trái rồi nhấn Bắt đầu luyện nói để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI 24kHz), Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp Realtime), và Hub 3 (Dịch Tiếng Việt tức thì).'
+          )}
         </p>
       </div>
     );
@@ -73,13 +78,25 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
           >
             <div
               className={cn(
-                'w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 shadow-xs',
+                'w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 shadow-xs overflow-hidden',
                 isUser
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                  ? 'bg-emerald-600 text-white p-0.5'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 p-1.5'
               )}
             >
-              {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              {isUser ? (
+                <img
+                  src="/assets/mascot/cat/cat-avatar.svg"
+                  alt="User"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <img
+                  src="/assets/brand/logo-mark.svg"
+                  alt="AI Teacher"
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
 
             <div className={cn('max-w-[82%] flex flex-col gap-1.5', isUser ? 'items-end' : 'items-start')}>
@@ -101,7 +118,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                       <button
                         type="button"
                         onClick={() => onAnalyzeTurn(turn.turnId, turn.englishLine1)}
-                        title="Phân tích ngữ pháp & từ vựng câu này"
+                        title={t('tutor.analyzeTurnTooltip', 'Phân tích ngữ pháp & từ vựng câu này')}
                         className="p-1 rounded-lg text-emerald-100 hover:bg-emerald-500 transition-colors cursor-pointer"
                       >
                         <Wand2 className="w-3.5 h-3.5" />
@@ -113,10 +130,10 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                         onClick={() => handleReplayTurn(turn)}
                         title={
                           isReplaying
-                            ? 'Dừng phát lại audio'
+                            ? t('tutor.stopReplay', 'Dừng phát lại audio')
                             : isUser
-                              ? 'Nghe lại câu tiếng Anh (Giọng thu âm của bạn)'
-                              : 'Nghe lại câu tiếng Anh (Giọng AI)'
+                              ? t('tutor.replayUserAudio', 'Nghe lại câu tiếng Anh (Giọng thu âm của bạn)')
+                              : t('tutor.replayAiAudio', 'Nghe lại câu tiếng Anh (Giọng AI)')
                         }
                         className={cn(
                           'px-1.5 py-1 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1',
@@ -132,7 +149,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                         {isReplaying ? (
                           <>
                             <Square className="w-3 h-3 fill-current animate-pulse" />
-                            <span className="text-[10px]">Đang phát</span>
+                            <span className="text-[10px]">{t('tutor.playing', 'Đang phát')}</span>
                           </>
                         ) : (
                           <Volume2 className="w-3.5 h-3.5" />
@@ -151,7 +168,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                       : 'text-slate-500 border-slate-100'
                   )}
                 >
-                  {turn.vietnameseLine2 || 'Đang dịch sang tiếng Việt...'}
+                  {turn.vietnameseLine2 || t('tutor.translating', 'Đang dịch sang tiếng Việt...')}
                 </p>
               </div>
 
@@ -160,7 +177,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectCorrection?.(turnCorrection)}
-                  title="Xem giải thích chi tiết ở cột Sửa lỗi Ngữ pháp & Từ vựng bên phải"
+                  title={t('tutor.viewCorrectionHint', 'Xem giải thích chi tiết ở cột Sửa lỗi Ngữ pháp & Từ vựng bên phải')}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200/90 text-amber-900 text-[11px] font-semibold transition-colors cursor-pointer max-w-full"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
