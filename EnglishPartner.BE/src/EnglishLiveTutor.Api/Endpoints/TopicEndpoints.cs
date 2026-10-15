@@ -15,23 +15,31 @@ public static class TopicEndpoints
         var group = app.MapGroup("/api/topics");
 
         group.MapGet("/", async (
+            HttpContext httpContext,
             bool? onlyActive,
             bool? supportsConversation,
             bool? supportsVocabulary,
             string? modeCode,
             string? category,
-            IQueryHandler<ListTopicsQuery, List<TopicDto>> handler,
+            string? search,
+            int? page,
+            int? pageSize,
+            bool? paged,
+            IQueryHandler<ListTopicsQuery, PagedResultDto<TopicDto>> handler,
             CancellationToken ct) =>
         {
-            var list = await handler.HandleAsync(
+            var pagedTopics = await handler.HandleAsync(
                 new ListTopicsQuery(
                     OnlyActive: onlyActive ?? true,
                     SupportsConversation: supportsConversation,
                     SupportsVocabulary: supportsVocabulary,
                     ModeCode: modeCode,
-                    Category: category),
+                    Category: category,
+                    Search: search,
+                    Page: page,
+                    PageSize: pageSize),
                 ct);
-            return Results.Ok(list);
+            return pagedTopics.ToHttpResult(httpContext, paged);
         });
 
         group.MapGet("/{id:guid}", async (

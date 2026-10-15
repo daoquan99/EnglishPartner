@@ -27,9 +27,33 @@ public sealed class ConversationRepository : IConversationRepository
 
     public async Task<List<object>> ListConversationsAsync(CancellationToken ct = default)
     {
+        var (items, _) = await ListConversationsPagedAsync(null, null, null, ct);
+        return items;
+    }
+
+    public async Task<(List<object> Items, int TotalCount)> ListConversationsPagedAsync(
+        string? search = null,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken ct = default)
+    {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var items = await db.Conversations
-            .AsNoTracking()
+        var query = db.Conversations.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            string term = search.Trim().ToLowerInvariant();
+            query = query.Where(c =>
+                c.Title.ToLower().Contains(term) ||
+                c.Topic.ToLower().Contains(term) ||
+                c.ConversationMode.ToLower().Contains(term) ||
+                c.CefrLevel.ToLower().Contains(term) ||
+                c.VoiceName.ToLower().Contains(term));
+        }
+
+        int totalCount = await query.CountAsync(ct);
+
+        var projected = query
             .OrderByDescending(c => c.UpdatedAtUtc ?? c.CreatedAtUtc)
             .Select(c => new
             {
@@ -47,15 +71,28 @@ public sealed class ConversationRepository : IConversationRepository
                 c.CreatedAtUtc,
                 c.UpdatedAtUtc,
                 MessageCount = c.Messages.Count(m => m.TranscriptLine1 != "" || m.TranslationLine2 != ""),
+                CorrectionCount = c.Corrections.Count(),
                 LastMessagePreview = c.Messages
                     .Where(m => m.TranscriptLine1 != "")
                     .OrderByDescending(m => m.SequenceOrder)
                     .Select(m => m.TranscriptLine1)
                     .FirstOrDefault() ?? "Chưa có tin nhắn"
-            })
-            .ToListAsync(ct);
+            });
 
-        return items.Cast<object>().ToList();
+        bool hasPaging = page.HasValue || pageSize.HasValue;
+        if (hasPaging)
+        {
+            int effPage = Math.Max(1, page ?? 1);
+            int effSize = Math.Clamp(pageSize ?? 20, 1, 500);
+            var pagedItems = await projected
+                .Skip((effPage - 1) * effSize)
+                .Take(effSize)
+                .ToListAsync(ct);
+            return (pagedItems.Cast<object>().ToList(), totalCount);
+        }
+
+        var items = await projected.ToListAsync(ct);
+        return (items.Cast<object>().ToList(), totalCount);
     }
 
     public async Task<ConversationEntity?> GetConversationWithHistoryAsync(string id, CancellationToken ct = default)

@@ -40,6 +40,7 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     // Prompts & Coaching Modes (CefrPromptBuilder in DB)
     public DbSet<CefrLevelPromptEntity> CefrLevelPrompts => Set<CefrLevelPromptEntity>();
     public DbSet<ConversationModePromptEntity> ConversationModePrompts => Set<ConversationModePromptEntity>();
+    public DbSet<SpeechSpeedEntity> SpeechSpeeds => Set<SpeechSpeedEntity>();
 
     // Teacher Voices Catalog
     public DbSet<TeacherVoiceEntity> TeacherVoices => Set<TeacherVoiceEntity>();

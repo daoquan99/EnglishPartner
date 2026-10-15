@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Features.Conversations.Commands.DeleteConvers
 using EnglishLiveTutor.Application.Features.Conversations.Commands.UpdateConversationSettings;
 using EnglishLiveTutor.Application.Features.Conversations.Queries.GetConversationHistory;
 using EnglishLiveTutor.Application.Features.Conversations.Queries.ListConversations;
+using EnglishLiveTutor.Application.Features.Identity.Commands.AdminManageIdentity;
 using EnglishLiveTutor.Application.Features.Identity.Commands.AssignUserRoles;
 using EnglishLiveTutor.Application.Features.Identity.Commands.CreatePermission;
 using EnglishLiveTutor.Application.Features.Identity.Commands.CreateRole;
@@ -32,15 +33,15 @@ using EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoring
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetActiveScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationHistory;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationModels;
+using EnglishLiveTutor.Application.Features.Topics.Commands.DeleteTopic;
+using EnglishLiveTutor.Application.Features.Topics.Commands.UpsertTopic;
+using EnglishLiveTutor.Application.Features.Topics.Queries.GetTopicById;
+using EnglishLiveTutor.Application.Features.Topics.Queries.ListTopics;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyFlashcard;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyGenerationModels;
 using EnglishLiveTutor.Application.Features.Voices.Commands.UpsertTeacherVoice;
 using EnglishLiveTutor.Application.Features.Voices.Queries.GetTeacherVoiceById;
-using EnglishLiveTutor.Application.Features.Topics.Commands.DeleteTopic;
-using EnglishLiveTutor.Application.Features.Topics.Commands.UpsertTopic;
-using EnglishLiveTutor.Application.Features.Topics.Queries.GetTopicById;
-using EnglishLiveTutor.Application.Features.Topics.Queries.ListTopics;
 using EnglishLiveTutor.Application.Features.Voices.Queries.ListTeacherVoices;
 using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Conversations;
@@ -70,33 +71,51 @@ public static class DependencyInjection
         services.AddTransient<AssignUserRolesCommandHandler>();
         services.AddTransient<ICommandHandler<AssignUserRolesCommand, UserProfileDto>>(sp => sp.GetRequiredService<AssignUserRolesCommandHandler>());
 
+        services.AddTransient<AdminCreateUserCommandHandler>();
+        services.AddTransient<ICommandHandler<AdminCreateUserCommand, UserProfileDto>>(sp => sp.GetRequiredService<AdminCreateUserCommandHandler>());
+
+        services.AddTransient<AdminUpdateUserCommandHandler>();
+        services.AddTransient<ICommandHandler<AdminUpdateUserCommand, UserProfileDto?>>(sp => sp.GetRequiredService<AdminUpdateUserCommandHandler>());
+
+        services.AddTransient<DeleteUserCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteUserCommand, bool>>(sp => sp.GetRequiredService<DeleteUserCommandHandler>());
+
         services.AddTransient<CreateRoleCommandHandler>();
         services.AddTransient<ICommandHandler<CreateRoleCommand, RoleDto>>(sp => sp.GetRequiredService<CreateRoleCommandHandler>());
 
         services.AddTransient<UpdateRolePermissionsCommandHandler>();
         services.AddTransient<ICommandHandler<UpdateRolePermissionsCommand, RoleDto>>(sp => sp.GetRequiredService<UpdateRolePermissionsCommandHandler>());
 
+        services.AddTransient<DeleteRoleCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteRoleCommand, bool>>(sp => sp.GetRequiredService<DeleteRoleCommandHandler>());
+
         services.AddTransient<CreatePermissionCommandHandler>();
         services.AddTransient<ICommandHandler<CreatePermissionCommand, PermissionDto>>(sp => sp.GetRequiredService<CreatePermissionCommandHandler>());
+
+        services.AddTransient<UpdatePermissionCommandHandler>();
+        services.AddTransient<ICommandHandler<UpdatePermissionCommand, PermissionDto?>>(sp => sp.GetRequiredService<UpdatePermissionCommandHandler>());
+
+        services.AddTransient<DeletePermissionCommandHandler>();
+        services.AddTransient<ICommandHandler<DeletePermissionCommand, bool>>(sp => sp.GetRequiredService<DeletePermissionCommandHandler>());
 
         services.AddTransient<GetUserProfileQueryHandler>();
         services.AddTransient<IQueryHandler<GetUserProfileQuery, UserProfileDto?>>(sp => sp.GetRequiredService<GetUserProfileQueryHandler>());
 
         services.AddTransient<ListUsersQueryHandler>();
-        services.AddTransient<IQueryHandler<ListUsersQuery, List<UserProfileDto>>>(sp => sp.GetRequiredService<ListUsersQueryHandler>());
+        services.AddTransient<IQueryHandler<ListUsersQuery, PagedResultDto<UserProfileDto>>>(sp => sp.GetRequiredService<ListUsersQueryHandler>());
 
         services.AddTransient<ListRolesQueryHandler>();
-        services.AddTransient<IQueryHandler<ListRolesQuery, List<RoleDto>>>(sp => sp.GetRequiredService<ListRolesQueryHandler>());
+        services.AddTransient<IQueryHandler<ListRolesQuery, PagedResultDto<RoleDto>>>(sp => sp.GetRequiredService<ListRolesQueryHandler>());
 
         services.AddTransient<ListPermissionsQueryHandler>();
-        services.AddTransient<IQueryHandler<ListPermissionsQuery, List<PermissionDto>>>(sp => sp.GetRequiredService<ListPermissionsQueryHandler>());
+        services.AddTransient<IQueryHandler<ListPermissionsQuery, PagedResultDto<PermissionDto>>>(sp => sp.GetRequiredService<ListPermissionsQueryHandler>());
 
         // Prompts & Session Modes (DB-backed CefrPromptBuilder)
         services.AddTransient<ListCefrLevelPromptsQueryHandler>();
-        services.AddTransient<IQueryHandler<ListCefrLevelPromptsQuery, List<CefrLevelPromptEntity>>>(sp => sp.GetRequiredService<ListCefrLevelPromptsQueryHandler>());
+        services.AddTransient<IQueryHandler<ListCefrLevelPromptsQuery, PagedResultDto<CefrLevelPromptEntity>>>(sp => sp.GetRequiredService<ListCefrLevelPromptsQueryHandler>());
 
         services.AddTransient<ListConversationModePromptsQueryHandler>();
-        services.AddTransient<IQueryHandler<ListConversationModePromptsQuery, List<ConversationModePromptEntity>>>(sp => sp.GetRequiredService<ListConversationModePromptsQueryHandler>());
+        services.AddTransient<IQueryHandler<ListConversationModePromptsQuery, PagedResultDto<ConversationModePromptEntity>>>(sp => sp.GetRequiredService<ListConversationModePromptsQueryHandler>());
 
         services.AddTransient<PreviewSystemPromptQueryHandler>();
         services.AddTransient<IQueryHandler<PreviewSystemPromptQuery, string>>(sp => sp.GetRequiredService<PreviewSystemPromptQueryHandler>());
@@ -109,7 +128,7 @@ public static class DependencyInjection
 
         // Teacher Voices Catalog
         services.AddTransient<ListTeacherVoicesQueryHandler>();
-        services.AddTransient<IQueryHandler<ListTeacherVoicesQuery, List<TeacherVoiceDto>>>(sp => sp.GetRequiredService<ListTeacherVoicesQueryHandler>());
+        services.AddTransient<IQueryHandler<ListTeacherVoicesQuery, PagedResultDto<TeacherVoiceDto>>>(sp => sp.GetRequiredService<ListTeacherVoicesQueryHandler>());
 
         services.AddTransient<GetTeacherVoiceByIdQueryHandler>();
         services.AddTransient<IQueryHandler<GetTeacherVoiceByIdQuery, TeacherVoiceDto?>>(sp => sp.GetRequiredService<GetTeacherVoiceByIdQueryHandler>());
@@ -119,7 +138,7 @@ public static class DependencyInjection
 
         // Topics Aggregate Catalog
         services.AddTransient<ListTopicsQueryHandler>();
-        services.AddTransient<IQueryHandler<ListTopicsQuery, List<TopicDto>>>(sp => sp.GetRequiredService<ListTopicsQueryHandler>());
+        services.AddTransient<IQueryHandler<ListTopicsQuery, PagedResultDto<TopicDto>>>(sp => sp.GetRequiredService<ListTopicsQueryHandler>());
 
         services.AddTransient<GetTopicByIdQueryHandler>();
         services.AddTransient<IQueryHandler<GetTopicByIdQuery, TopicDto?>>(sp => sp.GetRequiredService<GetTopicByIdQueryHandler>());
@@ -141,7 +160,7 @@ public static class DependencyInjection
         services.AddTransient<ICommandHandler<DeleteConversationCommand, bool>>(sp => sp.GetRequiredService<DeleteConversationCommandHandler>());
 
         services.AddTransient<ListConversationsQueryHandler>();
-        services.AddTransient<IQueryHandler<ListConversationsQuery, List<object>>>(sp => sp.GetRequiredService<ListConversationsQueryHandler>());
+        services.AddTransient<IQueryHandler<ListConversationsQuery, PagedResultDto<object>>>(sp => sp.GetRequiredService<ListConversationsQueryHandler>());
 
         services.AddTransient<GetConversationHistoryQueryHandler>();
         services.AddTransient<IQueryHandler<GetConversationHistoryQuery, object?>>(sp => sp.GetRequiredService<GetConversationHistoryQueryHandler>());

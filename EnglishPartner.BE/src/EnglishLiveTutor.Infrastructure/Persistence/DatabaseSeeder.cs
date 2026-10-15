@@ -8,29 +8,17 @@ using EnglishLiveTutor.Infrastructure.Identity;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Vocabulary;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace EnglishLiveTutor.Infrastructure.Persistence;
 
 public static class DatabaseSeeder
 {
-    public static async Task EnsureSchemaAndSeedAsync(
-        IDbContextFactory<AppDbContext> dbFactory,
-        IConfiguration? configuration = null)
+    public static async Task EnsureSchemaAndSeedAsync(IDbContextFactory<AppDbContext> dbFactory)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        await EnsureSchemaAndSeedAsync(db, configuration);
-    }
 
-    public static async Task EnsureSchemaAndSeedAsync(
-        AppDbContext db,
-        IConfiguration? configuration = null)
-    {
         // 1. Ensure all Vocabulary, Daily Learning, AI Model Catalog, and Pronunciation tables exist in SQL Server
-        if (db.Database.IsRelational())
-        {
-            await db.Database.MigrateAsync();
-        }
+        await db.Database.MigrateAsync();
 
         // 2. Seed AI Model Catalog idempotently
         if (!await db.AiModelCatalog.AnyAsync())
@@ -298,6 +286,13 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
         }
 
+        // 5b. Seed Teacher Speech Speeds into Database
+        if (!await db.SpeechSpeeds.AnyAsync())
+        {
+            db.SpeechSpeeds.AddRange(BuildDefaultSpeechSpeeds());
+            await db.SaveChangesAsync();
+        }
+
         // 6. Seed 30 Google Prebuilt Teacher Voices
         if (!await db.TeacherVoices.AnyAsync())
         {
@@ -313,7 +308,7 @@ public static class DatabaseSeeder
         }
 
         // 7. Seed Default Permissions, Roles (ADMIN, TEACHER, LEARNER), and Starter Accounts
-        await SeedIdentityAsync(db, configuration);
+        await SeedIdentityAsync(db);
     }
 
     private static List<VocabularyEntity> BuildStarterVocabularyCatalog()
@@ -965,48 +960,7 @@ public static class DatabaseSeeder
             displayOrder: 30)
     };
 
-    public static AdminUserSeedOptions GetAdminUserOptions(IConfiguration? configuration)
-    {
-        var options = new AdminUserSeedOptions();
-        if (configuration is null)
-        {
-            return options;
-        }
-
-        var section = configuration.GetSection(AdminUserSeedOptions.SectionName);
-        if (!section.Exists())
-        {
-            section = configuration.GetSection("SeedData:AdminUser");
-        }
-
-        string? username = section["Username"] ?? configuration["AdminUser:Username"];
-        if (!string.IsNullOrWhiteSpace(username))
-            options.Username = username.Trim();
-
-        string? email = section["Email"] ?? configuration["AdminUser:Email"];
-        if (!string.IsNullOrWhiteSpace(email))
-            options.Email = email.Trim();
-
-        string? password = section["Password"] ?? configuration["AdminUser:Password"];
-        if (!string.IsNullOrWhiteSpace(password))
-            options.Password = password;
-
-        string? fullName = section["FullName"] ?? configuration["AdminUser:FullName"];
-        if (!string.IsNullOrWhiteSpace(fullName))
-            options.FullName = fullName.Trim();
-
-        string? cefr = section["PreferredCefrLevel"] ?? configuration["AdminUser:PreferredCefrLevel"];
-        if (!string.IsNullOrWhiteSpace(cefr))
-            options.PreferredCefrLevel = cefr.Trim();
-
-        string? voice = section["PreferredVoiceName"] ?? configuration["AdminUser:PreferredVoiceName"];
-        if (!string.IsNullOrWhiteSpace(voice))
-            options.PreferredVoiceName = voice.Trim();
-
-        return options;
-    }
-
-    public static async Task SeedIdentityAsync(AppDbContext db, IConfiguration? configuration = null)
+    private static async Task SeedIdentityAsync(AppDbContext db)
     {
         if (!await db.Permissions.AnyAsync())
         {
@@ -1022,7 +976,8 @@ public static class DatabaseSeeder
                 new("users.read", "View Users", "Identity", "List and inspect user profiles", id: Guid.Parse("60000000-0000-0000-0000-000000000008")),
                 new("users.manage", "Manage Users & Role Assignments", "Identity", "Assign roles and activate/deactivate users", id: Guid.Parse("60000000-0000-0000-0000-000000000009")),
                 new("roles.manage", "Manage Roles & Permissions", "Identity", "Create roles and configure role-permission mappings", id: Guid.Parse("60000000-0000-0000-0000-000000000010")),
-                new("topics.manage", "Manage Topics Catalog", "Topics", "Create, update, and curate conversation & vocabulary topics", id: Guid.Parse("60000000-0000-0000-0000-000000000011"))
+                new("topics.manage", "Manage Topics Catalog", "Topics", "Create, update, and curate conversation & vocabulary topics", id: Guid.Parse("60000000-0000-0000-0000-000000000011")),
+                new("vocabularies.manage", "Manage Vocabulary & Flashcards Catalog", "Vocabulary", "Create, update, and delete vocabulary flashcards in database", id: Guid.Parse("60000000-0000-0000-0000-000000000012"))
             };
             db.Permissions.AddRange(permissions);
             await db.SaveChangesAsync();
@@ -1070,47 +1025,23 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
         }
 
-        var hasher = new Pbkdf2PasswordHasher();
-        var adminOptions = GetAdminUserOptions(configuration);
-
-        var adminRoleEntity = await db.Roles.FirstOrDefaultAsync(r => r.Code == "ADMIN");
-        var adminRoleId = adminRoleEntity?.Id ?? Guid.Parse("70000000-0000-0000-0000-000000000001");
-        var learnerRoleEntity = await db.Roles.FirstOrDefaultAsync(r => r.Code == "LEARNER");
-        var learnerRoleId = learnerRoleEntity?.Id ?? Guid.Parse("70000000-0000-0000-0000-000000000003");
-
-        var normalizedAdminEmail = UserEntity.NormalizeEmail(adminOptions.Email);
-        var existingAdmin = await db.Users
-            .Include(u => u.UserRoles)
-            .FirstOrDefaultAsync(u => u.Username == adminOptions.Username || u.NormalizedEmail == normalizedAdminEmail);
-
-        if (existingAdmin is null)
+        if (!await db.Users.AnyAsync())
         {
+            var hasher = new Pbkdf2PasswordHasher();
+            var adminRoleId = Guid.Parse("70000000-0000-0000-0000-000000000001");
+            var learnerRoleId = Guid.Parse("70000000-0000-0000-0000-000000000003");
+
             var adminUser = UserEntity.Create(
-                username: adminOptions.Username,
-                email: adminOptions.Email,
-                fullName: adminOptions.FullName,
-                passwordHash: hasher.HashPassword(adminOptions.Password),
-                preferredCefrLevel: adminOptions.PreferredCefrLevel,
-                preferredVoiceName: adminOptions.PreferredVoiceName,
+                username: "admin",
+                email: "admin@lingomint.local",
+                fullName: "LingoMint Administrator",
+                passwordHash: hasher.HashPassword("Admin@123"),
+                preferredCefrLevel: "C1",
+                preferredVoiceName: "Aoede",
                 id: Guid.Parse("80000000-0000-0000-0000-000000000001"));
-
             adminUser.AssignRole(adminRoleId);
-            db.Users.Add(adminUser);
-            await db.SaveChangesAsync();
-        }
-        else if (!existingAdmin.UserRoles.Any(ur => ur.RoleId == adminRoleId))
-        {
-            existingAdmin.AssignRole(adminRoleId);
-            await db.SaveChangesAsync();
-        }
 
-        var defaultLearner = await db.Users
-            .Include(u => u.UserRoles)
-            .FirstOrDefaultAsync(u => u.Username == "default-learner");
-
-        if (defaultLearner is null)
-        {
-            var learner = UserEntity.Create(
+            var defaultLearner = UserEntity.Create(
                 username: "default-learner",
                 email: "learner@lingomint.local",
                 fullName: "Học viên Mặc định",
@@ -1118,9 +1049,9 @@ public static class DatabaseSeeder
                 preferredCefrLevel: "B1",
                 preferredVoiceName: "Aoede",
                 id: Guid.Parse("80000000-0000-0000-0000-000000000002"));
+            defaultLearner.AssignRole(learnerRoleId);
 
-            learner.AssignRole(learnerRoleId);
-            db.Users.Add(learner);
+            db.Users.AddRange(adminUser, defaultLearner);
             await db.SaveChangesAsync();
         }
     }
@@ -1475,6 +1406,60 @@ public static class DatabaseSeeder
             isFeatured: false,
             displayOrder: 26,
             id: Guid.Parse("90000000-0000-0000-0000-000000000026"))
+    };
+
+    public static List<SpeechSpeedEntity> BuildDefaultSpeechSpeeds() => new()
+    {
+        new(
+            code: "0.75x",
+            speedValue: 0.75,
+            label: "0.75x — Chậm & Rõ từng từ",
+            descriptionVi: "Phù hợp cho người mới bắt đầu hoặc nghe từ mới khó",
+            recommendedCefrRange: "A1 - A2",
+            isDefault: false,
+            isActive: true,
+            displayOrder: 1,
+            id: Guid.Parse("45000000-0000-0000-0000-000000000001")),
+        new(
+            code: "0.90x",
+            speedValue: 0.90,
+            label: "0.90x — Vừa phải, dễ bắt kịp",
+            descriptionVi: "Nhịp độ sư phạm rõ ràng, dễ nghe trọng âm và nối âm",
+            recommendedCefrRange: "A2 - B1",
+            isDefault: false,
+            isActive: true,
+            displayOrder: 2,
+            id: Guid.Parse("45000000-0000-0000-0000-000000000002")),
+        new(
+            code: "1.00x",
+            speedValue: 1.00,
+            label: "1.00x — Tự nhiên chuẩn bản xứ",
+            descriptionVi: "Tốc độ hội thoại tiêu chuẩn hằng ngày và phỏng vấn",
+            recommendedCefrRange: "B1 - B2",
+            isDefault: true,
+            isActive: true,
+            displayOrder: 3,
+            id: Guid.Parse("45000000-0000-0000-0000-000000000003")),
+        new(
+            code: "1.15x",
+            speedValue: 1.15,
+            label: "1.15x — Nhanh & Năng động",
+            descriptionVi: "Luyện phản xạ nghe nhanh trong họp Scrum hoặc tranh luận",
+            recommendedCefrRange: "B2 - C1",
+            isDefault: false,
+            isActive: true,
+            displayOrder: 4,
+            id: Guid.Parse("45000000-0000-0000-0000-000000000004")),
+        new(
+            code: "1.25x",
+            speedValue: 1.25,
+            label: "1.25x — Thử thách tốc độ cao",
+            descriptionVi: "Mô phỏng áp lực cao và người bản xứ nói nhanh",
+            recommendedCefrRange: "C1 - C2",
+            isDefault: false,
+            isActive: true,
+            displayOrder: 5,
+            id: Guid.Parse("45000000-0000-0000-0000-000000000005"))
     };
 
 }

@@ -1,12 +1,18 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Prompts;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Prompts.Queries.ListConversationModePrompts;
 
-public sealed record ListConversationModePromptsQuery(string? Category = null) : IQuery<List<ConversationModePromptEntity>>;
+public sealed record ListConversationModePromptsQuery(
+    string? Category = null,
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<ConversationModePromptEntity>>;
 
-public sealed class ListConversationModePromptsQueryHandler : IQueryHandler<ListConversationModePromptsQuery, List<ConversationModePromptEntity>>
+public sealed class ListConversationModePromptsQueryHandler : IQueryHandler<ListConversationModePromptsQuery, PagedResultDto<ConversationModePromptEntity>>
 {
     private readonly IAppDbContextFactory _dbFactory;
 
@@ -15,16 +21,28 @@ public sealed class ListConversationModePromptsQueryHandler : IQueryHandler<List
         _dbFactory = dbFactory;
     }
 
-    public async Task<List<ConversationModePromptEntity>> HandleAsync(ListConversationModePromptsQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<ConversationModePromptEntity>> HandleAsync(ListConversationModePromptsQuery query, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var q = db.ConversationModePrompts.AsNoTracking();
+        var q = db.ConversationModePrompts.AsNoTracking().AsQueryable();
+
         if (!string.IsNullOrWhiteSpace(query.Category))
         {
             string cat = query.Category.Trim();
             q = q.Where(m => m.Category == cat);
         }
 
-        return await q.OrderBy(m => m.DisplayOrder).ToListAsync(ct);
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string term = query.Search.Trim().ToLowerInvariant();
+            q = q.Where(m =>
+                m.ModeCode.ToLower().Contains(term) ||
+                m.Category.ToLower().Contains(term) ||
+                m.DisplayName.ToLower().Contains(term) ||
+                m.DirectiveTemplate.ToLower().Contains(term));
+        }
+
+        var ordered = q.OrderBy(m => m.DisplayOrder);
+        return await PagedResultDto<ConversationModePromptEntity>.CreateAsync(ordered, query.Page, query.PageSize, ct);
     }
 }

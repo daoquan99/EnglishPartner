@@ -10,10 +10,13 @@ public sealed record ListTopicsQuery(
     bool? SupportsConversation = null,
     bool? SupportsVocabulary = null,
     string? ModeCode = null,
-    string? Category = null
-) : IQuery<List<TopicDto>>;
+    string? Category = null,
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<TopicDto>>;
 
-public sealed class ListTopicsQueryHandler : IQueryHandler<ListTopicsQuery, List<TopicDto>>
+public sealed class ListTopicsQueryHandler : IQueryHandler<ListTopicsQuery, PagedResultDto<TopicDto>>
 {
     private readonly ITopicRepository _topicRepo;
 
@@ -22,17 +25,21 @@ public sealed class ListTopicsQueryHandler : IQueryHandler<ListTopicsQuery, List
         _topicRepo = topicRepo;
     }
 
-    public async Task<List<TopicDto>> HandleAsync(ListTopicsQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<TopicDto>> HandleAsync(ListTopicsQuery query, CancellationToken ct = default)
     {
-        var items = await _topicRepo.ListAsync(
+        var (items, totalCount) = await _topicRepo.ListPagedAsync(
             query.OnlyActive,
             query.SupportsConversation,
             query.SupportsVocabulary,
             query.ModeCode,
             query.Category,
+            query.Search,
+            query.Page,
+            query.PageSize,
             ct);
 
-        return items.Select(MapToDto).ToList();
+        var dtos = items.Select(MapToDto).ToList();
+        return PagedResultDto<TopicDto>.FromPage(dtos, totalCount, query.Page, query.PageSize);
     }
 
     internal static TopicDto MapToDto(TopicEntity t) => new(

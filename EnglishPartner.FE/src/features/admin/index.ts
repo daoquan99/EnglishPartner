@@ -4,6 +4,7 @@ export {
   ADMIN_NAVIGATION_ITEMS,
 } from './components/AdminSidebar';
 export { AdminDashboardPage } from './pages/AdminDashboardPage';
+export { AdminVocabulariesPage } from './pages/AdminVocabulariesPage';
 export { AdminTopicsPage } from './pages/AdminTopicsPage';
 export { AdminPromptsPage } from './pages/AdminPromptsPage';
 export { AdminVoicesPage } from './pages/AdminVoicesPage';

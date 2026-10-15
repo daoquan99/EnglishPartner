@@ -1,5 +1,9 @@
 import { httpClient } from '@/shared/api/httpClient';
 import type {
+  SynthesizePronunciationAudioRequestDto,
+  SynthesizePronunciationAudioResponseDto,
+} from '@/shared/api/openapi.types';
+import type {
   DailyVocabularyPlanResponseDto,
   GenerateVocabularyRequestDto,
   PronunciationAssessmentResultDto,
@@ -148,7 +152,18 @@ const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
   },
 ];
 
+export const FALLBACK_VOCABULARY_CARDS = FALLBACK_FLASHCARDS;
+
 export const vocabularyApi = {
+  async synthesizePronunciationAudio(
+    payload: SynthesizePronunciationAudioRequestDto
+  ): Promise<SynthesizePronunciationAudioResponseDto> {
+    const { data } = await httpClient.post<SynthesizePronunciationAudioResponseDto>(
+      '/api/pronunciation/synthesize',
+      payload
+    );
+    return data;
+  },
   async getTodayPlan(targetWordCount = 10): Promise<DailyVocabularyPlanResponseDto> {
     try {
       const timeZoneId = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';

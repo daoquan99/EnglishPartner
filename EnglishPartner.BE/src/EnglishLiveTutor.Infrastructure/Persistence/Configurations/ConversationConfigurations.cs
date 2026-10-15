@@ -53,7 +53,8 @@ public sealed class ChatMessageEntityConfiguration : IEntityTypeConfiguration<Ch
     {
         builder.ToTable("Messages");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Id).HasMaxLength(128).ValueGeneratedNever();
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.Id).HasMaxLength(128);
         builder.Property(e => e.ConversationId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.TurnId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.Speaker).HasMaxLength(16).IsRequired();
@@ -75,7 +76,8 @@ public sealed class LanguageCorrectionEntityConfiguration : IEntityTypeConfigura
     {
         builder.ToTable("Corrections");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Id).HasMaxLength(64).ValueGeneratedNever();
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.Id).HasMaxLength(64);
         builder.Property(e => e.ConversationId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.TurnId).HasMaxLength(64);
         builder.Property(e => e.OriginalText).HasColumnType("nvarchar(max)").IsRequired();

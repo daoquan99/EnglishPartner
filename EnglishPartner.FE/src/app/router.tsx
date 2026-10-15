@@ -21,6 +21,9 @@ const DailyVocabularyPage = lazy(() =>
 const AdminDashboardPage = lazy(() =>
   import('@/features/admin').then((m) => ({ default: m.AdminDashboardPage }))
 );
+const AdminVocabulariesPage = lazy(() =>
+  import('@/features/admin').then((m) => ({ default: m.AdminVocabulariesPage }))
+);
 const AdminTopicsPage = lazy(() =>
   import('@/features/admin').then((m) => ({ default: m.AdminTopicsPage }))
 );
@@ -97,6 +100,16 @@ export const AppRouter: React.FC = () => {
               }
             >
               <Route index element={<AdminDashboardPage />} />
+              <Route
+                path="vocabularies"
+                element={
+                  <RequirePermission
+                    anyPermissions={['vocabularies.manage', 'vocabularies.generate', 'topics.manage']}
+                  >
+                    <AdminVocabulariesPage />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="topics"
                 element={

@@ -143,6 +143,20 @@ public class IdentityPromptsAndVoicesTests
         Assert.Contains(topics, t => t.Code == "vocab_business_idioms_phrasal_verbs" && t.SupportsVocabulary);
     }
 
+    [Fact]
+    public void SpeechSpeedsCatalog_And_WavContainer_ShouldWorkCorrectly()
+    {
+        var speeds = DatabaseSeeder.BuildDefaultSpeechSpeeds();
+        Assert.Equal(5, speeds.Count);
+        Assert.Contains(speeds, s => s.Code == "1.00x" && s.IsDefault);
+
+        byte[] samplePcm = new byte[4800]; // 100ms at 24kHz 16-bit mono
+        byte[] wav = GeminiLivePronunciationTtsSynthesizer.WrapPcm16MonoInWavContainer(samplePcm, 24000);
+        Assert.Equal(44 + 4800, wav.Length);
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(wav, 0, 4));
+        Assert.Equal("WAVE", System.Text.Encoding.ASCII.GetString(wav, 8, 4));
+    }
+
     private sealed class SingleOptionsDbContextFactory : IDbContextFactory<AppDbContext>
     {
         private readonly DbContextOptions<AppDbContext> _options;

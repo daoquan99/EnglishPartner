@@ -174,7 +174,9 @@ public static class VocabularyProjectionHelper
             LatestPronunciationScore: latestScore,
             NextReviewAt: prog?.NextReviewAt,
             IntervalDays: prog?.IntervalDays ?? 0,
-            EaseFactor: prog?.EaseFactor ?? 2.50m
+            EaseFactor: prog?.EaseFactor ?? 2.50m,
+            TopicCategory: vocab.TopicCategory,
+            FrequencyRank: vocab.FrequencyRank
         );
     }
 }

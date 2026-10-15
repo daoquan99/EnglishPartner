@@ -11,7 +11,6 @@ public sealed class GeminiVocabularyAiGenerator : IVocabularyAiGenerator
     public GeminiVocabularyAiGenerator(HttpClient http)
     {
         _http = http;
-        _http.Timeout = TimeSpan.FromSeconds(3000);
     }
 
     public async Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(
@@ -23,9 +22,10 @@ public sealed class GeminiVocabularyAiGenerator : IVocabularyAiGenerator
         List<string> excludedWords,
         CancellationToken ct = default)
     {
+        string excludedWordsJoined = string.Join(", ", excludedWords);
         string prompt = $@"You are an expert English lexicographer and curriculum designer for Vietnamese learners.
 Generate {count} distinct, high-utility English vocabulary items tailored to CEFR level {cefrLevel} and topic '{topic}'.
-Do NOT include any of these already-existing words: {string.Join(", ", excludedWords)}.
+Do NOT include any of these already-existing words: {excludedWordsJoined}.
 
 Strict Rules:
 1. Return ONLY valid JSON matching the requested schema (a JSON array of objects).

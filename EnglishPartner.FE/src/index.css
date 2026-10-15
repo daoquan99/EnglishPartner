@@ -111,3 +111,31 @@ body,
   height: 100%;
   overflow: hidden;
 }
+
+
+/* Modern SaaS Admin Design System (.adminTheme) */
+.adminTheme {
+  --admin-bg: #f8fafc;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f1f5f9;
+  --admin-text: #0f172a;
+  --admin-text-secondary: #475569;
+  --admin-text-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-border-strong: #cbd5e1;
+  --admin-primary: #059669;
+  --admin-primary-hover: #047857;
+  --admin-primary-soft: #ecfdf5;
+  --admin-danger: #e11d48;
+  --admin-danger-hover: #be123c;
+  --admin-danger-soft: #fff1f2;
+  --admin-shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --admin-shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.08);
+  --admin-radius-sm: 0.5rem;
+  --admin-radius-md: 0.75rem;
+  --admin-radius-lg: 1rem;
+  --admin-radius-xl: 1.25rem;
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+}

@@ -22,6 +22,30 @@ public sealed class TopicRepository : ITopicRepository
         string? category = null,
         CancellationToken ct = default)
     {
+        var (items, _) = await ListPagedAsync(
+            onlyActive,
+            supportsConversation,
+            supportsVocabulary,
+            modeCode,
+            category,
+            search: null,
+            page: null,
+            pageSize: null,
+            ct);
+        return items;
+    }
+
+    public async Task<(List<TopicEntity> Items, int TotalCount)> ListPagedAsync(
+        bool onlyActive = true,
+        bool? supportsConversation = null,
+        bool? supportsVocabulary = null,
+        string? modeCode = null,
+        string? category = null,
+        string? search = null,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken ct = default)
+    {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var query = db.Topics.AsNoTracking().AsQueryable();
 
@@ -52,11 +76,37 @@ public sealed class TopicRepository : ITopicRepository
             query = query.Where(t => t.Category == normCat);
         }
 
-        return await query
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            string term = search.Trim().ToLowerInvariant();
+            query = query.Where(t =>
+                t.Code.ToLower().Contains(term) ||
+                t.Name.ToLower().Contains(term) ||
+                t.DisplayNameVi.ToLower().Contains(term) ||
+                t.Category.ToLower().Contains(term) ||
+                (t.ModeCode != null && t.ModeCode.ToLower().Contains(term)));
+        }
+
+        int totalCount = await query.CountAsync(ct);
+        var ordered = query
             .OrderByDescending(t => t.IsFeatured)
             .ThenBy(t => t.DisplayOrder)
-            .ThenBy(t => t.Name)
-            .ToListAsync(ct);
+            .ThenBy(t => t.Name);
+
+        bool hasPaging = page.HasValue || pageSize.HasValue;
+        if (hasPaging)
+        {
+            int effPage = Math.Max(1, page ?? 1);
+            int effSize = Math.Clamp(pageSize ?? 20, 1, 500);
+            var pagedItems = await ordered
+                .Skip((effPage - 1) * effSize)
+                .Take(effSize)
+                .ToListAsync(ct);
+            return (pagedItems, totalCount);
+        }
+
+        var allItems = await ordered.ToListAsync(ct);
+        return (allItems, totalCount);
     }
 
     public async Task<TopicEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -111,7 +161,7 @@ public sealed class TopicRepository : ITopicRepository
         var existing = await db.Topics.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (existing is null) return false;
 
-        existing.MarkDeleted(DateTimeOffset.UtcNow);
+        existing.SoftDelete(DateTimeOffset.UtcNow);
         await db.SaveChangesAsync(ct);
         return true;
     }

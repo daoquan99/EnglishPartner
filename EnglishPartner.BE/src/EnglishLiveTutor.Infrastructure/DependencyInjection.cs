@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
             options.UseSqlServer(connectionString);
+            options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
         });
 
@@ -70,6 +71,7 @@ public static class DependencyInjection
         services.AddSingleton<GrammarCorrectionAnalyzerService>();
         services.AddScoped<IVocabularyAiGenerator, GeminiVocabularyAiGenerator>();
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();
+        services.AddScoped<ILivePronunciationTtsSynthesizer, GeminiLivePronunciationTtsSynthesizer>();
         services.AddSingleton<GeminiLiveConnectionManager>();
 
         return services;

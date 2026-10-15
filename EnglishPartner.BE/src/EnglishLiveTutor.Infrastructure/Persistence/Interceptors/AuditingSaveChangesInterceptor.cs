@@ -84,7 +84,7 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
                 createdProp.CurrentValue = utcNow;
 
                 var createdByProp = entry.Property(nameof(IAuditable.CreatedBy));
-                if (string.IsNullOrWhiteSpace(createdByProp.CurrentValue?.ToString()))
+                if (string.IsNullOrWhiteSpace(createdByProp.CurrentValue as string))
                 {
                     createdByProp.CurrentValue = actor;
                 }

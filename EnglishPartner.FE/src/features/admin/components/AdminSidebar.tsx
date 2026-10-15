@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   ArrowLeft,
   LogOut,
+  BookOpen,
 } from 'lucide-react';
 import { hasAnyPermission, useCurrentUser, useLogoutMutation } from '@/features/auth';
 import { useTutorSessionStore } from '@/features/tutor';
@@ -23,7 +24,7 @@ export interface AdminNavItem {
   label: string;
   description: string;
   requiredPermissions: string[];
-  iconName: 'dashboard' | 'users' | 'roles' | 'prompts' | 'voices' | 'topics' | 'rubrics';
+  iconName: 'dashboard' | 'vocabularies' | 'users' | 'roles' | 'prompts' | 'voices' | 'topics' | 'rubrics';
 }
 
 export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
@@ -38,8 +39,17 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
       'voices.manage',
       'topics.manage',
       'rubrics.manage',
+      'vocabularies.manage',
+      'vocabularies.read',
     ],
     iconName: 'dashboard',
+  },
+  {
+    to: '/admin/vocabularies',
+    label: 'Từ vựng / Flashcards',
+    description: 'CRUD Từ vựng, IPA, Ví dụ & Nghĩa',
+    requiredPermissions: ['vocabularies.manage', 'vocabularies.generate', 'topics.manage'],
+    iconName: 'vocabularies',
   },
   {
     to: '/admin/topics',
@@ -50,8 +60,8 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
   },
   {
     to: '/admin/prompts',
-    label: 'CEFR & 19 Chế độ Luyện nói',
-    description: 'CefrPromptBuilder trong Database',
+    label: 'CEFR, Modes & Tốc độ nói',
+    description: 'Prompts & SpeechSpeeds trong DB',
     requiredPermissions: ['prompts.manage'],
     iconName: 'prompts',
   },
@@ -101,6 +111,8 @@ function renderIcon(name: AdminNavItem['iconName']) {
   switch (name) {
     case 'dashboard':
       return <LayoutDashboard className="w-5 h-5" />;
+    case 'vocabularies':
+      return <BookOpen className="w-5 h-5" />;
     case 'topics':
       return <Tags className="w-5 h-5" />;
     case 'prompts':

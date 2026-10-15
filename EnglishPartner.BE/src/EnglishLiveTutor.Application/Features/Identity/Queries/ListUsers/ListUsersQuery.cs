@@ -1,12 +1,17 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Identity.Queries.ListUsers;
 
-public sealed record ListUsersQuery() : IQuery<List<UserProfileDto>>;
+public sealed record ListUsersQuery(
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<UserProfileDto>>;
 
-public sealed class ListUsersQueryHandler : IQueryHandler<ListUsersQuery, List<UserProfileDto>>
+public sealed class ListUsersQueryHandler : IQueryHandler<ListUsersQuery, PagedResultDto<UserProfileDto>>
 {
     private readonly IAppDbContextFactory _dbFactory;
 
@@ -15,21 +20,38 @@ public sealed class ListUsersQueryHandler : IQueryHandler<ListUsersQuery, List<U
         _dbFactory = dbFactory;
     }
 
-    public async Task<List<UserProfileDto>> HandleAsync(ListUsersQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<UserProfileDto>> HandleAsync(ListUsersQuery query, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var users = await db.Users
-            .AsNoTracking()
-            .OrderByDescending(u => u.CreatedAtUtc)
-            .ToListAsync(ct);
+        var q = db.Users.AsNoTracking().AsQueryable();
 
-        var result = new List<UserProfileDto>(users.Count);
-        foreach (var u in users)
+        if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, u.Id, ct);
-            result.Add(IdentityProjectionHelper.MapToProfileDto(u, roleCodes, permissionCodes));
+            string term = query.Search.Trim().ToLowerInvariant();
+            string normEmailTerm = query.Search.Trim().ToUpperInvariant();
+            q = q.Where(u =>
+                u.Username.ToLower().Contains(term) ||
+                u.NormalizedEmail.Contains(normEmailTerm) ||
+                u.FullName.ToLower().Contains(term) ||
+                u.UserRoles.Any(ur => db.Roles.Any(r => r.Id == ur.RoleId && r.Code.ToLower().Contains(term))));
         }
 
-        return result;
+        var ordered = q.OrderByDescending(u => u.CreatedAtUtc);
+
+        return await PagedResultDto<UserEntity>.CreateProjectedAsync(
+            ordered,
+            async (pageUsers, token) =>
+            {
+                var list = new List<UserProfileDto>(pageUsers.Count);
+                foreach (var u in pageUsers)
+                {
+                    var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, u.Id, token);
+                    list.Add(IdentityProjectionHelper.MapToProfileDto(u, roleCodes, permissionCodes));
+                }
+                return list;
+            },
+            query.Page,
+            query.PageSize,
+            ct);
     }
 }

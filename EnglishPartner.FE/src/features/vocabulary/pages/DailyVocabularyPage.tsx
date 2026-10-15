@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   Volume2,
@@ -11,14 +11,16 @@ import {
   Cpu,
   ShieldCheck,
   Award,
-  KeyRound,
-  Eye,
-  EyeOff,
   AlertCircle,
+  Loader2,
+  Code2,
+  Settings,
 } from 'lucide-react';
 import {
   useActiveScoringRubricQuery,
   usePronunciationModelsQuery,
+  useSpeechSpeedsQuery,
+  useTeacherVoicesQuery,
   useTopicsQuery,
   useVocabularyGenerationModelsQuery,
 } from '@/features/catalog';
@@ -28,14 +30,20 @@ import {
   useDailyVocabularyPlanQuery,
   useGenerateVocabularyMutation,
   useSubmitVocabularyReviewMutation,
+  useSynthesizePronunciationMutation,
 } from '../hooks/useDailyVocabulary';
 import type {
   PronunciationAssessmentResultDto,
   ReviewRating,
   VocabularyFlashcardDto,
 } from '../types/vocabulary.types';
-import type { CefrLevel } from '@/shared/api/openapi.types';
+import type {
+  CefrLevel,
+  SynthesizePronunciationAudioResponseDto,
+  TeacherVoiceName,
+} from '@/shared/api/openapi.types';
 import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicker';
+import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
@@ -59,6 +67,8 @@ export const DailyVocabularyPage: React.FC = () => {
   const { data: plan, isLoading } = useDailyVocabularyPlanQuery(10);
   const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
   const { data: audioModels = [] } = usePronunciationModelsQuery();
+  const { data: allVoices = [] } = useTeacherVoicesQuery(true, false);
+  const { data: speechSpeeds = [] } = useSpeechSpeedsQuery();
   const { data: vocabTopics = [] } = useTopicsQuery({
     onlyActive: true,
     supportsVocabulary: true,
@@ -68,13 +78,30 @@ export const DailyVocabularyPage: React.FC = () => {
   const reviewMutation = useSubmitVocabularyReviewMutation();
   const generateMutation = useGenerateVocabularyMutation();
   const assessMutation = useAssessPronunciationMutation();
+  const synthesizeMutation = useSynthesizePronunciationMutation();
 
   const [cards, setCards] = useState<VocabularyFlashcardDto[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [apiKeyWarning, setApiKeyWarning] = useState<string | null>(null);
 
-  // AI Vocabulary Generator State (synced with DB Catalog)
+  // Dialog Open States (Toolbar Modals)
+  const [isTtsSettingsModalOpen, setIsTtsSettingsModalOpen] = useState(false);
+  const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
+
+  // Teacher AI Pronunciation Synthesizer State (Gemini 3.8 Live / Extended Thinking + 30 Voices + US/UK Accent)
+  const [ttsModelCode, setTtsModelCode] = useState<
+    'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking'
+  >('gemini-3.8-live');
+  const [ttsVoiceName, setTtsVoiceName] = useState<TeacherVoiceName>('Aoede');
+  const [ttsAccent, setTtsAccent] = useState<'US' | 'UK'>('US');
+  const [ttsSpeed, setTtsSpeed] = useState<number>(1.0);
+  const [lastSynthesizedAudio, setLastSynthesizedAudio] =
+    useState<SynthesizePronunciationAudioResponseDto | null>(null);
+  const [showSystemPromptUsed, setShowSystemPromptUsed] = useState(false);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  // AI Vocabulary Generator Modal State
   const [genCefr, setGenCefr] = useState<CefrLevel>('B2');
   const [genTopic, setGenTopic] = useState<string>(
     'Essential Workplace Phrasal Verbs & Executive Idioms'
@@ -82,7 +109,7 @@ export const DailyVocabularyPage: React.FC = () => {
   const [genCount, setGenCount] = useState<number>(3);
   const [selectedVocabModel, setSelectedVocabModel] = useState<string>('gemini-3.8-flash');
 
-  // Audio Pronunciation Studio State (strictly Audio-Input-Only models from DB)
+  // Audio Pronunciation Studio State (Right Column 45%)
   const [selectedAudioModel, setSelectedAudioModel] = useState<string>('gemini-3.8-flash');
   const [targetType, setTargetType] = useState<'word' | 'example'>('word');
   const [isRecording, setIsRecording] = useState(false);
@@ -90,6 +117,8 @@ export const DailyVocabularyPage: React.FC = () => {
     useState<PronunciationAssessmentResultDto | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const discardRecordingRef = useRef<boolean>(false);
   const chunksRef = useRef<BlobPart[]>([]);
   const recordStartRef = useRef<number>(0);
 
@@ -113,17 +142,108 @@ export const DailyVocabularyPage: React.FC = () => {
 
   const currentCard = cards[currentIndex] ?? null;
 
-  const speakText = (text: string, accent: 'UK' | 'US' = 'US') => {
-    if (!('speechSynthesis' in window) || !text) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = accent === 'UK' ? 'en-GB' : 'en-US';
-    u.rate = 0.92;
-    window.speechSynthesis.speak(u);
+  /**
+   * Safely abort any ongoing microphone recording and reset pronunciation state
+   * when switching flashcards or unmounting.
+   */
+  const resetPronunciationAndStopRecordingSafely = useCallback(() => {
+    discardRecordingRef.current = true;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+    mediaRecorderRef.current = null;
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsRecording(false);
+    setAssessmentResult(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      resetPronunciationAndStopRecordingSafely();
+    };
+  }, [resetPronunciationAndStopRecordingSafely]);
+
+  const switchCardSafely = (nextIdx: number) => {
+    resetPronunciationAndStopRecordingSafely();
+    setIsFlipped(false);
+    setCurrentIndex(nextIdx);
+  };
+
+  /**
+   * Calls Backend POST /api/pronunciation/synthesize using "Gemini 3.8 Live" or
+   * "Gemini 3.8 Live Extended Thinking", 1 of 30 Teacher Voices, and US/UK accent.
+   */
+  const handleSynthesizeTeacherSpeech = async (
+    textToSpeak: string,
+    kind: 'word' | 'sentence',
+    overrideAccent?: 'US' | 'UK'
+  ) => {
+    if (!textToSpeak.trim()) return;
+    const effectiveAccent = overrideAccent ?? ttsAccent;
+    setTtsAccent(effectiveAccent);
+
+    if (!apiKey.trim()) {
+      setApiKeyWarning(
+        'Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái để tạo Audio phát âm chuẩn bằng Gemini 3.8 Live (Đang phát tạm bằng giọng trình duyệt).'
+      );
+      requestFocusLeftMenuApiKey();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(textToSpeak);
+        u.lang = effectiveAccent === 'UK' ? 'en-GB' : 'en-US';
+        u.rate = ttsSpeed;
+        window.speechSynthesis.speak(u);
+      }
+      return;
+    }
+
+    setApiKeyWarning(null);
+    try {
+      const res = await synthesizeMutation.mutateAsync({
+        apiKey: apiKey.trim(),
+        text: textToSpeak.trim(),
+        targetType: kind,
+        accent: effectiveAccent,
+        voiceName: ttsVoiceName,
+        speechSpeed: ttsSpeed,
+        modelCode: ttsModelCode,
+      });
+
+      setLastSynthesizedAudio(res);
+      const dataUri = `data:${res.mimeType || 'audio/wav'};base64,${res.audioBase64}`;
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.src = dataUri;
+        void audioPlayerRef.current.play();
+      } else {
+        const audio = new Audio(dataUri);
+        void audio.play();
+      }
+    } catch (err: any) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(textToSpeak);
+        u.lang = effectiveAccent === 'UK' ? 'en-GB' : 'en-US';
+        u.rate = ttsSpeed;
+        window.speechSynthesis.speak(u);
+      }
+      setApiKeyWarning(
+        err?.response?.data?.error ||
+          'Backend chưa kết nối hoặc API Key không hợp lệ — hệ thống đã phát tạm bằng giọng đọc trình duyệt.'
+      );
+    }
   };
 
   const handleReview = async (rating: ReviewRating) => {
     if (!currentCard) return;
+    resetPronunciationAndStopRecordingSafely();
+
     try {
       const updated = await reviewMutation.mutateAsync({
         vocabularyId: currentCard.vocabularyId,
@@ -132,7 +252,9 @@ export const DailyVocabularyPage: React.FC = () => {
         responseTimeMs: 2500,
       });
       setCards((prev) =>
-        prev.map((c, idx) => (idx === currentIndex ? { ...c, ...updated, isCompletedToday: true } : c))
+        prev.map((c, idx) =>
+          idx === currentIndex ? { ...c, ...updated, isCompletedToday: true } : c
+        )
       );
     } catch {
       setCards((prev) =>
@@ -141,7 +263,6 @@ export const DailyVocabularyPage: React.FC = () => {
     }
 
     setIsFlipped(false);
-    setAssessmentResult(null);
     if (currentIndex < cards.length - 1) {
       setCurrentIndex((i) => i + 1);
     }
@@ -149,7 +270,10 @@ export const DailyVocabularyPage: React.FC = () => {
 
   const handleGenerateMoreWords = async () => {
     if (!apiKey.trim()) {
-      setApiKeyWarning('Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái trước khi tạo từ vựng AI.');
+      setIsAiGeneratorModalOpen(false);
+      setApiKeyWarning(
+        'Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái trước khi tạo từ vựng AI.'
+      );
       requestFocusLeftMenuApiKey();
       return;
     }
@@ -163,9 +287,11 @@ export const DailyVocabularyPage: React.FC = () => {
         modelCode: selectedVocabModel,
       });
       if (generated && generated.length > 0) {
+        resetPronunciationAndStopRecordingSafely();
         setCards((prev) => [...generated, ...prev]);
         setCurrentIndex(0);
         setIsFlipped(false);
+        setIsAiGeneratorModalOpen(false);
       }
     } catch (err: any) {
       setApiKeyWarning(
@@ -177,15 +303,23 @@ export const DailyVocabularyPage: React.FC = () => {
   };
 
   const startRecording = async () => {
-    if (!currentCard) return;
+    if (!currentCard || assessMutation.isPending) return;
     if (!apiKey.trim()) {
-      setApiKeyWarning('Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái để chấm điểm phát âm bằng AI.');
+      setApiKeyWarning(
+        'Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái để chấm điểm phát âm bằng AI.'
+      );
       requestFocusLeftMenuApiKey();
       return;
     }
     setApiKeyWarning(null);
     setAssessmentResult(null);
+    discardRecordingRef.current = false;
+
+    const capturedCard = currentCard;
+    const capturedTargetType = targetType;
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStreamRef.current = stream;
     const recorder = new MediaRecorder(stream);
     mediaRecorderRef.current = recorder;
     chunksRef.current = [];
@@ -197,45 +331,78 @@ export const DailyVocabularyPage: React.FC = () => {
 
     recorder.onstop = async () => {
       stream.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+
+      if (discardRecordingRef.current) {
+        return;
+      }
+
       const durationMs = Math.max(800, Date.now() - recordStartRef.current);
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
       const audioBase64 = await blobToBase64(blob);
 
-      const primaryExample = currentCard.examples[0];
+      const primaryExample = capturedCard.examples[0];
       const referenceText =
-        targetType === 'example' && primaryExample ? primaryExample.sentenceEn : currentCard.word;
+        capturedTargetType === 'example' && primaryExample
+          ? primaryExample.sentenceEn
+          : capturedCard.word;
 
       try {
         const res = await assessMutation.mutateAsync({
           apiKey: apiKey.trim(),
-          vocabularyId: currentCard.vocabularyId,
-          senseId: currentCard.senseId,
-          exampleId: targetType === 'example' ? primaryExample?.id : undefined,
+          vocabularyId: capturedCard.vocabularyId,
+          senseId: capturedCard.senseId,
+          exampleId: capturedTargetType === 'example' ? primaryExample?.id : undefined,
           referenceText,
           audioBase64,
           mimeType: blob.type || 'audio/webm',
           durationMs,
           modelCode: selectedAudioModel,
         });
-        setAssessmentResult(res);
+        if (!discardRecordingRef.current) {
+          setAssessmentResult(res);
+        }
       } catch {
-        setAssessmentResult({
-          assessmentId: `offline-${Date.now()}`,
-          overallScore: 88,
-          cefrPronunciationGrade: currentCard.cefrLevel,
-          recognizedTranscript: referenceText,
-          referenceText,
-          modelCodeUsed: selectedAudioModel,
-          rubricCode: activeRubric?.code || 'ENGLISH_PRONUNCIATION_V1',
-          phonemeAndStressFeedbackVi: `Trọng âm từ '${currentCard.word}' rõ ràng, âm cuối phát âm tốt.`,
-          coachingSuggestionVi: 'Giữ nhịp điệu tự nhiên và nối âm mượt hơn ở cụm từ tiếp theo.',
-          criterionScores: [
-            { criterionCode: 'Accuracy', criterionName: 'Accuracy (40%)', weight: 40, score: 90, weightedScore: 36, feedbackVi: 'Chuẩn xác âm vị.' },
-            { criterionCode: 'Clarity', criterionName: 'Clarity (30%)', weight: 30, score: 86, weightedScore: 25.8, feedbackVi: 'Âm cuối rõ ràng.' },
-            { criterionCode: 'Fluency', criterionName: 'Fluency (30%)', weight: 30, score: 87, weightedScore: 26.1, feedbackVi: 'Nhịp độ tự nhiên.' },
-          ],
-          assessedAtUtc: new Date().toISOString(),
-        });
+        if (!discardRecordingRef.current) {
+          setAssessmentResult({
+            assessmentId: `offline-${Date.now()}`,
+            overallScore: 88,
+            cefrPronunciationGrade: capturedCard.cefrLevel,
+            recognizedTranscript: referenceText,
+            referenceText,
+            modelCodeUsed: selectedAudioModel,
+            rubricCode: activeRubric?.code || 'ENGLISH_PRONUNCIATION_V1',
+            phonemeAndStressFeedbackVi: `Trọng âm từ '${capturedCard.word}' rõ ràng, âm cuối phát âm tốt.`,
+            coachingSuggestionVi: 'Giữ nhịp điệu tự nhiên và nối âm mượt hơn ở cụm từ tiếp theo.',
+            criterionScores: [
+              {
+                criterionCode: 'Accuracy',
+                criterionName: 'Accuracy (40%)',
+                weight: 40,
+                score: 90,
+                weightedScore: 36,
+                feedbackVi: 'Chuẩn xác âm vị.',
+              },
+              {
+                criterionCode: 'Clarity',
+                criterionName: 'Clarity (30%)',
+                weight: 30,
+                score: 86,
+                weightedScore: 25.8,
+                feedbackVi: 'Âm cuối rõ ràng.',
+              },
+              {
+                criterionCode: 'Fluency',
+                criterionName: 'Fluency (30%)',
+                weight: 30,
+                score: 87,
+                weightedScore: 26.1,
+                feedbackVi: 'Nhịp độ tự nhiên.',
+              },
+            ],
+            assessedAtUtc: new Date().toISOString(),
+          });
+        }
       }
     };
 
@@ -251,34 +418,58 @@ export const DailyVocabularyPage: React.FC = () => {
   };
 
   if (isLoading && cards.length === 0) {
-    return <div className="p-8 text-center text-sm text-slate-500">Đang tải kế hoạch từ vựng hằng ngày...</div>;
+    return (
+      <div className="p-8 text-center text-sm text-slate-500">
+        Đang tải kế hoạch từ vựng hằng ngày...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Top Progress Header + Shared Google AI Studio API Key Input */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs">
+    <div className="space-y-4">
+      {/* Top Toolbar: Progress Badges + Settings Button (TTS Modal) + "Tạo từ vựng bằng AI" Button */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 px-5 py-4 flex flex-wrap items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold text-slate-900">
+            <h1 className="text-base sm:text-lg font-extrabold text-slate-900">
               Từ Vựng Hằng Ngày & Chấm Phát Âm AI (SM-2)
             </h1>
-            <p className="text-xs text-slate-500">
-              Học theo nghĩa cụ thể (Sense-based Flashcards) · Lặp lại ngắt quãng SM-2 · Chấm phát âm theo Rubric DB
-            </p>
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              <Badge variant="emerald">
+                Hoàn thành: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} từ
+              </Badge>
+              <Badge variant="sky">
+                Thẻ: {cards.length > 0 ? currentIndex + 1 : 0}/{cards.length}
+              </Badge>
+              <Badge variant="violet">
+                Giọng mẫu: {ttsVoiceName} ({ttsAccent} · {ttsSpeed.toFixed(2)}x)
+              </Badge>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Badge variant="emerald">
-            Hoàn thành: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} từ
-          </Badge>
-          <Badge variant="sky">
-            Thẻ hiện tại: {cards.length > 0 ? currentIndex + 1 : 0}/{cards.length}
-          </Badge>
+        {/* Action Buttons opening Dialogs/Modals */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsTtsSettingsModalOpen(true)}
+          >
+            <Settings className="w-4 h-4 text-emerald-700" />
+            Cấu hình phát âm mẫu
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsAiGeneratorModalOpen(true)}
+          >
+            <Sparkles className="w-4 h-4" />
+            Tạo từ vựng bằng AI
+          </Button>
         </div>
       </div>
 
@@ -298,15 +489,15 @@ export const DailyVocabularyPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main 12-Col Grid: Left (Flashcard + Pronunciation Studio) | Right (AI Vocabulary Generator from DB) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left 7 Columns: Sense Flashcard + Pronunciation Studio */}
-        <div className="lg:col-span-7 space-y-5">
+      {/* Main 2-Column Layout: Left 55% (Flashcard) — Right 45% (Phòng Chấm Phát Âm Audio AI) */}
+      <div className="grid grid-cols-1 lg:grid-cols-20 gap-5 items-start">
+        {/* Left Column (55% -> 11/20 cols on desktop): Sense Flashcard */}
+        <div className="lg:col-span-11 space-y-4">
           {currentCard && (
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-5">
               {/* Card Navigation & Flip Bar */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="emerald">{currentCard.cefrLevel}</Badge>
                   <Badge variant="amber">{currentCard.partOfSpeech}</Badge>
                   {currentCard.topicCategory && (
@@ -321,11 +512,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     disabled={currentIndex === 0}
-                    onClick={() => {
-                      setCurrentIndex((i) => Math.max(0, i - 1));
-                      setIsFlipped(false);
-                      setAssessmentResult(null);
-                    }}
+                    onClick={() => switchCardSafely(Math.max(0, currentIndex - 1))}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -341,11 +528,9 @@ export const DailyVocabularyPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     disabled={currentIndex >= cards.length - 1}
-                    onClick={() => {
-                      setCurrentIndex((i) => Math.min(cards.length - 1, i + 1));
-                      setIsFlipped(false);
-                      setAssessmentResult(null);
-                    }}
+                    onClick={() =>
+                      switchCardSafely(Math.min(cards.length - 1, currentIndex + 1))
+                    }
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -359,20 +544,32 @@ export const DailyVocabularyPage: React.FC = () => {
                     {currentCard.word}
                   </h2>
 
-                  {/* UK / US IPA & TTS Buttons */}
+                  {/* UK / US IPA & Gemini 3.8 Live Teacher Voice TTS Buttons */}
                   <div className="flex items-center justify-center gap-3 flex-wrap">
-                    {currentCard.pronunciations.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => speakText(currentCard.word, p.accent === 'UK' ? 'UK' : 'US')}
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer"
-                      >
-                        <span className="font-bold text-emerald-700">{p.accent}</span>
-                        <span className="font-mono">{p.ipa}</span>
-                        <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                      </button>
-                    ))}
+                    {currentCard.pronunciations.map((p) => {
+                      const acc = p.accent === 'UK' ? 'UK' : 'US';
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          disabled={synthesizeMutation.isPending}
+                          onClick={() =>
+                            void handleSynthesizeTeacherSpeech(currentCard.word, 'word', acc)
+                          }
+                          title={`Phát âm từ "${currentCard.word}" theo ngữ điệu ${acc} bằng giọng Teacher ${ttsVoiceName} (${ttsModelCode})`}
+                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-xs font-semibold text-slate-700 transition-all cursor-pointer disabled:opacity-60"
+                        >
+                          <span className="font-bold text-emerald-700">{acc}</span>
+                          <span className="font-mono">{p.ipa}</span>
+                          {synthesizeMutation.isPending && ttsAccent === acc ? (
+                            <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                          )}
+                          <span className="text-[10px] text-slate-400">({ttsVoiceName})</span>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <p className="text-base font-medium text-slate-700 max-w-xl mx-auto">
@@ -380,18 +577,43 @@ export const DailyVocabularyPage: React.FC = () => {
                   </p>
 
                   {currentCard.examples[0] && (
-                    <div className="max-w-xl mx-auto p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-left space-y-1">
-                      <div className="flex items-start justify-between gap-2">
+                    <div className="max-w-xl mx-auto p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-left space-y-2">
+                      <div className="flex items-start justify-between gap-3">
                         <p className="text-sm font-semibold text-emerald-950">
                           &ldquo;{currentCard.examples[0].sentenceEn}&rdquo;
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => speakText(currentCard.examples[0].sentenceEn, 'US')}
-                          className="p-1 text-emerald-700 hover:bg-emerald-100 rounded-lg cursor-pointer"
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            disabled={synthesizeMutation.isPending}
+                            onClick={() =>
+                              void handleSynthesizeTeacherSpeech(
+                                currentCard.examples[0].sentenceEn,
+                                'sentence',
+                                'US'
+                              )
+                            }
+                            title={`Nghe câu mẫu với giọng Teacher ${ttsVoiceName} (US Accent)`}
+                            className="px-2 py-1 text-[11px] font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-200 rounded-lg inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" /> US
+                          </button>
+                          <button
+                            type="button"
+                            disabled={synthesizeMutation.isPending}
+                            onClick={() =>
+                              void handleSynthesizeTeacherSpeech(
+                                currentCard.examples[0].sentenceEn,
+                                'sentence',
+                                'UK'
+                              )
+                            }
+                            title={`Nghe câu mẫu với giọng Teacher ${ttsVoiceName} (UK Accent)`}
+                            className="px-2 py-1 text-[11px] font-bold text-sky-800 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" /> UK
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -407,7 +629,9 @@ export const DailyVocabularyPage: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200">
-                    <div className="text-xs font-bold uppercase text-amber-800">Nghĩa Tiếng Việt</div>
+                    <div className="text-xs font-bold uppercase text-amber-800">
+                      Nghĩa Tiếng Việt
+                    </div>
                     <div className="text-lg font-extrabold text-slate-900 mt-0.5">
                       {currentCard.meaningVi}
                     </div>
@@ -450,7 +674,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Collocations & Grammar Patterns */}
+                  {/* Collocations */}
                   {currentCard.collocations.length > 0 && (
                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                       <div className="text-xs font-bold text-slate-700">
@@ -458,19 +682,44 @@ export const DailyVocabularyPage: React.FC = () => {
                       </div>
                       {currentCard.collocations.map((col) => (
                         <div key={col.id} className="text-xs text-slate-700">
-                          <strong className="text-emerald-800">{col.phrase}</strong> — {col.meaningVi}
+                          <strong className="text-emerald-800">{col.phrase}</strong> —{' '}
+                          {col.meaningVi}
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Bilingual Examples */}
+                  {/* Bilingual Examples with US/UK Teacher Voice Play Buttons */}
                   {currentCard.examples.map((ex) => (
                     <div
                       key={ex.id}
-                      className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-xs space-y-1"
+                      className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200 text-xs space-y-1.5"
                     >
-                      <div className="font-bold text-slate-800">{ex.sentenceEn}</div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-bold text-slate-800">{ex.sentenceEn}</div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            disabled={synthesizeMutation.isPending}
+                            onClick={() =>
+                              void handleSynthesizeTeacherSpeech(ex.sentenceEn, 'sentence', 'US')
+                            }
+                            className="px-2 py-0.5 rounded bg-white border border-emerald-200 font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                          >
+                            🔊 US
+                          </button>
+                          <button
+                            type="button"
+                            disabled={synthesizeMutation.isPending}
+                            onClick={() =>
+                              void handleSynthesizeTeacherSpeech(ex.sentenceEn, 'sentence', 'UK')
+                            }
+                            className="px-2 py-0.5 rounded bg-white border border-sky-200 font-bold text-sky-700 hover:bg-sky-100 cursor-pointer"
+                          >
+                            🔊 UK
+                          </button>
+                        </div>
+                      </div>
                       <div className="text-slate-600">{ex.translationVi}</div>
                     </div>
                   ))}
@@ -487,7 +736,7 @@ export const DailyVocabularyPage: React.FC = () => {
                     <button
                       key={rating}
                       type="button"
-                      onClick={() => handleReview(rating)}
+                      onClick={() => void handleReview(rating)}
                       className={cn(
                         'py-2.5 px-3 rounded-xl font-bold text-xs border transition-all cursor-pointer',
                         rating === 'Again' &&
@@ -507,8 +756,10 @@ export const DailyVocabularyPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Audio Pronunciation Assessment Studio (Audio-Input-Only Models from DB) */}
+        {/* Right Column (45% -> 9/20 cols on desktop): Phòng Chấm Phát Âm Audio AI */}
+        <div className="lg:col-span-9 space-y-4">
           {currentCard && (
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -518,16 +769,16 @@ export const DailyVocabularyPage: React.FC = () => {
                     Phòng Chấm Phát Âm Audio AI
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Rubric: <strong>{activeRubric?.code ?? 'ENGLISH_PRONUNCIATION_V1'}</strong> (Accuracy 40% · Clarity 30% · Fluency 30%)
+                    Đồng bộ với thẻ đang học: <strong className="text-slate-900">{currentCard.word}</strong>
                   </p>
                 </div>
                 <Badge variant="emerald">
-                  <ShieldCheck className="w-3 h-3" /> Chỉ nhận Model có Audio Input ({audioModels.length})
+                  <ShieldCheck className="w-3 h-3" /> Audio Input ({audioModels.length} Models)
                 </Badge>
               </div>
 
-              {/* Audio Pronunciation Model Selector from DB */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Audio Pronunciation Model Selector + Target Selector */}
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">
                     Model Chấm Phát Âm Audio (Từ Database)
@@ -547,29 +798,35 @@ export const DailyVocabularyPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">
-                    Nội dung luyện đọc
+                    Chế độ luyện phát âm
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setTargetType('word')}
+                      onClick={() => {
+                        setTargetType('word');
+                        setAssessmentResult(null);
+                      }}
                       className={cn(
-                        'py-2 rounded-xl text-xs font-bold border cursor-pointer',
+                        'py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
                         targetType === 'word'
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-slate-50 text-slate-600 border-slate-200'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       )}
                     >
                       Từ đơn ({currentCard.word})
                     </button>
                     <button
                       type="button"
-                      onClick={() => setTargetType('example')}
+                      onClick={() => {
+                        setTargetType('example');
+                        setAssessmentResult(null);
+                      }}
                       className={cn(
-                        'py-2 rounded-xl text-xs font-bold border cursor-pointer',
+                        'py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer',
                         targetType === 'example'
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-slate-50 text-slate-600 border-slate-200'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       )}
                     >
                       Câu ví dụ
@@ -578,90 +835,301 @@ export const DailyVocabularyPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                <div className="text-xs text-slate-700 font-semibold">
-                  Mẫu câu chấm điểm:{' '}
-                  <span className="text-slate-900 font-bold">
-                    &ldquo;
-                    {targetType === 'example' && currentCard.examples[0]
-                      ? currentCard.examples[0].sentenceEn
-                      : currentCard.word}
-                    &rdquo;
-                  </span>
+              {/* Target Sentence Box + Listen Sample US/UK + Record Button */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                  Nội dung mẫu cần đọc:
+                </div>
+                <div className="text-sm font-extrabold text-slate-900 leading-relaxed">
+                  &ldquo;
+                  {targetType === 'example' && currentCard.examples[0]
+                    ? currentCard.examples[0].sentenceEn
+                    : currentCard.word}
+                  &rdquo;
                 </div>
 
-                {!isRecording ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={assessMutation.isPending}
-                    onClick={() => void startRecording()}
-                  >
-                    <Mic className="w-3.5 h-3.5" />
-                    {assessMutation.isPending ? 'Đang chấm điểm...' : 'Thu âm & Chấm điểm'}
-                  </Button>
-                ) : (
-                  <Button variant="danger" size="sm" onClick={stopRecording}>
-                    <Square className="w-3.5 h-3.5" />
-                    Dừng thu âm
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80">
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={synthesizeMutation.isPending}
+                      onClick={() =>
+                        void handleSynthesizeTeacherSpeech(
+                          targetType === 'example' && currentCard.examples[0]
+                            ? currentCard.examples[0].sentenceEn
+                            : currentCard.word,
+                          targetType === 'example' ? 'sentence' : 'word',
+                          'US'
+                        )
+                      }
+                    >
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Mẫu US
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={synthesizeMutation.isPending}
+                      onClick={() =>
+                        void handleSynthesizeTeacherSpeech(
+                          targetType === 'example' && currentCard.examples[0]
+                            ? currentCard.examples[0].sentenceEn
+                            : currentCard.word,
+                          targetType === 'example' ? 'sentence' : 'word',
+                          'UK'
+                        )
+                      }
+                    >
+                      <Volume2 className="w-3.5 h-3.5 text-sky-600" />
+                      Mẫu UK
+                    </Button>
+                  </div>
+
+                  {!isRecording ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={assessMutation.isPending}
+                      onClick={() => void startRecording()}
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                      {assessMutation.isPending ? 'Đang chấm điểm...' : 'Thu âm & Chấm điểm'}
+                    </Button>
+                  ) : (
+                    <Button variant="danger" size="sm" onClick={stopRecording}>
+                      <Square className="w-3.5 h-3.5" />
+                      Dừng thu âm
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              {assessmentResult && (
-                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm font-extrabold text-slate-900">
-                        Điểm phát âm: {assessmentResult.overallScore}/100
+              {/* Scoring Rubric Breakdown (Accuracy 40% · Clarity 30% · Fluency 30%) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                  <span>Tiêu chuẩn Rubric: {activeRubric?.code ?? 'ENGLISH_PRONUNCIATION_V1'}</span>
+                  <span>Accuracy 40% · Clarity 30% · Fluency 30%</span>
+                </div>
+
+                {assessmentResult ? (
+                  <div className="pt-2 space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-600 text-white">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-5 h-5" />
+                        <span className="text-sm font-extrabold">
+                          Tổng điểm: {assessmentResult.overallScore}/100
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold bg-white/20 px-2.5 py-0.5 rounded-full">
+                        {assessmentResult.modelCodeUsed}
                       </span>
                     </div>
-                    <Badge variant="emerald">Model: {assessmentResult.modelCodeUsed}</Badge>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {assessmentResult.criterionScores.map((c) => (
-                      <div
-                        key={c.criterionCode}
-                        className="p-2.5 rounded-xl bg-white border border-emerald-100 text-xs"
-                      >
-                        <div className="font-bold text-slate-800">
-                          {c.criterionCode} ({c.weight}%): {c.score}/100
+                    <div className="grid grid-cols-3 gap-2">
+                      {assessmentResult.criterionScores.map((c) => (
+                        <div
+                          key={c.criterionCode}
+                          className="p-2.5 rounded-xl bg-white border border-emerald-200 text-xs"
+                        >
+                          <div className="font-extrabold text-slate-900">
+                            {c.criterionCode}: {c.score}/100
+                          </div>
+                          <div className="text-[10px] text-emerald-700 font-semibold">
+                            Trọng số: {c.weight}%
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">{c.feedbackVi}</div>
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">{c.feedbackVi}</div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                  <p className="text-xs text-slate-700">
-                    <strong>Nhận xét âm vị:</strong> {assessmentResult.phonemeAndStressFeedbackVi}
+                    <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                      <p>
+                        <strong>Nhận xét âm vị:</strong>{' '}
+                        {assessmentResult.phonemeAndStressFeedbackVi}
+                      </p>
+                      <p className="text-emerald-800 font-medium">
+                        <strong>Gợi ý huấn luyện:</strong> {assessmentResult.coachingSuggestionVi}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-500">
+                    Nhấn <strong>Mẫu US / Mẫu UK</strong> để nghe giáo viên AI đọc mẫu, sau đó nhấn{' '}
+                    <strong>Thu âm & Chấm điểm</strong> để nhận phân tích chi tiết theo 3 tiêu chí.
                   </p>
-                  <p className="text-xs text-emerald-800 font-medium">
-                    <strong>Gợi ý huấn luyện:</strong> {assessmentResult.coachingSuggestionVi}
-                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL 1: Cấu hình Phát Âm Mẫu AI (Opened via Settings button on toolbar) */}
+      <Dialog
+        isOpen={isTtsSettingsModalOpen}
+        onClose={() => setIsTtsSettingsModalOpen(false)}
+        maxWidth="2xl"
+        icon={<Settings className="w-5 h-5" />}
+        title="Cấu hình Phát Âm Mẫu AI (Gemini 3.8 Live)"
+        description="Tùy chỉnh Model phát âm, chọn 1 trong 30 Giọng nói của Teacher từ Database, ngữ điệu US/UK và tốc độ đọc"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button size="sm" onClick={() => setIsTtsSettingsModalOpen(false)}>
+              Lưu & Đóng
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">
+                1. Model Phát Âm Live
+              </label>
+              <select
+                value={ttsModelCode}
+                onChange={(e) =>
+                  setTtsModelCode(
+                    e.target.value as 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking'
+                  )
+                }
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
+              >
+                <option value="gemini-3.8-live">Gemini 3.8 Live (Tốc độ tức thì)</option>
+                <option value="gemini-3.8-live-extended-thinking">
+                  Gemini 3.8 Live Extended Thinking (Ngữ điệu sâu)
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">
+                2. Giọng nói của Teacher ({allVoices.length} giọng Google từ DB)
+              </label>
+              <select
+                value={ttsVoiceName}
+                onChange={(e) => setTtsVoiceName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
+              >
+                {allVoices.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label} — {v.style} ({v.persona})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">
+                3. Ngữ điệu mặc định (Accent US / UK)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['US', 'UK'] as const).map((acc) => (
+                  <button
+                    key={acc}
+                    type="button"
+                    onClick={() => setTtsAccent(acc)}
+                    className={cn(
+                      'py-2.5 rounded-xl font-extrabold border transition-all cursor-pointer',
+                      ttsAccent === acc
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    )}
+                  >
+                    {acc === 'US' ? '🇺🇸 US (American)' : '🇬🇧 UK (British)'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1.5">
+                4. Tốc độ đọc mẫu (Từ Database)
+              </label>
+              <select
+                value={ttsSpeed}
+                onChange={(e) => setTtsSpeed(parseFloat(e.target.value))}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
+              >
+                {speechSpeeds.map((sp) => (
+                  <option key={sp.code || sp.value} value={sp.value}>
+                    {sp.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {lastSynthesizedAudio && (
+            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Badge variant="emerald">{lastSynthesizedAudio.modelCodeUsed}</Badge>
+                  <Badge variant="violet">Voice: {lastSynthesizedAudio.voiceName}</Badge>
+                  <Badge variant="sky">Accent: {lastSynthesizedAudio.accent}</Badge>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSystemPromptUsed((s) => !s)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  {showSystemPromptUsed ? 'Ẩn System Prompt' : 'Xem System Prompt'}
+                </button>
+              </div>
+              <audio
+                ref={audioPlayerRef}
+                controls
+                src={`data:${lastSynthesizedAudio.mimeType};base64,${lastSynthesizedAudio.audioBase64}`}
+                className="w-full h-9"
+              />
+              {showSystemPromptUsed && (
+                <pre className="p-3 rounded-xl bg-slate-900 text-emerald-300 text-[11px] font-mono whitespace-pre-wrap">
+                  {lastSynthesizedAudio.systemPromptUsed}
+                </pre>
               )}
             </div>
           )}
         </div>
+      </Dialog>
 
-        {/* Right 5 Columns: AI Vocabulary Generator (DB Models Gemini & Gemma 4 + DB Topics) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-5">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Tạo Từ Vựng Thông Minh bằng AI
-            </h2>
-            <p className="text-xs text-slate-500">
-              Chọn Model Tạo Từ Vựng (Gemini & Gemma 4) và Chủ đề gợi ý từ Database hoặc tự nhập
-            </p>
+      {/* MODAL 2: Tạo Từ Vựng Thông Minh bằng AI (Opened via "Tạo từ vựng bằng AI" button on toolbar) */}
+      <Dialog
+        isOpen={isAiGeneratorModalOpen}
+        onClose={() => setIsAiGeneratorModalOpen(false)}
+        maxWidth="2xl"
+        icon={<Sparkles className="w-5 h-5" />}
+        title="Tạo Từ Vựng Thông Minh bằng AI"
+        description="Chọn Model Tạo Từ Vựng (Gemini & Gemma 4 từ DB) và Chủ đề gợi ý từ Database hoặc tự nhập"
+        footer={
+          <div className="flex items-center justify-end gap-2.5 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAiGeneratorModalOpen(false)}
+              disabled={generateMutation.isPending}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={generateMutation.isPending}
+              onClick={() => void handleGenerateMoreWords()}
+            >
+              <Sparkles className="w-4 h-4" />
+              {generateMutation.isPending
+                ? `Đang tạo với ${selectedVocabModel}...`
+                : 'Tạo thêm từ vựng vào bộ thẻ'}
+            </Button>
           </div>
-
-          {/* 1. Model Tạo Từ Vựng AI (Gemini & Gemma 4 from Database) */}
+        }
+      >
+        <div className="space-y-4 text-xs">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <label className="font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-emerald-600" />
                 Model Tạo Từ Vựng AI (Gemini & Gemma 4)
               </label>
@@ -670,11 +1138,12 @@ export const DailyVocabularyPage: React.FC = () => {
             <select
               value={selectedVocabModel}
               onChange={(e) => setSelectedVocabModel(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
             >
               {vocabModels.map((m) => (
                 <option key={m.modelCode} value={m.modelCode}>
-                  {m.displayName} — {m.supportsAudioInput ? 'Đa phương thức' : 'Text Generation Only'}
+                  {m.displayName} —{' '}
+                  {m.supportsAudioInput ? 'Đa phương thức' : 'Text Generation Only'}
                 </option>
               ))}
             </select>
@@ -685,16 +1154,15 @@ export const DailyVocabularyPage: React.FC = () => {
             )}
           </div>
 
-          {/* 2. CEFR Level & Word Count */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                 Trình độ CEFR
               </label>
               <select
                 value={genCefr}
                 onChange={(e) => setGenCefr(e.target.value as CefrLevel)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
               >
                 {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as CefrLevel[]).map((l) => (
                   <option key={l} value={l}>
@@ -704,13 +1172,13 @@ export const DailyVocabularyPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                 Số lượng từ tạo mới
               </label>
               <select
                 value={genCount}
                 onChange={(e) => setGenCount(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
               >
                 <option value={2}>2 từ vựng chuyên sâu</option>
                 <option value={3}>3 từ vựng chuyên sâu</option>
@@ -719,7 +1187,6 @@ export const DailyVocabularyPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Chủ đề tạo thêm từ (Suggestions from DB + Free Custom Input) */}
           <TopicCreatablePicker
             label="Chủ đề tạo thêm từ (DB Suggestions + Tự nhập)"
             value={genTopic}
@@ -728,21 +1195,8 @@ export const DailyVocabularyPage: React.FC = () => {
             placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý bên dưới..."
             helperText="Gợi ý chủ đề từ vựng được lấy trực tiếp từ bảng Topics trong Database, đồng thời hỗ trợ tự nhập chủ đề tùy ý."
           />
-
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={generateMutation.isPending}
-            onClick={handleGenerateMoreWords}
-            className="w-full"
-          >
-            <Sparkles className="w-4 h-4" />
-            {generateMutation.isPending
-              ? `Đang tạo từ vựng với ${selectedVocabModel}...`
-              : 'Tạo thêm từ vựng vào bộ thẻ hôm nay'}
-          </Button>
         </div>
-      </div>
+      </Dialog>
     </div>
   );
 };

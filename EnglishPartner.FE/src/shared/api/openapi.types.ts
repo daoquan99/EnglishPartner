@@ -160,11 +160,90 @@ export interface TeacherVoiceDto {
 }
 
 export interface SpeechSpeedOptionDto {
+  id: string;
+  code: string;
   value: number;
   label: string;
   descriptionVi: string;
   recommendedCefrRange: string;
   isDefault: boolean;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface UpsertSpeechSpeedRequestDto {
+  code: string;
+  value: number;
+  label: string;
+  descriptionVi: string;
+  recommendedCefrRange: string;
+  isDefault: boolean;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface SynthesizePronunciationAudioRequestDto {
+  apiKey: string;
+  text: string;
+  targetType?: 'word' | 'sentence';
+  accent: 'US' | 'UK';
+  voiceName: TeacherVoiceName;
+  speechSpeed: number;
+  modelCode: 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking' | string;
+}
+
+export interface SynthesizePronunciationAudioResponseDto {
+  text: string;
+  targetType: string;
+  accent: string;
+  voiceName: string;
+  speechSpeed: number;
+  modelCodeUsed: string;
+  systemPromptUsed: string;
+  mimeType: string;
+  sampleRate: number;
+  durationMs: number;
+  audioBase64: string;
+}
+
+export interface UpsertAiModelConfigRequestDto {
+  displayName: string;
+  modelCode: string;
+  routedModelCode?: string | null;
+  supportsTextGeneration: boolean;
+  supportsStructuredOutput: boolean;
+  supportsAudioInput: boolean;
+  supportsPronunciationAssessment: boolean;
+  supportsLiveAudio: boolean;
+  supportsTranscription?: boolean;
+  supportsTranslation?: boolean;
+  supportsStreaming?: boolean;
+  isAvailable: boolean;
+  isDeprecated: boolean;
+  isEnabled: boolean;
+  capabilityNote: string;
+  displayOrder: number;
+}
+
+export interface AdminCreateUserRequestDto {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  preferredCefrLevel: CefrLevel;
+  preferredVoiceName: TeacherVoiceName;
+  isActive: boolean;
+  roleCodes: string[];
+}
+
+export interface AdminUpdateUserRequestDto {
+  email: string;
+  fullName: string;
+  preferredCefrLevel: CefrLevel;
+  preferredVoiceName: TeacherVoiceName;
+  isActive: boolean;
+  newPassword?: string;
+  roleCodes: string[];
 }
 
 export interface TopicDto {
@@ -238,4 +317,21 @@ export interface ScoringRubricDto {
   assessmentType: string;
   isActive: boolean;
   criteria: ScoringRubricCriterionDto[];
+}
+
+
+// --- Generic Pagination Contracts ---
+export interface PagedResultDto<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface PaginationQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  paged?: boolean;
 }

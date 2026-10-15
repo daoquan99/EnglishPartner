@@ -6,9 +6,15 @@ using EnglishLiveTutor.Domain.Pronunciation.Repositories;
 namespace EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoringRubric;
 
 public sealed record UpdateScoringRubricCommand(
-    Guid RubricId,
+    string CodeOrId,
     UpdateScoringRubricRequest Request
-) : ICommand<ScoringRubricEntity>;
+) : ICommand<ScoringRubricEntity>
+{
+    public UpdateScoringRubricCommand(Guid rubricId, UpdateScoringRubricRequest request)
+        : this(rubricId.ToString(), request)
+    {
+    }
+}
 
 public sealed class UpdateScoringRubricCommandHandler : ICommandHandler<UpdateScoringRubricCommand, ScoringRubricEntity>
 {
@@ -22,14 +28,47 @@ public sealed class UpdateScoringRubricCommandHandler : ICommandHandler<UpdateSc
     public async Task<ScoringRubricEntity> HandleAsync(UpdateScoringRubricCommand command, CancellationToken ct = default)
     {
         var req = command.Request;
-        var rubricId = command.RubricId;
+        string codeOrId = (command.CodeOrId ?? string.Empty).Trim();
 
         if (req.Criteria is null || req.Criteria.Count == 0)
             throw new InvalidOperationException("Rubric phải có ít nhất 1 tiêu chí chấm điểm.");
 
-        var existing = await _rubricRepo.GetByIdWithCriteriaAsync(rubricId, ct);
+        ScoringRubricEntity? existing = null;
+        if (Guid.TryParse(codeOrId, out var parsedId))
+        {
+            existing = await _rubricRepo.GetByIdWithCriteriaAsync(parsedId, ct);
+        }
+
+        if (existing is null && !string.IsNullOrWhiteSpace(codeOrId))
+        {
+            existing = await _rubricRepo.GetByCodeWithCriteriaAsync(codeOrId, ct);
+        }
+
         if (existing is null)
-            throw new InvalidOperationException("Không tìm thấy cấu hình Rubric.");
+        {
+            string effectiveCode = string.IsNullOrWhiteSpace(codeOrId) || Guid.TryParse(codeOrId, out _)
+                ? $"RUBRIC_{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}"
+                : codeOrId.ToUpperInvariant();
+
+            var created = new ScoringRubricEntity(
+                code: effectiveCode,
+                name: string.IsNullOrWhiteSpace(req.Name) ? effectiveCode : req.Name.Trim(),
+                description: req.Description ?? string.Empty,
+                version: 1,
+                assessmentType: "Pronunciation",
+                isActive: true);
+
+            int order = 1;
+            foreach (var c in req.Criteria)
+            {
+                created.AddCriterion(c.Code, c.Name, c.Description, c.Weight, order++);
+            }
+            created.ValidateWeights();
+
+            await _rubricRepo.AddAsync(created, ct);
+            await _rubricRepo.SaveChangesAsync(ct);
+            return created;
+        }
 
         existing.UpdateRubric(
             req.Name,

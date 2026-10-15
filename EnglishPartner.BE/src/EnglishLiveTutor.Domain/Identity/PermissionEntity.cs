@@ -31,4 +31,13 @@ public sealed class PermissionEntity : AggregateRoot<Guid>
         Module = string.IsNullOrWhiteSpace(module) ? "General" : module.Trim();
         Description = description?.Trim() ?? string.Empty;
     }
+
+    public void UpdateDetails(string name, string module, string description)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+            Name = name.Trim();
+        if (!string.IsNullOrWhiteSpace(module))
+            Module = module.Trim();
+        Description = description?.Trim() ?? string.Empty;
+    }
 }

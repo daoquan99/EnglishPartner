@@ -1,69 +1,84 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Tags, MessageSquareCode, Volume2, Users, ShieldCheck, Award } from 'lucide-react';
 import {
-  useConversationModesQuery,
-  usePronunciationModelsQuery,
-  useVocabularyGenerationModelsQuery,
-} from '@/features/catalog';
+  Tags,
+  MessageSquareCode,
+  Volume2,
+  Users,
+  ShieldCheck,
+  Award,
+  BookOpen,
+} from 'lucide-react';
+import { useConversationModesQuery } from '@/features/catalog';
 import {
+  useAdminAiModelsQuery,
   useAdminRolesQuery,
+  useAdminSpeechSpeedsQuery,
   useAdminTopicsQuery,
   useAdminUsersQuery,
+  useAdminVocabulariesQuery,
   useAdminVoicesQuery,
 } from '../hooks/useAdminQueries';
 
 export const AdminDashboardPage: React.FC = () => {
+  const { data: vocabularies = [] } = useAdminVocabulariesQuery();
   const { data: topics = [] } = useAdminTopicsQuery();
   const { data: modes = [] } = useConversationModesQuery();
+  const { data: speeds = [] } = useAdminSpeechSpeedsQuery();
   const { data: voices = [] } = useAdminVoicesQuery();
   const { data: users = [] } = useAdminUsersQuery();
   const { data: roles = [] } = useAdminRolesQuery();
-  const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
-  const { data: audioModels = [] } = usePronunciationModelsQuery();
+  const { data: aiModels = [] } = useAdminAiModelsQuery();
 
   const cards = [
     {
-      title: 'Topics Aggregate (DB)',
+      title: 'Từ vựng / Flashcards (CRUD)',
+      value: `${vocabularies.length} thẻ từ`,
+      sub: 'Quản lý Sense, UK/US IPA, Synonyms, Collocations & Examples',
+      to: '/admin/vocabularies',
+      icon: <BookOpen className="w-5 h-5 text-emerald-600" />,
+    },
+    {
+      title: 'Topics Aggregate (CRUD)',
       value: `${topics.length} chủ đề`,
       sub: `${topics.filter((t) => t.supportsConversation).length} Hội thoại · ${topics.filter((t) => t.supportsVocabulary).length} Từ vựng`,
       to: '/admin/topics',
-      icon: <Tags className="w-5 h-5 text-emerald-600" />,
+      icon: <Tags className="w-5 h-5 text-teal-600" />,
     },
     {
-      title: 'Chế độ Luyện nói (DB)',
-      value: `${modes.length} Modes`,
-      sub: 'CefrPromptBuilder lưu trong SQL Server',
+      title: 'CEFR, 19 Modes & Tốc độ nói (CRUD)',
+      value: `${modes.length} Modes · ${speeds.length} Speeds`,
+      sub: 'CefrLevelPrompts, ConversationModes & SpeechSpeeds trong DB',
       to: '/admin/prompts',
       icon: <MessageSquareCode className="w-5 h-5 text-sky-600" />,
     },
     {
-      title: 'Giọng đọc Teacher (Google)',
+      title: '30 Giọng đọc Teacher (CRUD)',
       value: `${voices.length} Voices`,
       sub: `${voices.filter((v) => v.isFeatured).length} giọng Featured ưu tiên`,
       to: '/admin/voices',
       icon: <Volume2 className="w-5 h-5 text-violet-600" />,
     },
     {
-      title: 'AI Models (Vocab & Audio)',
-      value: `${vocabModels.length} Vocab / ${audioModels.length} Audio`,
-      sub: 'Gemini 3.8/2.5 & Gemma 4 (Text-only)',
+      title: 'Rubric & AI Models (CRUD)',
+      value: `${aiModels.length} AI Models`,
+      sub: 'ENGLISH_PRONUNCIATION_V1 & AiModelCatalog trong DB',
       to: '/admin/rubrics',
       icon: <Award className="w-5 h-5 text-amber-600" />,
     },
     {
-      title: 'Người dùng (Users)',
+      title: 'Người dùng & Phân quyền (CRUD)',
       value: `${users.length} tài khoản`,
-      sub: 'Quản lý gán Role & trạng thái hoạt động',
+      sub: 'Tạo, sửa, khóa/mở khóa & gán Role cho Users',
       to: '/admin/users',
       icon: <Users className="w-5 h-5 text-rose-600" />,
     },
     {
-      title: 'Roles & Permissions',
+      title: 'Ma trận Roles & Permissions (CRUD)',
       value: `${roles.length} Roles`,
       sub: 'ADMIN · TEACHER · LEARNER',
       to: '/admin/roles',
-      icon: <ShieldCheck className="w-5 h-5 text-teal-600" />,
+      icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />,
     },
   ];
 
@@ -71,10 +86,10 @@ export const AdminDashboardPage: React.FC = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
         <h1 className="text-xl font-extrabold text-slate-900">
-          Trung tâm Quản trị Hệ thống (Admin Portal)
+          Trung tâm Quản trị Hệ thống (Admin Portal — Full CRUD)
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Quản lý tập trung các Aggregate trong Database: Topics, CEFR & Session Mode Prompts, 30 Google Teacher Voices, AI Models & RBAC Permissions.
+          Quản lý đầy đủ Create / Read / Update / Delete cho toàn bộ các Aggregate trong Database: Flashcards, Topics, CEFR, 19 Modes, Speech Speeds, 30 Teacher Voices, Rubrics, AI Models, Users, Roles & Permissions.
         </p>
       </div>
 

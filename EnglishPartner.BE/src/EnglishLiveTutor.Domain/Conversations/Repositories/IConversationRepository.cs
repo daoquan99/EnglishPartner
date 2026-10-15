@@ -5,6 +5,11 @@ namespace EnglishLiveTutor.Domain.Conversations.Repositories;
 public interface IConversationRepository
 {
     Task<List<object>> ListConversationsAsync(CancellationToken ct = default);
+    Task<(List<object> Items, int TotalCount)> ListConversationsPagedAsync(
+        string? search = null,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken ct = default);
     Task<ConversationEntity?> GetConversationWithHistoryAsync(string id, CancellationToken ct = default);
 
     Task<ConversationEntity> CreateOrUpdateConversationAsync(

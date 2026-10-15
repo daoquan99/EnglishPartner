@@ -6,10 +6,9 @@ import {
   Settings,
   Wifi,
   AlertCircle,
-  Trash2,
-  FolderOpen,
 } from 'lucide-react';
 import { TutorSetupSidebar as TutorSetupModal } from '../components/TutorSetupSidebar';
+import { ConversationHistoryModal } from '../components/ConversationHistoryModal';
 import { LiveMessengerStream } from '../components/LiveMessengerStream';
 import { GrammarCorrectionPanel } from '../components/GrammarCorrectionPanel';
 import { useTutorSessionStore } from '../store/tutorSessionStore';
@@ -20,7 +19,7 @@ import {
   useDeleteConversationMutation,
   useUpdateConversationSettingsMutation,
 } from '../hooks/useConversations';
-import { conversationsApi } from '../api/conversationsApi';
+import type { ConversationDetailDto } from '../types/tutor.types';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
@@ -125,53 +124,46 @@ export const LiveTutorPage: React.FC = () => {
     });
   };
 
-  const handleLoadHistoryConversation = async (id: string) => {
-    try {
-      const detail = await conversationsApi.getConversationDetail(id);
-      if (!detail) return;
-      applyConversationSettings({
-        id: detail.id,
-        cefrLevel: detail.cefrLevel,
-        conversationMode: detail.conversationMode,
-        voiceName: detail.voiceName,
-        speechSpeed: detail.speechSpeed,
-        topic: detail.topic,
-        customSystemPrompt: detail.customSystemPrompt,
-        extendedThinking: detail.extendedThinking,
-      });
+  const handleResumeFromModal = (detail: ConversationDetailDto) => {
+    applyConversationSettings({
+      id: detail.id,
+      cefrLevel: detail.cefrLevel,
+      conversationMode: detail.conversationMode,
+      voiceName: detail.voiceName,
+      speechSpeed: detail.speechSpeed,
+      topic: detail.topic,
+      customSystemPrompt: detail.customSystemPrompt,
+      extendedThinking: detail.extendedThinking,
+    });
 
-      loadPersistedSessionData(
-        detail.messages.map((m) => ({
-          turnId: m.turnId,
-          speaker: m.speaker,
-          englishLine1: m.transcriptLine1,
-          vietnameseLine2: m.translationLine2,
-          isFinal: true,
-          timestamp: new Date(m.createdAtUtc).getTime(),
-        })),
-        detail.corrections.map((c) => {
-          let parsedErrors = [];
-          try {
-            parsedErrors = JSON.parse(c.errorsJson || '[]');
-          } catch {
-            parsedErrors = [];
-          }
-          return {
-            turnId: c.turnId,
-            hasErrors: true,
-            originalSentence: c.originalSentence,
-            correctedSentence: c.correctedSentence,
-            naturalAlternative: c.naturalAlternative,
-            overallTipVi: c.overallTipVi,
-            errors: parsedErrors,
-            timestamp: new Date(c.createdAtUtc).getTime(),
-          };
-        })
-      );
-      setHistoryDrawerOpen(false);
-    } catch {
-      // ignore
-    }
+    loadPersistedSessionData(
+      detail.messages.map((m) => ({
+        turnId: m.turnId,
+        speaker: m.speaker,
+        englishLine1: m.transcriptLine1,
+        vietnameseLine2: m.translationLine2,
+        isFinal: true,
+        timestamp: new Date(m.createdAtUtc).getTime(),
+      })),
+      detail.corrections.map((c) => {
+        let parsedErrors = [];
+        try {
+          parsedErrors = JSON.parse(c.errorsJson || '[]');
+        } catch {
+          parsedErrors = [];
+        }
+        return {
+          turnId: c.turnId,
+          hasErrors: true,
+          originalSentence: c.originalSentence,
+          correctedSentence: c.correctedSentence,
+          naturalAlternative: c.naturalAlternative,
+          overallTipVi: c.overallTipVi,
+          errors: parsedErrors,
+          timestamp: new Date(c.createdAtUtc).getTime(),
+        };
+      })
+    );
   };
 
   return (
@@ -179,7 +171,6 @@ export const LiveTutorPage: React.FC = () => {
       {/* Top Action & Configuration Bar */}
       <div className="bg-white rounded-3xl border border-slate-200/90 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Primary Button to Open Setup Modal */}
           <Button
             variant="outline"
             size="sm"
@@ -202,7 +193,6 @@ export const LiveTutorPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 3 SignalR Hub Badges */}
           <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
             <Wifi
               className={cn(
@@ -217,10 +207,11 @@ export const LiveTutorPage: React.FC = () => {
             <span>Hub 3: {hubStates.translateHub}</span>
           </div>
 
+          {/* Button opens Centered Dialog/Modal instead of inline drawer */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setHistoryDrawerOpen(!isHistoryDrawerOpen)}
+            onClick={() => setHistoryDrawerOpen(true)}
           >
             <History className="w-3.5 h-3.5" />
             Lịch sử ({historyList.length})
@@ -244,59 +235,8 @@ export const LiveTutorPage: React.FC = () => {
         </div>
       )}
 
-      {/* History Drawer */}
-      {isHistoryDrawerOpen && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-md space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-emerald-600" />
-              Lịch sử Cuộc trò chuyện đã lưu trong Database ({historyList.length})
-            </h3>
-            <button
-              type="button"
-              onClick={() => setHistoryDrawerOpen(false)}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-            >
-              Đóng
-            </button>
-          </div>
-          {historyList.length === 0 ? (
-            <p className="text-xs text-slate-500">Chưa có cuộc hội thoại nào được lưu.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto">
-              {historyList.map((conv) => (
-                <div
-                  key={conv.id}
-                  className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-400 bg-slate-50/60 flex items-start justify-between gap-2"
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleLoadHistoryConversation(conv.id)}
-                    className="text-left flex-1 min-w-0 cursor-pointer"
-                  >
-                    <div className="text-xs font-bold text-slate-800 truncate">{conv.title}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      {conv.cefrLevel} · {conv.voiceName} · {conv.messageCount} câu
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteConvMutation.mutate(conv.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer"
-                    title="Xóa cuộc hội thoại"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Expanded 2-Column Live Chat Workspace (8 cols Messenger + 4 cols Grammar Correction) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* Expanded Center/Left Column: Bilingual Live Messenger & Call Controls */}
         <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 shadow-xs flex flex-col h-[calc(100vh-9.5rem)] min-h-[540px]">
           <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
@@ -325,7 +265,6 @@ export const LiveTutorPage: React.FC = () => {
 
           <LiveMessengerStream turns={turns} corrections={corrections} />
 
-          {/* Bottom Audio Visualizer & Start/Stop Call Bar */}
           <div className="p-4 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex flex-wrap items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-4 text-xs text-slate-600">
               <div className="flex items-center gap-1.5">
@@ -349,11 +288,7 @@ export const LiveTutorPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => setSetupModalOpen(true)}
-              >
+              <Button variant="outline" size="md" onClick={() => setSetupModalOpen(true)}>
                 <Settings className="w-4 h-4" />
                 Thiết lập
               </Button>
@@ -363,11 +298,6 @@ export const LiveTutorPage: React.FC = () => {
                   variant={apiKey.trim() ? 'primary' : 'secondary'}
                   size="md"
                   onClick={handleStartLive}
-                  title={
-                    apiKey.trim()
-                      ? 'Kết nối 3 SignalR Hubs'
-                      : 'Nhập Google AI Studio API Key ở Left Menu để kết nối'
-                  }
                 >
                   <Mic className="w-4 h-4" />
                   Bắt đầu luyện nói
@@ -382,19 +312,29 @@ export const LiveTutorPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Realtime Grammar & Vocabulary Corrections */}
         <div className="lg:col-span-4">
           <GrammarCorrectionPanel corrections={corrections} />
         </div>
       </div>
 
-      {/* Session Setup Dialog / Modal */}
+      {/* Modal 1: Session Setup Dialog */}
       <TutorSetupModal
         isOpen={isSetupModalOpen}
         isSessionActive={isSessionActive}
         onClose={() => setSetupModalOpen(false)}
         onSaveSettings={() => void handleSaveSettingsOnly()}
         onStartSpeaking={() => void handleStartLive()}
+      />
+
+      {/* Modal 2: Conversation History Dialog (with View Detail, Resume, and Delete ConfirmDialog) */}
+      <ConversationHistoryModal
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setHistoryDrawerOpen(false)}
+        conversations={historyList}
+        onResumeConversation={handleResumeFromModal}
+        onDeleteConversation={async (id) => {
+          await deleteConvMutation.mutateAsync(id);
+        }}
       />
     </div>
   );

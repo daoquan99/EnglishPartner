@@ -31,6 +31,21 @@ public sealed class ScoringRubricRepository : IScoringRubricRepository
             .FirstOrDefaultAsync(r => r.Id == rubricId, ct);
     }
 
+    public async Task<ScoringRubricEntity?> GetByCodeWithCriteriaAsync(string code, CancellationToken ct = default)
+    {
+        string norm = code.Trim();
+        return await _db.ScoringRubrics
+            .Include(r => r.Criteria)
+            .OrderByDescending(r => r.Version)
+            .FirstOrDefaultAsync(r => r.Code == norm, ct);
+    }
+
+    public Task AddAsync(ScoringRubricEntity rubric, CancellationToken ct = default)
+    {
+        _db.ScoringRubrics.Add(rubric);
+        return Task.CompletedTask;
+    }
+
     public async Task SaveChangesAsync(CancellationToken ct = default)
     {
         await _db.SaveChangesAsync(ct);

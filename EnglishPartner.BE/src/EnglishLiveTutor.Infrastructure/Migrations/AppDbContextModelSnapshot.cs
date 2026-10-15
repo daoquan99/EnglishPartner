@@ -25,7 +25,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.AiCatalog.AiModelConfigEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CapabilityNote")
@@ -336,7 +335,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.Entities.RefreshTokenEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -400,7 +398,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.Entities.RolePermissionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -441,7 +438,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.Entities.UserRoleEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("AssignedAtUtc")
@@ -482,7 +478,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.PermissionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
@@ -549,7 +544,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.RoleEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
@@ -617,7 +611,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AvatarUrl")
@@ -723,7 +716,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Learning.DailyVocabularyPlanEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("CompletedAt")
@@ -800,7 +792,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Learning.Entities.DailyVocabularyItemEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("AssignedAt")
@@ -860,7 +851,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Learning.UserVocabularyProgressEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("CorrectCount")
@@ -956,7 +946,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Learning.VocabularyReviewAttemptEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -1027,7 +1016,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Prompts.CefrLevelPromptEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CefrLevel")
@@ -1094,7 +1082,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Prompts.ConversationModePromptEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Category")
@@ -1166,10 +1153,89 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.ToTable("ConversationModePrompts", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Prompts.SpeechSpeedEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<string>("DescriptionVi")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("RecommendedCefrRange")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<double>("SpeedValue")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.ToTable("SpeechSpeeds", (string)null);
+                });
+
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.AudioRecordingEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContentType")
@@ -1246,7 +1312,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.Entities.PronunciationCriterionScoreEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("AssessmentId")
@@ -1309,7 +1374,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.Entities.ScoringRubricCriterionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
@@ -1377,7 +1441,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.PronunciationAssessmentEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Accent")
@@ -1507,7 +1570,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.ScoringRubricEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AssessmentType")
@@ -1582,7 +1644,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Topics.TopicEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Category")
@@ -1684,7 +1745,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyCollocationEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -1730,7 +1790,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyExampleEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AudioUrl")
@@ -1784,7 +1843,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyGrammarPatternEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -1831,7 +1889,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyPronunciationEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Accent")
@@ -1895,7 +1952,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyRelationEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -1948,7 +2004,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularySenseEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CefrLevel")
@@ -2014,7 +2069,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.Entities.VocabularyWordFamilyEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -2061,7 +2115,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.VocabularyEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -2145,7 +2198,6 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Vocabulary.VocabularyGenerationAuditEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("AcceptedCount")

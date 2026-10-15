@@ -1,12 +1,17 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Prompts;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Prompts.Queries.ListCefrLevelPrompts;
 
-public sealed record ListCefrLevelPromptsQuery() : IQuery<List<CefrLevelPromptEntity>>;
+public sealed record ListCefrLevelPromptsQuery(
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<CefrLevelPromptEntity>>;
 
-public sealed class ListCefrLevelPromptsQueryHandler : IQueryHandler<ListCefrLevelPromptsQuery, List<CefrLevelPromptEntity>>
+public sealed class ListCefrLevelPromptsQueryHandler : IQueryHandler<ListCefrLevelPromptsQuery, PagedResultDto<CefrLevelPromptEntity>>
 {
     private readonly IAppDbContextFactory _dbFactory;
 
@@ -15,12 +20,21 @@ public sealed class ListCefrLevelPromptsQueryHandler : IQueryHandler<ListCefrLev
         _dbFactory = dbFactory;
     }
 
-    public async Task<List<CefrLevelPromptEntity>> HandleAsync(ListCefrLevelPromptsQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<CefrLevelPromptEntity>> HandleAsync(ListCefrLevelPromptsQuery query, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        return await db.CefrLevelPrompts
-            .AsNoTracking()
-            .OrderBy(p => p.DisplayOrder)
-            .ToListAsync(ct);
+        var q = db.CefrLevelPrompts.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string term = query.Search.Trim().ToLowerInvariant();
+            q = q.Where(c =>
+                c.CefrLevel.ToLower().Contains(term) ||
+                c.DisplayName.ToLower().Contains(term) ||
+                c.LevelGuidance.ToLower().Contains(term));
+        }
+
+        var ordered = q.OrderBy(p => p.DisplayOrder);
+        return await PagedResultDto<CefrLevelPromptEntity>.CreateAsync(ordered, query.Page, query.PageSize, ct);
     }
 }

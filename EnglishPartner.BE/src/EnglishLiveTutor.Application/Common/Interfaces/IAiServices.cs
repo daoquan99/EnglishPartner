@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Pronunciation;
 
 namespace EnglishLiveTutor.Application.Common.Interfaces;
@@ -56,5 +57,12 @@ public interface IPronunciationAiAssessor
         string expectedText,
         string accent,
         ScoringRubricEntity rubric,
+        CancellationToken ct = default);
+}
+
+public interface ILivePronunciationTtsSynthesizer
+{
+    Task<SynthesizePronunciationAudioResponseDto> SynthesizeSpeechAsync(
+        SynthesizePronunciationAudioRequest request,
         CancellationToken ct = default);
 }

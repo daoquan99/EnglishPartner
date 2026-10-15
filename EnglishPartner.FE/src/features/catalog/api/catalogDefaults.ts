@@ -15,39 +15,59 @@ import type {
  */
 export const DEFAULT_SPEECH_SPEEDS: SpeechSpeedOptionDto[] = [
   {
+    id: '45000000-0000-0000-0000-000000000001',
+    code: '0.75x',
     value: 0.75,
     label: '0.75x — Chậm & Rõ từng từ',
     descriptionVi: 'Phù hợp cho người mới bắt đầu hoặc nghe từ mới khó',
     recommendedCefrRange: 'A1 - A2',
     isDefault: false,
+    isActive: true,
+    displayOrder: 1,
   },
   {
+    id: '45000000-0000-0000-0000-000000000002',
+    code: '0.90x',
     value: 0.9,
     label: '0.90x — Vừa phải, dễ bắt kịp',
     descriptionVi: 'Nhịp độ sư phạm rõ ràng, dễ nghe trọng âm và nối âm',
     recommendedCefrRange: 'A2 - B1',
     isDefault: false,
+    isActive: true,
+    displayOrder: 2,
   },
   {
+    id: '45000000-0000-0000-0000-000000000003',
+    code: '1.00x',
     value: 1.0,
     label: '1.00x — Tự nhiên chuẩn bản xứ',
     descriptionVi: 'Tốc độ hội thoại tiêu chuẩn hằng ngày và phỏng vấn',
     recommendedCefrRange: 'B1 - B2',
     isDefault: true,
+    isActive: true,
+    displayOrder: 3,
   },
   {
+    id: '45000000-0000-0000-0000-000000000004',
+    code: '1.15x',
     value: 1.15,
     label: '1.15x — Nhanh & Năng động',
     descriptionVi: 'Luyện phản xạ nghe nhanh trong họp Scrum hoặc tranh luận',
     recommendedCefrRange: 'B2 - C1',
     isDefault: false,
+    isActive: true,
+    displayOrder: 4,
   },
   {
+    id: '45000000-0000-0000-0000-000000000005',
+    code: '1.25x',
     value: 1.25,
     label: '1.25x — Thử thách tốc độ cao',
     descriptionVi: 'Mô phỏng áp lực cao và người bản xứ nói nhanh',
     recommendedCefrRange: 'C1 - C2',
     isDefault: false,
+    isActive: true,
+    displayOrder: 5,
   },
 ];
 
@@ -181,6 +201,8 @@ export const DEFAULT_AI_MODELS: AiModelOptionDto[] = [
   { id: '10000000-0000-0000-0000-000000000006', displayName: 'Gemini 2.5 Flash', modelCode: 'gemini-2.5-flash', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: true, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Model ổn định phổ biến cho tạo từ vựng và chấm phát âm.', displayOrder: 6 },
   { id: '10000000-0000-0000-0000-000000000009', displayName: 'Gemma 4 26B (Text Only)', modelCode: 'gemma-4-26b-a4b-it', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: false, supportsPronunciationAssessment: false, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Chỉ hỗ trợ tạo từ vựng văn bản (Text Generation); KHÔNG hỗ trợ đầu vào âm thanh để chấm phát âm.', displayOrder: 9 },
   { id: '10000000-0000-0000-0000-000000000010', displayName: 'Gemma 4 31B (Text Only)', modelCode: 'gemma-4-31b-it', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: false, supportsPronunciationAssessment: false, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Chỉ hỗ trợ tạo từ vựng văn bản (Text Generation); KHÔNG hỗ trợ đầu vào âm thanh để chấm phát âm.', displayOrder: 10 },
+  { id: '10000000-0000-0000-0000-000000000013', displayName: 'Gemini 3.8 Live', modelCode: 'gemini-3.8-live', supportsTextGeneration: false, supportsStructuredOutput: false, supportsAudioInput: true, supportsPronunciationAssessment: false, supportsLiveAudio: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Chuyên dụng cho Hub 1 Live Voice Tutor & Tạo Audio Phát Âm Mẫu (30 Giọng Teacher).', displayOrder: 13 },
+  { id: '10000000-0000-0000-0000-000000000014', displayName: 'Gemini 3.8 Live Extended Thinking', modelCode: 'gemini-3.8-live-extended-thinking', supportsTextGeneration: false, supportsStructuredOutput: false, supportsAudioInput: true, supportsPronunciationAssessment: false, supportsLiveAudio: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Chuyên dụng cho Hub 1 Live Voice Tutor & Tạo Audio Phát Âm Mẫu (Thinking Mode).', displayOrder: 14 },
 ];
 
 export const DEFAULT_SCORING_RUBRIC: ScoringRubricDto = {

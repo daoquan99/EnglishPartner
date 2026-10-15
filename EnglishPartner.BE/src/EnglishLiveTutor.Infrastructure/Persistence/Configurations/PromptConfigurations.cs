@@ -40,3 +40,24 @@ public sealed class ConversationModePromptEntityConfiguration : IEntityTypeConfi
         builder.HasIndex(e => e.ModeCode).IsUnique();
     }
 }
+
+public sealed class SpeechSpeedEntityConfiguration : IEntityTypeConfiguration<SpeechSpeedEntity>
+{
+    public void Configure(EntityTypeBuilder<SpeechSpeedEntity> builder)
+    {
+        builder.ToTable("SpeechSpeeds");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.Code).HasMaxLength(32).IsRequired();
+        builder.Property(e => e.SpeedValue).IsRequired();
+        builder.Property(e => e.Label).HasMaxLength(160).IsRequired();
+        builder.Property(e => e.DescriptionVi).HasMaxLength(400).IsRequired();
+        builder.Property(e => e.RecommendedCefrRange).HasMaxLength(32).IsRequired();
+
+        builder.ConfigureAudit<SpeechSpeedEntity, Guid>();
+        builder.ConfigureSoftDelete<SpeechSpeedEntity, Guid>();
+
+        builder.HasIndex(e => e.Code).IsUnique();
+        builder.HasIndex(e => e.DisplayOrder);
+    }
+}

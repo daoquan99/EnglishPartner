@@ -7,10 +7,13 @@ namespace EnglishLiveTutor.Application.Features.Voices.Queries.ListTeacherVoices
 public sealed record ListTeacherVoicesQuery(
     bool OnlyEnabled = true,
     bool OnlyFeatured = false,
-    string? Gender = null
-) : IQuery<List<TeacherVoiceDto>>;
+    string? Gender = null,
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<TeacherVoiceDto>>;
 
-public sealed class ListTeacherVoicesQueryHandler : IQueryHandler<ListTeacherVoicesQuery, List<TeacherVoiceDto>>
+public sealed class ListTeacherVoicesQueryHandler : IQueryHandler<ListTeacherVoicesQuery, PagedResultDto<TeacherVoiceDto>>
 {
     private readonly ITeacherVoiceRepository _voiceRepo;
 
@@ -19,10 +22,18 @@ public sealed class ListTeacherVoicesQueryHandler : IQueryHandler<ListTeacherVoi
         _voiceRepo = voiceRepo;
     }
 
-    public async Task<List<TeacherVoiceDto>> HandleAsync(ListTeacherVoicesQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<TeacherVoiceDto>> HandleAsync(ListTeacherVoicesQuery query, CancellationToken ct = default)
     {
-        var voices = await _voiceRepo.ListVoicesAsync(query.OnlyEnabled, query.OnlyFeatured, query.Gender, ct);
-        return voices.Select(v => new TeacherVoiceDto(
+        var (voices, totalCount) = await _voiceRepo.ListPagedVoicesAsync(
+            query.OnlyEnabled,
+            query.OnlyFeatured,
+            query.Gender,
+            query.Search,
+            query.Page,
+            query.PageSize,
+            ct);
+
+        var dtos = voices.Select(v => new TeacherVoiceDto(
             v.Id,
             v.Name,
             v.DisplayName,
@@ -36,5 +47,7 @@ public sealed class ListTeacherVoicesQueryHandler : IQueryHandler<ListTeacherVoi
             v.IsEnabled,
             v.DisplayOrder
         )).ToList();
+
+        return PagedResultDto<TeacherVoiceDto>.FromPage(dtos, totalCount, query.Page, query.PageSize);
     }
 }

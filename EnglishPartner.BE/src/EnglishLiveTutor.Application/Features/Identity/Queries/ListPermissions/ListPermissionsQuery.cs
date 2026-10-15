@@ -4,9 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Identity.Queries.ListPermissions;
 
-public sealed record ListPermissionsQuery() : IQuery<List<PermissionDto>>;
+public sealed record ListPermissionsQuery(
+    string? Search = null,
+    int? Page = null,
+    int? PageSize = null
+) : IQuery<PagedResultDto<PermissionDto>>;
 
-public sealed class ListPermissionsQueryHandler : IQueryHandler<ListPermissionsQuery, List<PermissionDto>>
+public sealed class ListPermissionsQueryHandler : IQueryHandler<ListPermissionsQuery, PagedResultDto<PermissionDto>>
 {
     private readonly IAppDbContextFactory _dbFactory;
 
@@ -15,14 +19,26 @@ public sealed class ListPermissionsQueryHandler : IQueryHandler<ListPermissionsQ
         _dbFactory = dbFactory;
     }
 
-    public async Task<List<PermissionDto>> HandleAsync(ListPermissionsQuery query, CancellationToken ct = default)
+    public async Task<PagedResultDto<PermissionDto>> HandleAsync(ListPermissionsQuery query, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        return await db.Permissions
-            .AsNoTracking()
+        var q = db.Permissions.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string term = query.Search.Trim().ToLowerInvariant();
+            q = q.Where(p =>
+                p.Code.ToLower().Contains(term) ||
+                p.Name.ToLower().Contains(term) ||
+                p.Module.ToLower().Contains(term) ||
+                p.Description.ToLower().Contains(term));
+        }
+
+        var projected = q
             .OrderBy(p => p.Module)
             .ThenBy(p => p.Code)
-            .Select(p => new PermissionDto(p.Id, p.Code, p.Name, p.Module, p.Description))
-            .ToListAsync(ct);
+            .Select(p => new PermissionDto(p.Id, p.Code, p.Name, p.Module, p.Description));
+
+        return await PagedResultDto<PermissionDto>.CreateAsync(projected, query.Page, query.PageSize, ct);
     }
 }

@@ -16,11 +16,16 @@ public static class ConversationEndpoints
         var group = app.MapGroup("/api/conversations");
 
         group.MapGet("/", async (
-            IQueryHandler<ListConversationsQuery, List<object>> handler,
+            HttpContext httpContext,
+            string? search,
+            int? page,
+            int? pageSize,
+            bool? paged,
+            IQueryHandler<ListConversationsQuery, PagedResultDto<object>> handler,
             CancellationToken ct) =>
         {
-            var list = await handler.HandleAsync(new ListConversationsQuery(), ct);
-            return Results.Ok(list);
+            var pagedConversations = await handler.HandleAsync(new ListConversationsQuery(search, page, pageSize), ct);
+            return pagedConversations.ToHttpResult(httpContext, paged);
         });
 
         group.MapGet("/{id}", async (

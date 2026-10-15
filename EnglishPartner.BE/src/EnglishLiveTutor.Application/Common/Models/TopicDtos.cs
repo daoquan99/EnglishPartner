@@ -32,9 +32,24 @@ public sealed record UpsertTopicRequest(
 );
 
 public sealed record SpeechSpeedOptionDto(
+    Guid Id,
+    string Code,
     double Value,
     string Label,
     string DescriptionVi,
     string RecommendedCefrRange,
-    bool IsDefault
+    bool IsDefault,
+    bool IsActive,
+    int DisplayOrder
+);
+
+public sealed record UpsertSpeechSpeedRequest(
+    string Code,
+    double Value,
+    string Label,
+    string DescriptionVi,
+    string RecommendedCefrRange = "B1 - B2",
+    bool IsDefault = false,
+    bool IsActive = true,
+    int DisplayOrder = 1
 );

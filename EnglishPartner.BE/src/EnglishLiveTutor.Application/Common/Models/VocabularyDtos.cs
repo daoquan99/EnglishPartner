@@ -66,7 +66,9 @@ public sealed record VocabularyFlashcardDto(
     decimal? LatestPronunciationScore,
     DateTimeOffset? NextReviewAt,
     int IntervalDays,
-    decimal EaseFactor
+    decimal EaseFactor,
+    string? TopicCategory = null,
+    int? FrequencyRank = null
 );
 
 public sealed record DailyVocabularyPlanResponseDto(
@@ -113,12 +115,12 @@ public sealed record SubmitPronunciationAssessmentRequest(
     string ApiKey,
     Guid VocabularyId,
     Guid SenseId,
-    string TargetType, // Word | Sentence
-    Guid? TargetId,
-    string? ReferenceText,
-    string Accent, // US | UK
-    string AssessmentModelCode,
-    string Base64Audio,
+    string TargetType = "Word", // Word | Sentence
+    Guid? TargetId = null,
+    string? ReferenceText = null,
+    string Accent = "US", // US | UK
+    string AssessmentModelCode = "gemini-3.8-flash",
+    string Base64Audio = "",
     string ContentType = "audio/webm",
     int DurationMilliseconds = 2500
 );

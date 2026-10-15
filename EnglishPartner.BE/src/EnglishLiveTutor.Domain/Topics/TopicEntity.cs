@@ -1,4 +1,3 @@
-using EnglishLiveTutor.Domain.Common.Abstractions;
 using EnglishLiveTutor.Domain.Common.Primitives;
 
 namespace EnglishLiveTutor.Domain.Topics;
@@ -7,7 +6,7 @@ namespace EnglishLiveTutor.Domain.Topics;
 /// Aggregate Root representing a curated or custom learning Topic for Live AI Tutor
 /// conversations and AI Vocabulary Generation.
 /// </summary>
-public sealed class TopicEntity : AggregateRoot<Guid>, IAuditable, ISoftDeletable
+public sealed class TopicEntity : AggregateRoot<Guid>
 {
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
@@ -22,7 +21,9 @@ public sealed class TopicEntity : AggregateRoot<Guid>, IAuditable, ISoftDeletabl
     public bool IsActive { get; private set; } = true;
     public int DisplayOrder { get; private set; } = 100;
 
-    private TopicEntity() { }
+    private TopicEntity()
+    {
+    }
 
     public TopicEntity(
         string code,
@@ -92,11 +93,9 @@ public sealed class TopicEntity : AggregateRoot<Guid>, IAuditable, ISoftDeletabl
         DisplayOrder = displayOrder;
     }
 
-    public void MarkDeleted(DateTimeOffset deletedAtUtc, string? deletedBy = null)
+    public override void SoftDelete(DateTimeOffset deletedAtUtc, string? deletedBy = null)
     {
-        IsDeleted = true;
+        base.SoftDelete(deletedAtUtc, deletedBy);
         IsActive = false;
-        DeletedAtUtc = deletedAtUtc;
-        DeletedBy = deletedBy;
     }
 }

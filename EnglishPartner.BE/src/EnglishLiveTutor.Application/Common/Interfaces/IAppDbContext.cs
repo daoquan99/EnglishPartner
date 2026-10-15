@@ -34,6 +34,7 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     // Prompts & Coaching Modes (CefrPromptBuilder in DB)
     DbSet<CefrLevelPromptEntity> CefrLevelPrompts { get; }
     DbSet<ConversationModePromptEntity> ConversationModePrompts { get; }
+    DbSet<SpeechSpeedEntity> SpeechSpeeds { get; }
 
     // Teacher Voices Catalog
     DbSet<TeacherVoiceEntity> TeacherVoices { get; }

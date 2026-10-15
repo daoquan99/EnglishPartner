@@ -48,3 +48,9 @@ export function useAssessPronunciationMutation() {
     },
   });
 }
+
+export function useSynthesizePronunciationMutation() {
+  return useMutation({
+    mutationFn: vocabularyApi.synthesizePronunciationAudio,
+  });
+}
