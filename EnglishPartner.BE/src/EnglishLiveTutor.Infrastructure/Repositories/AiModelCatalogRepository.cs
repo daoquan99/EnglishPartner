@@ -21,6 +21,18 @@ public sealed class AiModelCatalogRepository : IAiModelCatalogRepository
             .FirstOrDefaultAsync(m => m.ModelCode == modelCode, ct);
     }
 
+    public Task<AiModelConfigEntity?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        _db.AiModelCatalog.FirstOrDefaultAsync(m => m.Id == id, ct);
+
+    public Task AddAsync(AiModelConfigEntity model, CancellationToken ct = default)
+    {
+        _db.AiModelCatalog.Add(model);
+        return Task.CompletedTask;
+    }
+
+    public async Task SaveChangesAsync(CancellationToken ct = default) =>
+        await _db.SaveChangesAsync(ct);
+
     public async Task<List<AiModelConfigEntity>> ListTextGenerationModelsAsync(CancellationToken ct = default)
     {
         return await _db.AiModelCatalog

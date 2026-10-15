@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { Volume2, User, Bot, Sparkles, CheckCircle2, Wand2 } from 'lucide-react';
+import { Volume2, Square, User, Bot, Sparkles, CheckCircle2, Wand2 } from 'lucide-react';
 import type { BilingualTurnItem, GrammarCorrectionItem } from '../types/tutor.types';
 import { cn } from '@/shared/lib/cn';
 
 interface LiveMessengerStreamProps {
   turns: BilingualTurnItem[];
   corrections: GrammarCorrectionItem[];
+  replayingTurnId?: string | null;
+  onReplayTurnAudio?: (turn: BilingualTurnItem) => void;
   onSelectCorrection?: (correction: GrammarCorrectionItem) => void;
   onAnalyzeTurn?: (turnId: string, englishText: string) => void;
 }
@@ -13,6 +15,8 @@ interface LiveMessengerStreamProps {
 export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
   turns,
   corrections,
+  replayingTurnId = null,
+  onReplayTurnAudio,
   onSelectCorrection,
   onAnalyzeTurn,
 }) => {
@@ -22,10 +26,14 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns.length]);
 
-  const speakEnglishText = (text: string) => {
-    if (!('speechSynthesis' in window) || !text) return;
+  const handleReplayTurn = (turn: BilingualTurnItem) => {
+    if (onReplayTurnAudio) {
+      onReplayTurnAudio(turn);
+      return;
+    }
+    if (!('speechSynthesis' in window) || !turn.englishLine1) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(turn.englishLine1);
     utterance.lang = 'en-US';
     utterance.rate = 0.95;
     window.speechSynthesis.speak(utterance);
@@ -53,6 +61,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
       {turns.map((turn) => {
         const isUser = turn.speaker === 'user';
+        const isReplaying = replayingTurnId === turn.turnId;
         const turnCorrection = isUser
           ? corrections.find((c) => c.turnId === turn.turnId)
           : undefined;
@@ -101,16 +110,33 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
                     {turn.englishLine1 && (
                       <button
                         type="button"
-                        onClick={() => speakEnglishText(turn.englishLine1)}
-                        title="Nghe lại câu tiếng Anh"
+                        onClick={() => handleReplayTurn(turn)}
+                        title={
+                          isReplaying
+                            ? 'Dừng phát lại audio'
+                            : isUser
+                              ? 'Nghe lại câu tiếng Anh (Giọng thu âm của bạn)'
+                              : 'Nghe lại câu tiếng Anh (Giọng AI)'
+                        }
                         className={cn(
-                          'p-1 rounded-lg transition-colors cursor-pointer',
+                          'px-1.5 py-1 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1',
                           isUser
-                            ? 'text-emerald-100 hover:bg-emerald-500'
-                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                            ? isReplaying
+                              ? 'bg-white text-emerald-700 font-bold shadow-2xs'
+                              : 'text-emerald-100 hover:bg-emerald-500'
+                            : isReplaying
+                              ? 'bg-amber-100 text-amber-800 font-bold border border-amber-300'
+                              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
                         )}
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
+                        {isReplaying ? (
+                          <>
+                            <Square className="w-3 h-3 fill-current animate-pulse" />
+                            <span className="text-[10px]">Đang phát</span>
+                          </>
+                        ) : (
+                          <Volume2 className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     )}
                   </div>

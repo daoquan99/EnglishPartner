@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Volume2,
+  Square,
   Lightbulb,
   Loader2,
   Wand2,
@@ -16,14 +17,18 @@ interface GrammarCorrectionPanelProps {
   corrections: GrammarCorrectionItem[];
   isAnalyzing?: boolean;
   canAnalyzeLatestTurn?: boolean;
+  replayingTurnId?: string | null;
   onAnalyzeLatestTurn?: () => void;
+  onReplayUserTurnAudio?: (turnId: string, fallbackText: string) => void;
 }
 
 export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
   corrections,
   isAnalyzing = false,
   canAnalyzeLatestTurn = false,
+  replayingTurnId = null,
   onAnalyzeLatestTurn,
+  onReplayUserTurnAudio,
 }) => {
   const speakEnglish = (text: string) => {
     if (!('speechSynthesis' in window) || !text) return;
@@ -107,6 +112,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
           const isSameText =
             item.originalSentence.trim().toLowerCase() ===
             item.correctedSentence.trim().toLowerCase();
+          const isReplayingOriginal = replayingTurnId === item.turnId;
 
           return (
             <div
@@ -138,11 +144,25 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => speakEnglish(item.originalSentence)}
-                  title="Nghe lại câu gốc"
+                  onClick={() => {
+                    if (onReplayUserTurnAudio) {
+                      onReplayUserTurnAudio(item.turnId, item.originalSentence);
+                    } else {
+                      speakEnglish(item.originalSentence);
+                    }
+                  }}
+                  title={
+                    isReplayingOriginal
+                      ? 'Dừng phát lại'
+                      : 'Nghe lại câu gốc (Giọng thu âm của bạn)'
+                  }
                   className="p-1 rounded-lg text-rose-600 hover:bg-rose-100 shrink-0 cursor-pointer"
                 >
-                  <Volume2 className="w-3.5 h-3.5" />
+                  {isReplayingOriginal ? (
+                    <Square className="w-3.5 h-3.5 fill-current animate-pulse" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
                 </button>
               </div>
 
@@ -160,7 +180,7 @@ export const GrammarCorrectionPanel: React.FC<GrammarCorrectionPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => speakEnglish(item.correctedSentence)}
-                  title="Nghe phát âm câu đã sửa"
+                  title="Nghe phát âm mẫu câu đã sửa"
                   className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-100 shrink-0 cursor-pointer"
                 >
                   <Volume2 className="w-3.5 h-3.5" />

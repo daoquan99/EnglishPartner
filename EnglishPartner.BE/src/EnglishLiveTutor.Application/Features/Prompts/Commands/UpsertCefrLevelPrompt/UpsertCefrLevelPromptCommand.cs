@@ -8,7 +8,15 @@ namespace EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertCefrLevel
 public sealed record UpsertCefrLevelPromptCommand(
     string CefrLevel,
     UpsertCefrLevelPromptRequest Request
-) : ICommand<CefrLevelPromptEntity>;
+) : ICommand<CefrLevelPromptEntity>
+{
+    public UpsertCefrLevelPromptCommand(UpsertCefrLevelPromptRequest request)
+        : this(!string.IsNullOrWhiteSpace(request.DisplayName) && request.DisplayName.Length <= 4
+            ? request.DisplayName
+            : "B1", request)
+    {
+    }
+}
 
 public sealed class UpsertCefrLevelPromptCommandHandler : ICommandHandler<UpsertCefrLevelPromptCommand, CefrLevelPromptEntity>
 {

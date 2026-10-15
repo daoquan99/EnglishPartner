@@ -1,14 +1,20 @@
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.CreateAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.DeleteAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.UpdateAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Queries.ListAiModelConfigs;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.AssessPronunciation;
+using EnglishLiveTutor.Application.Features.Pronunciation.Commands.DeleteScoringRubric;
+using EnglishLiveTutor.Application.Features.Pronunciation.Commands.SynthesizePronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetActiveScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationHistory;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationModels;
+using EnglishLiveTutor.Application.Features.Pronunciation.Queries.ListScoringRubrics;
 using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Pronunciation;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -29,12 +35,12 @@ public static class PronunciationEndpoints
         // Synthesize Spoken Pronunciation Audio using Gemini 3.8 Live / Extended Thinking + 30 Teacher Voices + US/UK Accent
         group.MapPost("/synthesize", async (
             SynthesizePronunciationAudioRequest req,
-            ILivePronunciationTtsSynthesizer synthesizer,
+            ICommandHandler<SynthesizePronunciationAudioCommand, SynthesizePronunciationAudioResponseDto> handler,
             CancellationToken ct) =>
         {
             try
             {
-                var result = await synthesizer.SynthesizeSpeechAsync(req, ct);
+                var result = await handler.HandleAsync(new SynthesizePronunciationAudioCommand(req), ct);
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex)
@@ -50,29 +56,12 @@ public static class PronunciationEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IAppDbContextFactory dbFactory,
+            IQueryHandler<ListScoringRubricsQuery, PagedResultDto<ScoringRubricEntity>> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var query = db.ScoringRubrics
-                .AsNoTracking()
-                .Include(r => r.Criteria.OrderBy(c => c.DisplayOrder))
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                string term = search.Trim().ToLowerInvariant();
-                query = query.Where(r =>
-                    r.Code.ToLower().Contains(term) ||
-                    r.Name.ToLower().Contains(term) ||
-                    r.Description.ToLower().Contains(term));
-            }
-
-            var ordered = query
-                .OrderByDescending(r => r.IsActive)
-                .ThenBy(r => r.Code);
-
-            return await ordered.ToPaginatedOrListResultAsync(httpContext, page, pageSize, paged, ct);
+            int? effectivePage = page ?? (paged == true ? 1 : null);
+            var result = await handler.HandleAsync(new ListScoringRubricsQuery(search, effectivePage, pageSize), ct);
+            return result.ToHttpResult(httpContext, paged);
         });
 
         group.MapGet("/rubrics/active", async (
@@ -90,10 +79,7 @@ public static class PronunciationEndpoints
         {
             try
             {
-                string code = string.IsNullOrWhiteSpace(req.Name)
-                    ? $"RUBRIC_{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}"
-                    : req.Name.Trim().ToUpperInvariant().Replace(' ', '_');
-                var created = await handler.HandleAsync(new UpdateScoringRubricCommand(code, req), ct);
+                var created = await handler.HandleAsync(new UpdateScoringRubricCommand(req), ct);
                 return Results.Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -121,16 +107,11 @@ public static class PronunciationEndpoints
 
         group.MapDelete("/rubrics/{code}", async (
             string code,
-            ICurrentUser currentUser,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<DeleteScoringRubricCommand, bool> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var rubric = await db.ScoringRubrics.FirstOrDefaultAsync(r => r.Code == code, ct);
-            if (rubric is null) return Results.NotFound();
-            rubric.SoftDelete(DateTimeOffset.UtcNow, currentUser.UserIdOrSystem);
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            bool deleted = await handler.HandleAsync(new DeleteScoringRubricCommand(code), ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("rubrics.manage");
 
         group.MapPost("/assessments", async (
@@ -173,109 +154,54 @@ public static class PronunciationEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IAppDbContextFactory dbFactory,
+            IQueryHandler<ListAiModelConfigsQuery, PagedResultDto<AiModelConfigEntity>> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var query = db.AiModelCatalog.AsNoTracking().AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                string term = search.Trim().ToLowerInvariant();
-                query = query.Where(m =>
-                    m.DisplayName.ToLower().Contains(term) ||
-                    m.ModelCode.ToLower().Contains(term) ||
-                    (m.CapabilityNote != null && m.CapabilityNote.ToLower().Contains(term)));
-            }
-
-            var ordered = query
-                .OrderBy(m => m.DisplayOrder)
-                .ThenBy(m => m.DisplayName);
-
-            return await ordered.ToPaginatedOrListResultAsync(httpContext, page, pageSize, paged, ct);
+            int? effectivePage = page ?? (paged == true ? 1 : null);
+            var result = await handler.HandleAsync(new ListAiModelConfigsQuery(search, effectivePage, pageSize), ct);
+            return result.ToHttpResult(httpContext, paged);
         });
 
         modelsGroup.MapPost("/", async (
             UpsertAiModelConfigRequest req,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<CreateAiModelConfigCommand, AiModelConfigEntity> handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(req.ModelCode))
-                return Results.BadRequest(new { error = "Mã Model (ModelCode) không được để trống." });
-
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var entity = new AiModelConfigEntity(
-                displayName: string.IsNullOrWhiteSpace(req.DisplayName) ? req.ModelCode : req.DisplayName.Trim(),
-                modelCode: req.ModelCode.Trim(),
-                routedModelCode: string.IsNullOrWhiteSpace(req.RoutedModelCode) ? null : req.RoutedModelCode.Trim(),
-                supportsTextGeneration: req.SupportsTextGeneration,
-                supportsStructuredOutput: req.SupportsStructuredOutput,
-                supportsAudioInput: req.SupportsAudioInput,
-                supportsPronunciationAssessment: req.SupportsPronunciationAssessment,
-                supportsLiveAudio: req.SupportsLiveAudio,
-                supportsTranscription: req.SupportsTranscription,
-                supportsTranslation: req.SupportsTranslation,
-                supportsStreaming: req.SupportsStreaming,
-                isAvailable: req.IsAvailable,
-                isDeprecated: req.IsDeprecated,
-                isEnabled: req.IsEnabled,
-                capabilityNote: req.CapabilityNote ?? string.Empty,
-                displayOrder: req.DisplayOrder);
-
-            db.AiModelCatalog.Add(entity);
-            await db.SaveChangesAsync(ct);
-            return Results.Ok(entity);
+            try
+            {
+                var result = await handler.HandleAsync(new CreateAiModelConfigCommand(req), ct);
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequirePermission("rubrics.manage");
 
         modelsGroup.MapPut("/{id:guid}", async (
             Guid id,
             UpsertAiModelConfigRequest req,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<UpdateAiModelConfigCommand, AiModelConfigEntity?> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var existing = await db.AiModelCatalog.FirstOrDefaultAsync(m => m.Id == id, ct);
-            if (existing is null) return Results.NotFound(new { error = "Không tìm thấy AI Model." });
-
-            db.AiModelCatalog.Remove(existing);
-            await db.SaveChangesAsync(ct);
-
-            var updated = new AiModelConfigEntity(
-                displayName: string.IsNullOrWhiteSpace(req.DisplayName) ? req.ModelCode : req.DisplayName.Trim(),
-                modelCode: req.ModelCode.Trim(),
-                routedModelCode: string.IsNullOrWhiteSpace(req.RoutedModelCode) ? null : req.RoutedModelCode.Trim(),
-                supportsTextGeneration: req.SupportsTextGeneration,
-                supportsStructuredOutput: req.SupportsStructuredOutput,
-                supportsAudioInput: req.SupportsAudioInput,
-                supportsPronunciationAssessment: req.SupportsPronunciationAssessment,
-                supportsLiveAudio: req.SupportsLiveAudio,
-                supportsTranscription: req.SupportsTranscription,
-                supportsTranslation: req.SupportsTranslation,
-                supportsStreaming: req.SupportsStreaming,
-                isAvailable: req.IsAvailable,
-                isDeprecated: req.IsDeprecated,
-                isEnabled: req.IsEnabled,
-                capabilityNote: req.CapabilityNote ?? string.Empty,
-                displayOrder: req.DisplayOrder,
-                id: id);
-
-            db.AiModelCatalog.Add(updated);
-            await db.SaveChangesAsync(ct);
-            return Results.Ok(updated);
+            try
+            {
+                var result = await handler.HandleAsync(new UpdateAiModelConfigCommand(id, req), ct);
+                return result is null ? Results.NotFound(new { error = "Không tìm thấy AI Model." }) : Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequirePermission("rubrics.manage");
 
         modelsGroup.MapDelete("/{id:guid}", async (
             Guid id,
-            ICurrentUser currentUser,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<DeleteAiModelConfigCommand, bool> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var existing = await db.AiModelCatalog.FirstOrDefaultAsync(m => m.Id == id, ct);
-            if (existing is null) return Results.NotFound();
-            existing.SoftDelete(DateTimeOffset.UtcNow, currentUser.UserIdOrSystem);
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            bool deleted = await handler.HandleAsync(new DeleteAiModelConfigCommand(id), ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("rubrics.manage");
 
         return app;

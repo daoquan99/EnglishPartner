@@ -1,14 +1,18 @@
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteCefrLevelPrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteConversationModePrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteSpeechSpeed;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.UpdateSpeechSpeed;
 using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertCefrLevelPrompt;
 using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertConversationModePrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertSpeechSpeed;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListCefrLevelPrompts;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListConversationModePrompts;
+using EnglishLiveTutor.Application.Features.Prompts.Queries.ListSpeechSpeeds;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.PreviewSystemPrompt;
 using EnglishLiveTutor.Domain.Prompts;
-using EnglishLiveTutor.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
@@ -26,166 +30,54 @@ public static class PromptEndpoints
             int? page,
             int? pageSize,
             bool? paged,
-            IAppDbContextFactory dbFactory,
+            IQueryHandler<ListSpeechSpeedsQuery, PagedResultDto<SpeechSpeedOptionDto>> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var query = db.SpeechSpeeds.AsNoTracking().AsQueryable();
-            if (onlyActive ?? true)
-            {
-                query = query.Where(s => s.IsActive);
-            }
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                string term = search.Trim().ToLowerInvariant();
-                query = query.Where(s =>
-                    s.Code.ToLower().Contains(term) ||
-                    s.Label.ToLower().Contains(term) ||
-                    s.DescriptionVi.ToLower().Contains(term) ||
-                    s.RecommendedCefrRange.ToLower().Contains(term));
-            }
-
-            var projected = query
-                .OrderBy(s => s.DisplayOrder)
-                .ThenBy(s => s.SpeedValue)
-                .Select(s => new SpeechSpeedOptionDto(
-                    s.Id,
-                    s.Code,
-                    s.SpeedValue,
-                    s.Label,
-                    s.DescriptionVi,
-                    s.RecommendedCefrRange,
-                    s.IsDefault,
-                    s.IsActive,
-                    s.DisplayOrder));
-
-            var pagedResult = await PagedResultDto<SpeechSpeedOptionDto>.CreateAsync(projected, page, pageSize, ct);
-            if (pagedResult.TotalCount == 0 && string.IsNullOrWhiteSpace(search))
-            {
-                var defaults = DatabaseSeeder.BuildDefaultSpeechSpeeds()
-                    .Select(s => new SpeechSpeedOptionDto(
-                        s.Id,
-                        s.Code,
-                        s.SpeedValue,
-                        s.Label,
-                        s.DescriptionVi,
-                        s.RecommendedCefrRange,
-                        s.IsDefault,
-                        s.IsActive,
-                        s.DisplayOrder))
-                    .ToList();
-                pagedResult = PagedResultDto<SpeechSpeedOptionDto>.FromPage(defaults, defaults.Count, page, pageSize);
-            }
-
-            return pagedResult.ToHttpResult(httpContext, paged);
+            int? effectivePage = page ?? (paged == true ? 1 : null);
+            var result = await handler.HandleAsync(new ListSpeechSpeedsQuery(onlyActive, search, effectivePage, pageSize), ct);
+            return result.ToHttpResult(httpContext, paged);
         });
 
         group.MapPost("/speech-speeds", async (
             UpsertSpeechSpeedRequest req,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<UpsertSpeechSpeedCommand, SpeechSpeedOptionDto> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            if (req.IsDefault)
+            try
             {
-                var currentDefaults = await db.SpeechSpeeds.Where(x => x.IsDefault).ToListAsync(ct);
-                foreach (var d in currentDefaults)
-                {
-                    d.UpdateDetails(d.Code, d.SpeedValue, d.Label, d.DescriptionVi, d.RecommendedCefrRange, false, d.IsActive, d.DisplayOrder);
-                }
+                var result = await handler.HandleAsync(new UpsertSpeechSpeedCommand(req), ct);
+                return Results.Ok(result);
             }
-
-            var existing = await db.SpeechSpeeds
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(x => x.Code == req.Code.Trim(), ct);
-
-            if (existing is not null)
+            catch (InvalidOperationException ex)
             {
-                existing.Restore();
-                existing.UpdateDetails(
-                    req.Code,
-                    req.Value,
-                    req.Label,
-                    req.DescriptionVi,
-                    req.RecommendedCefrRange,
-                    req.IsDefault,
-                    req.IsActive,
-                    req.DisplayOrder);
-                await db.SaveChangesAsync(ct);
-                return Results.Ok(new SpeechSpeedOptionDto(
-                    existing.Id, existing.Code, existing.SpeedValue, existing.Label,
-                    existing.DescriptionVi, existing.RecommendedCefrRange, existing.IsDefault,
-                    existing.IsActive, existing.DisplayOrder));
+                return Results.BadRequest(new { error = ex.Message });
             }
-
-            var entity = new SpeechSpeedEntity(
-                req.Code,
-                req.Value,
-                req.Label,
-                req.DescriptionVi,
-                req.RecommendedCefrRange,
-                req.IsDefault,
-                req.IsActive,
-                req.DisplayOrder);
-
-            db.SpeechSpeeds.Add(entity);
-            await db.SaveChangesAsync(ct);
-
-            return Results.Ok(new SpeechSpeedOptionDto(
-                entity.Id, entity.Code, entity.SpeedValue, entity.Label,
-                entity.DescriptionVi, entity.RecommendedCefrRange, entity.IsDefault,
-                entity.IsActive, entity.DisplayOrder));
         }).RequirePermission("prompts.manage");
 
         group.MapPut("/speech-speeds/{id:guid}", async (
             Guid id,
             UpsertSpeechSpeedRequest req,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<UpdateSpeechSpeedCommand, SpeechSpeedOptionDto?> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var entity = await db.SpeechSpeeds.FirstOrDefaultAsync(x => x.Id == id, ct);
-            if (entity is null) return Results.NotFound(new { error = "Không tìm thấy cấu hình tốc độ nói." });
-
-            if (req.IsDefault)
+            try
             {
-                var others = await db.SpeechSpeeds.Where(x => x.Id != id && x.IsDefault).ToListAsync(ct);
-                foreach (var o in others)
-                {
-                    o.UpdateDetails(o.Code, o.SpeedValue, o.Label, o.DescriptionVi, o.RecommendedCefrRange, false, o.IsActive, o.DisplayOrder);
-                }
+                var result = await handler.HandleAsync(new UpdateSpeechSpeedCommand(id, req), ct);
+                return result is null ? Results.NotFound(new { error = "Không tìm thấy cấu hình tốc độ nói." }) : Results.Ok(result);
             }
-
-            entity.UpdateDetails(
-                req.Code,
-                req.Value,
-                req.Label,
-                req.DescriptionVi,
-                req.RecommendedCefrRange,
-                req.IsDefault,
-                req.IsActive,
-                req.DisplayOrder);
-            await db.SaveChangesAsync(ct);
-
-            return Results.Ok(new SpeechSpeedOptionDto(
-                entity.Id, entity.Code, entity.SpeedValue, entity.Label,
-                entity.DescriptionVi, entity.RecommendedCefrRange, entity.IsDefault,
-                entity.IsActive, entity.DisplayOrder));
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequirePermission("prompts.manage");
 
         group.MapDelete("/speech-speeds/{id:guid}", async (
             Guid id,
-            ICurrentUser currentUser,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<DeleteSpeechSpeedCommand, bool> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            var entity = await db.SpeechSpeeds.FirstOrDefaultAsync(x => x.Id == id, ct);
-            if (entity is null) return Results.NotFound();
-            entity.SoftDelete(DateTimeOffset.UtcNow, currentUser.UserIdOrSystem);
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            bool deleted = await handler.HandleAsync(new DeleteSpeechSpeedCommand(id), ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("prompts.manage");
 
         // --- 2. CEFR Level Prompts CRUD ---
@@ -209,10 +101,7 @@ public static class PromptEndpoints
         {
             try
             {
-                string levelCode = !string.IsNullOrWhiteSpace(req.DisplayName) && req.DisplayName.Length <= 4
-                    ? req.DisplayName
-                    : "B1";
-                var created = await handler.HandleAsync(new UpsertCefrLevelPromptCommand(levelCode, req), ct);
+                var created = await handler.HandleAsync(new UpsertCefrLevelPromptCommand(req), ct);
                 return Results.Ok(created);
             }
             catch (InvalidOperationException ex)
@@ -240,17 +129,11 @@ public static class PromptEndpoints
 
         group.MapDelete("/cefr-levels/{cefrLevel}", async (
             string cefrLevel,
-            ICurrentUser currentUser,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<DeleteCefrLevelPromptCommand, bool> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            string norm = cefrLevel.Trim().ToUpperInvariant();
-            var entity = await db.CefrLevelPrompts.FirstOrDefaultAsync(x => x.CefrLevel == norm, ct);
-            if (entity is null) return Results.NotFound();
-            entity.SoftDelete(DateTimeOffset.UtcNow, currentUser.UserIdOrSystem);
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            bool deleted = await handler.HandleAsync(new DeleteCefrLevelPromptCommand(cefrLevel), ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("prompts.manage");
 
         // --- 3. Conversation Mode Prompts CRUD ---
@@ -302,17 +185,11 @@ public static class PromptEndpoints
 
         group.MapDelete("/modes/{modeCode}", async (
             string modeCode,
-            ICurrentUser currentUser,
-            IAppDbContextFactory dbFactory,
+            ICommandHandler<DeleteConversationModePromptCommand, bool> handler,
             CancellationToken ct) =>
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
-            string norm = modeCode.Trim().ToLowerInvariant();
-            var entity = await db.ConversationModePrompts.FirstOrDefaultAsync(x => x.ModeCode == norm, ct);
-            if (entity is null) return Results.NotFound();
-            entity.SoftDelete(DateTimeOffset.UtcNow, currentUser.UserIdOrSystem);
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            bool deleted = await handler.HandleAsync(new DeleteConversationModePromptCommand(modeCode), ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequirePermission("prompts.manage");
 
         // --- 4. System Instruction Preview ---

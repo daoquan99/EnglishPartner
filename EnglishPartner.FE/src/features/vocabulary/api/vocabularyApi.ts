@@ -4,11 +4,16 @@ import type {
   SynthesizePronunciationAudioResponseDto,
 } from '@/shared/api/openapi.types';
 import type {
+  BuildVocabularyGenerationPromptRequestDto,
   DailyVocabularyPlanResponseDto,
   GenerateVocabularyRequestDto,
+  ImportVocabularyJsonRequestDto,
+  PronunciationAssessmentApiResultDto,
   PronunciationAssessmentResultDto,
+  SubmitPronunciationAssessmentRequestDto,
   SubmitVocabularyReviewRequestDto,
   VocabularyFlashcardDto,
+  VocabularyGenerationPromptDto,
 } from '../types/vocabulary.types';
 
 const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
@@ -203,6 +208,28 @@ export const vocabularyApi = {
   ): Promise<VocabularyFlashcardDto[]> {
     const { data } = await httpClient.post<VocabularyFlashcardDto[]>(
       '/api/vocabularies/generate',
+      payload,
+      // Allow one minute beyond the backend's 3000-second generation timeout.
+      { timeout: 3_060_000 }
+    );
+    return data;
+  },
+
+  async buildGenerationPrompt(
+    payload: BuildVocabularyGenerationPromptRequestDto
+  ): Promise<VocabularyGenerationPromptDto> {
+    const { data } = await httpClient.post<VocabularyGenerationPromptDto>(
+      '/api/vocabularies/generation/prompt',
+      payload
+    );
+    return data;
+  },
+
+  async importVocabularyJson(
+    payload: ImportVocabularyJsonRequestDto
+  ): Promise<VocabularyFlashcardDto[]> {
+    const { data } = await httpClient.post<VocabularyFlashcardDto[]>(
+      '/api/vocabularies/generation/import',
       payload
     );
     return data;
@@ -212,18 +239,52 @@ export const vocabularyApi = {
     apiKey: string;
     userId?: string;
     vocabularyId: string;
-    senseId?: string;
+    senseId: string;
     exampleId?: string;
     referenceText: string;
     audioBase64: string;
     mimeType: string;
     durationMs: number;
     modelCode: string;
+    accent?: 'US' | 'UK';
   }): Promise<PronunciationAssessmentResultDto> {
-    const { data } = await httpClient.post<PronunciationAssessmentResultDto>(
+    const request: SubmitPronunciationAssessmentRequestDto = {
+      apiKey: payload.apiKey,
+      vocabularyId: payload.vocabularyId,
+      senseId: payload.senseId,
+      targetType: payload.exampleId ? 'Sentence' : 'Word',
+      targetId: payload.exampleId,
+      referenceText: payload.referenceText,
+      accent: payload.accent ?? 'US',
+      assessmentModelCode: payload.modelCode,
+      base64Audio: payload.audioBase64,
+      contentType: payload.mimeType,
+      durationMilliseconds: payload.durationMs,
+    };
+    const { data } = await httpClient.post<PronunciationAssessmentApiResultDto>(
       '/api/pronunciation/assessments',
-      payload
+      request
     );
-    return data;
+    return {
+      assessmentId: data.assessmentId,
+      overallScore: data.overallScore,
+      isAssessable: data.isAssessable,
+      status: data.status,
+      recognizedTranscript: data.recognizedText ?? '',
+      referenceText: data.expectedText,
+      modelCodeUsed: data.modelCode,
+      rubricCode: data.rubricCode,
+      phonemeAndStressFeedbackVi: [...data.strengths, ...data.improvements].join('\n'),
+      coachingSuggestionVi: data.suggestedPractice.join('\n'),
+      criterionScores: data.criteria.map((criterion) => ({
+        criterionCode: criterion.code,
+        criterionName: criterion.name,
+        weight: criterion.weight,
+        score: criterion.score,
+        weightedScore: criterion.weightedScore,
+        feedbackVi: criterion.feedback,
+      })),
+      assessedAtUtc: data.createdAt,
+    };
   },
 };

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vocabularyApi } from '../api/vocabularyApi';
 import type {
+  BuildVocabularyGenerationPromptRequestDto,
   GenerateVocabularyRequestDto,
+  ImportVocabularyJsonRequestDto,
   SubmitVocabularyReviewRequestDto,
 } from '../types/vocabulary.types';
 
@@ -52,5 +54,23 @@ export function useAssessPronunciationMutation() {
 export function useSynthesizePronunciationMutation() {
   return useMutation({
     mutationFn: vocabularyApi.synthesizePronunciationAudio,
+  });
+}
+
+export function useBuildVocabularyGenerationPromptMutation() {
+  return useMutation({
+    mutationFn: (payload: BuildVocabularyGenerationPromptRequestDto) =>
+      vocabularyApi.buildGenerationPrompt(payload),
+  });
+}
+
+export function useImportVocabularyJsonMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ImportVocabularyJsonRequestDto) =>
+      vocabularyApi.importVocabularyJson(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'today-plan'] });
+    },
   });
 }

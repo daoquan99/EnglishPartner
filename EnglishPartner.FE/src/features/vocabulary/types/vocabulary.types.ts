@@ -87,6 +87,30 @@ export interface GenerateVocabularyRequestDto {
   userId?: string;
 }
 
+export interface BuildVocabularyGenerationPromptRequestDto {
+  requestedCount: number;
+  cefrLevel: CefrLevel;
+  topic?: string | null;
+  excludedWords?: string[];
+}
+
+export interface VocabularyGenerationPromptDto {
+  prompt: string;
+  promptVersion: string;
+  requestedCount: number;
+  cefrLevel: CefrLevel;
+  topic: string;
+  excludedWords: string[];
+}
+
+export interface ImportVocabularyJsonRequestDto {
+  jsonText: string;
+  modelCode?: string;
+  cefrLevel: CefrLevel;
+  topic?: string | null;
+  assignToTodayPlan?: boolean;
+}
+
 export interface SubmitVocabularyReviewRequestDto {
   userId?: string;
   vocabularyId: string;
@@ -104,10 +128,48 @@ export interface CriterionScoreDto {
   feedbackVi: string;
 }
 
+export interface SubmitPronunciationAssessmentRequestDto {
+  apiKey: string;
+  vocabularyId: string;
+  senseId: string;
+  targetType: 'Word' | 'Sentence';
+  targetId?: string;
+  referenceText: string;
+  accent: 'US' | 'UK';
+  assessmentModelCode: string;
+  base64Audio: string;
+  contentType: string;
+  durationMilliseconds: number;
+}
+
+export interface PronunciationAssessmentApiResultDto {
+  assessmentId: string;
+  overallScore: number | null;
+  expectedText: string;
+  recognizedText: string | null;
+  modelCode: string;
+  rubricCode: string;
+  isAssessable: boolean;
+  status: string;
+  criteria: {
+    code: string;
+    name: string;
+    weight: number;
+    score: number;
+    weightedScore: number;
+    feedback: string;
+  }[];
+  strengths: string[];
+  improvements: string[];
+  suggestedPractice: string[];
+  createdAt: string;
+}
+
 export interface PronunciationAssessmentResultDto {
   assessmentId: string;
-  overallScore: number;
-  cefrPronunciationGrade: string;
+  overallScore: number | null;
+  isAssessable: boolean;
+  status: string;
   recognizedTranscript: string;
   referenceText: string;
   modelCodeUsed: string;

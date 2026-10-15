@@ -11,7 +11,7 @@ public sealed record RegisterUserRequest(
 );
 
 public sealed record LoginRequest(
-    string EmailOrUsername,
+    string UsernameOrEmail,
     string Password,
     string? DeviceInfo = null
 );

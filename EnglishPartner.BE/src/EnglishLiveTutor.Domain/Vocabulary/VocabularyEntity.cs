@@ -152,6 +152,25 @@ public sealed class VocabularyEntity : AggregateRoot<Guid>
 
     public void Activate() => IsActive = true;
 
+    public void UpdateDetails(string word, int? frequencyRank, string? topicCategory)
+    {
+        string normalized = NormalizeWord(word);
+        if (string.IsNullOrWhiteSpace(normalized))
+            throw new InvalidOperationException("Từ vựng không được để trống.");
+
+        Word = word.Trim();
+        NormalizedWord = normalized;
+        FrequencyRank = frequencyRank;
+        TopicCategory = string.IsNullOrWhiteSpace(topicCategory) ? null : topicCategory.Trim();
+        SourceType = "AdminUpdated";
+    }
+
+    public void ClearPronunciationsAndWordFamilies()
+    {
+        _pronunciations.Clear();
+        _wordFamilies.Clear();
+    }
+
     public void Deactivate() => IsActive = false;
 
     public static string NormalizeWord(string raw)

@@ -31,10 +31,10 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, AuthResp
     public async Task<AuthResponseDto> HandleAsync(LoginCommand command, CancellationToken ct = default)
     {
         var req = command.Request;
-        if (string.IsNullOrWhiteSpace(req.EmailOrUsername) || string.IsNullOrWhiteSpace(req.Password))
+        if (string.IsNullOrWhiteSpace(req.UsernameOrEmail) || string.IsNullOrWhiteSpace(req.Password))
             throw new InvalidOperationException("Vui lòng nhập tài khoản và mật khẩu.");
 
-        var user = await _userRepo.GetByEmailOrUsernameWithDetailsAsync(req.EmailOrUsername, ct);
+        var user = await _userRepo.GetByEmailOrUsernameWithDetailsAsync(req.UsernameOrEmail, ct);
         if (user is null || !user.IsActive)
             throw new InvalidOperationException("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa.");
 

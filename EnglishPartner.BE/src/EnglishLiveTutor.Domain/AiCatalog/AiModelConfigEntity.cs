@@ -71,6 +71,47 @@ public sealed class AiModelConfigEntity : AggregateRoot<Guid>
         DisplayOrder = displayOrder;
     }
 
+    public void UpdateConfiguration(
+        string displayName,
+        string modelCode,
+        string? routedModelCode,
+        bool supportsTextGeneration,
+        bool supportsStructuredOutput,
+        bool supportsAudioInput,
+        bool supportsPronunciationAssessment,
+        bool supportsLiveAudio,
+        bool supportsTranscription,
+        bool supportsTranslation,
+        bool supportsStreaming,
+        bool isAvailable,
+        bool isDeprecated,
+        bool isEnabled,
+        string? capabilityNote,
+        int displayOrder)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+            throw new InvalidOperationException("Display name is required.");
+        if (string.IsNullOrWhiteSpace(modelCode))
+            throw new InvalidOperationException("Mã Model (ModelCode) không được để trống.");
+
+        DisplayName = displayName.Trim();
+        ModelCode = modelCode.Trim();
+        RoutedModelCode = string.IsNullOrWhiteSpace(routedModelCode) ? null : routedModelCode.Trim();
+        SupportsTextGeneration = supportsTextGeneration;
+        SupportsStructuredOutput = supportsStructuredOutput;
+        SupportsAudioInput = supportsAudioInput;
+        SupportsPronunciationAssessment = supportsPronunciationAssessment;
+        SupportsLiveAudio = supportsLiveAudio;
+        SupportsTranscription = supportsTranscription;
+        SupportsTranslation = supportsTranslation;
+        SupportsStreaming = supportsStreaming;
+        IsAvailable = isAvailable;
+        IsDeprecated = isDeprecated;
+        IsEnabled = isEnabled;
+        CapabilityNote = capabilityNote;
+        DisplayOrder = displayOrder;
+    }
+
     public string GetEffectiveModelCode()
     {
         return IsDeprecated && !string.IsNullOrWhiteSpace(RoutedModelCode)

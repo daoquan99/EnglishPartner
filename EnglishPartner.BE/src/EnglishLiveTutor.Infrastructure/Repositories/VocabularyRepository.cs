@@ -1,4 +1,5 @@
 using EnglishLiveTutor.Domain.Vocabulary;
+using EnglishLiveTutor.Domain.Vocabulary.Entities;
 using EnglishLiveTutor.Domain.Vocabulary.Repositories;
 using EnglishLiveTutor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,17 @@ public sealed class VocabularyRepository : IVocabularyRepository
     {
         _db.VocabularyGenerationAudits.Add(audit);
         return Task.CompletedTask;
+    }
+
+    public void RemoveFlashcardDetails(VocabularyEntity vocabulary, VocabularySenseEntity? sense)
+    {
+        _db.VocabularyPronunciations.RemoveRange(vocabulary.Pronunciations);
+        _db.VocabularyWordFamilies.RemoveRange(vocabulary.WordFamilies);
+        if (sense is null) return;
+        _db.VocabularyRelations.RemoveRange(sense.Relations);
+        _db.VocabularyCollocations.RemoveRange(sense.Collocations);
+        _db.VocabularyExamples.RemoveRange(sense.Examples);
+        _db.VocabularyGrammarPatterns.RemoveRange(sense.GrammarPatterns);
     }
 
     public async Task SaveChangesAsync(CancellationToken ct = default)

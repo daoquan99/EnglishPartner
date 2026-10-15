@@ -1,5 +1,9 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.CreateAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.DeleteAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Commands.UpdateAiModelConfig;
+using EnglishLiveTutor.Application.Features.AiModels.Queries.ListAiModelConfigs;
 using EnglishLiveTutor.Application.Features.Conversations.Commands.CreateConversation;
 using EnglishLiveTutor.Application.Features.Conversations.Commands.DeleteConversation;
 using EnglishLiveTutor.Application.Features.Conversations.Commands.UpdateConversationSettings;
@@ -23,23 +27,39 @@ using EnglishLiveTutor.Application.Features.Learning.Commands.SubmitVocabularyRe
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetDailyVocabularyPlan;
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetLearningHistory;
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetLearningProgress;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteCefrLevelPrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteConversationModePrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteSpeechSpeed;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.UpdateSpeechSpeed;
 using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertCefrLevelPrompt;
 using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertConversationModePrompt;
+using EnglishLiveTutor.Application.Features.Prompts.Commands.UpsertSpeechSpeed;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListCefrLevelPrompts;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListConversationModePrompts;
+using EnglishLiveTutor.Application.Features.Prompts.Queries.ListSpeechSpeeds;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.PreviewSystemPrompt;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.AssessPronunciation;
+using EnglishLiveTutor.Application.Features.Pronunciation.Commands.DeleteScoringRubric;
+using EnglishLiveTutor.Application.Features.Pronunciation.Commands.SynthesizePronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetActiveScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationHistory;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationModels;
+using EnglishLiveTutor.Application.Features.Pronunciation.Queries.ListScoringRubrics;
 using EnglishLiveTutor.Application.Features.Topics.Commands.DeleteTopic;
 using EnglishLiveTutor.Application.Features.Topics.Commands.UpsertTopic;
 using EnglishLiveTutor.Application.Features.Topics.Queries.GetTopicById;
 using EnglishLiveTutor.Application.Features.Topics.Queries.ListTopics;
+using EnglishLiveTutor.Application.Features.Vocabulary.Commands.CreateVocabulary;
+using EnglishLiveTutor.Application.Features.Vocabulary.Commands.DeleteVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
+using EnglishLiveTutor.Application.Features.Vocabulary;
+using EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
+using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
+using EnglishLiveTutor.Application.Features.Vocabulary.Commands.UpdateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyFlashcard;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyGenerationModels;
+using EnglishLiveTutor.Application.Features.Vocabulary.Queries.ListVocabularyFlashcards;
 using EnglishLiveTutor.Application.Features.Voices.Commands.UpsertTeacherVoice;
 using EnglishLiveTutor.Application.Features.Voices.Queries.GetTeacherVoiceById;
 using EnglishLiveTutor.Application.Features.Voices.Queries.ListTeacherVoices;
@@ -167,6 +187,9 @@ public static class DependencyInjection
 
         // Vocabulary
         services.AddTransient<GenerateVocabularyCommandHandler>();
+        services.AddTransient<VocabularyGenerationWriter>();
+        services.AddTransient<IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto>, BuildVocabularyGenerationPromptQueryHandler>();
+        services.AddTransient<ICommandHandler<ImportVocabularyJsonCommand, List<VocabularyFlashcardDto>>, ImportVocabularyJsonCommandHandler>();
         services.AddTransient<ICommandHandler<GenerateVocabularyCommand, List<VocabularyFlashcardDto>>>(sp => sp.GetRequiredService<GenerateVocabularyCommandHandler>());
 
         services.AddTransient<GetVocabularyFlashcardQueryHandler>();
@@ -206,6 +229,58 @@ public static class DependencyInjection
 
         services.AddTransient<GetPronunciationHistoryQueryHandler>();
         services.AddTransient<IQueryHandler<GetPronunciationHistoryQuery, List<PronunciationAssessmentResultDto>>>(sp => sp.GetRequiredService<GetPronunciationHistoryQueryHandler>());
+
+        // Catalog and admin CQRS handlers.
+        services.AddTransient<ListVocabularyFlashcardsQueryHandler>();
+        services.AddTransient<IQueryHandler<ListVocabularyFlashcardsQuery, PagedResultDto<VocabularyFlashcardDto>>>(sp => sp.GetRequiredService<ListVocabularyFlashcardsQueryHandler>());
+
+        services.AddTransient<ListScoringRubricsQueryHandler>();
+        services.AddTransient<IQueryHandler<ListScoringRubricsQuery, PagedResultDto<ScoringRubricEntity>>>(sp => sp.GetRequiredService<ListScoringRubricsQueryHandler>());
+
+        services.AddTransient<ListAiModelConfigsQueryHandler>();
+        services.AddTransient<IQueryHandler<ListAiModelConfigsQuery, PagedResultDto<AiModelConfigEntity>>>(sp => sp.GetRequiredService<ListAiModelConfigsQueryHandler>());
+
+        services.AddTransient<ListSpeechSpeedsQueryHandler>();
+        services.AddTransient<IQueryHandler<ListSpeechSpeedsQuery, PagedResultDto<SpeechSpeedOptionDto>>>(sp => sp.GetRequiredService<ListSpeechSpeedsQueryHandler>());
+
+        services.AddTransient<DeleteVocabularyCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteVocabularyCommand, bool>>(sp => sp.GetRequiredService<DeleteVocabularyCommandHandler>());
+
+        services.AddTransient<DeleteScoringRubricCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteScoringRubricCommand, bool>>(sp => sp.GetRequiredService<DeleteScoringRubricCommandHandler>());
+
+        services.AddTransient<DeleteAiModelConfigCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteAiModelConfigCommand, bool>>(sp => sp.GetRequiredService<DeleteAiModelConfigCommandHandler>());
+
+        services.AddTransient<DeleteSpeechSpeedCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteSpeechSpeedCommand, bool>>(sp => sp.GetRequiredService<DeleteSpeechSpeedCommandHandler>());
+
+        services.AddTransient<DeleteCefrLevelPromptCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteCefrLevelPromptCommand, bool>>(sp => sp.GetRequiredService<DeleteCefrLevelPromptCommandHandler>());
+
+        services.AddTransient<DeleteConversationModePromptCommandHandler>();
+        services.AddTransient<ICommandHandler<DeleteConversationModePromptCommand, bool>>(sp => sp.GetRequiredService<DeleteConversationModePromptCommandHandler>());
+
+        services.AddTransient<UpsertSpeechSpeedCommandHandler>();
+        services.AddTransient<ICommandHandler<UpsertSpeechSpeedCommand, SpeechSpeedOptionDto>>(sp => sp.GetRequiredService<UpsertSpeechSpeedCommandHandler>());
+
+        services.AddTransient<UpdateSpeechSpeedCommandHandler>();
+        services.AddTransient<ICommandHandler<UpdateSpeechSpeedCommand, SpeechSpeedOptionDto?>>(sp => sp.GetRequiredService<UpdateSpeechSpeedCommandHandler>());
+
+        services.AddTransient<CreateVocabularyCommandHandler>();
+        services.AddTransient<ICommandHandler<CreateVocabularyCommand, VocabularyFlashcardDto>>(sp => sp.GetRequiredService<CreateVocabularyCommandHandler>());
+
+        services.AddTransient<UpdateVocabularyCommandHandler>();
+        services.AddTransient<ICommandHandler<UpdateVocabularyCommand, VocabularyFlashcardDto?>>(sp => sp.GetRequiredService<UpdateVocabularyCommandHandler>());
+
+        services.AddTransient<CreateAiModelConfigCommandHandler>();
+        services.AddTransient<ICommandHandler<CreateAiModelConfigCommand, AiModelConfigEntity>>(sp => sp.GetRequiredService<CreateAiModelConfigCommandHandler>());
+
+        services.AddTransient<UpdateAiModelConfigCommandHandler>();
+        services.AddTransient<ICommandHandler<UpdateAiModelConfigCommand, AiModelConfigEntity?>>(sp => sp.GetRequiredService<UpdateAiModelConfigCommandHandler>());
+
+        services.AddTransient<SynthesizePronunciationAudioCommandHandler>();
+        services.AddTransient<ICommandHandler<SynthesizePronunciationAudioCommand, SynthesizePronunciationAudioResponseDto>>(sp => sp.GetRequiredService<SynthesizePronunciationAudioCommandHandler>());
 
         return services;
     }

@@ -31,6 +31,16 @@ function base64ToInt16Array(base64: string): Int16Array {
   return new Int16Array(bytes.buffer);
 }
 
+function computeChunkRms(chunk: Int16Array): number {
+  if (chunk.length === 0) return 0;
+  let sumSq = 0;
+  for (let i = 0; i < chunk.length; i++) {
+    const s = chunk[i] / 32768.0;
+    sumSq += s * s;
+  }
+  return Math.sqrt(sumSq / chunk.length);
+}
+
 interface StartLiveSessionParams {
   apiKey: string;
   cefrLevel: CefrLevel;
@@ -56,6 +66,7 @@ export function useThreeHubLiveSession() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [micLevel, setMicLevel] = useState<number>(0);
   const [aiAudioLevel, setAiAudioLevel] = useState<number>(0);
+  const [replayingTurnId, setReplayingTurnId] = useState<string | null>(null);
 
   const tutorConnRef = useRef<signalR.HubConnection | null>(null);
   const transcribeConnRef = useRef<signalR.HubConnection | null>(null);
@@ -73,6 +84,21 @@ export function useThreeHubLiveSession() {
   const activeApiKeyRef = useRef<string>('');
   const isAiSpeakingRef = useRef<boolean>(false);
 
+  // Per-turn recorded PCM audio buffers for "Nghe lại câu tiếng Anh"
+  // - User audio is captured at 16,000 Hz Int16 PCM
+  // - AI audio is received at 24,000 Hz Int16 PCM
+  const userAudioChunksByTurnRef = useRef<Map<string, Int16Array[]>>(new Map());
+  const aiAudioChunksByTurnRef = useRef<Map<string, Int16Array[]>>(new Map());
+  const activeUserTurnIdRef = useRef<string | null>(null);
+  const activeAiTurnIdRef = useRef<string | null>(null);
+  const preRollUserChunksRef = useRef<Int16Array[]>([]);
+  const pendingUserVoiceChunksRef = useRef<Int16Array[]>([]);
+  const silentChunksSinceVoiceRef = useRef<number>(0);
+
+  // Dedicated AudioContext & source node for replaying recorded user/AI turns
+  const replayCtxRef = useRef<AudioContext | null>(null);
+  const replaySourceRef = useRef<AudioBufferSourceNode | null>(null);
+
   // Track received corrections and pending auto-analysis timers per user turn
   const receivedCorrectionTurnsRef = useRef<Set<string>>(new Set());
   const grammarTimersByTurnRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -84,6 +110,140 @@ export function useThreeHubLiveSession() {
     }
     grammarTimersByTurnRef.current.clear();
   }, []);
+
+  const stopReplayAudio = useCallback(() => {
+    if (replaySourceRef.current) {
+      try {
+        replaySourceRef.current.onended = null;
+        replaySourceRef.current.stop();
+        replaySourceRef.current.disconnect();
+      } catch {
+        // ignore
+      }
+      replaySourceRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setReplayingTurnId(null);
+  }, []);
+
+  /**
+   * Plays back the recorded audio of a turn ("audio của tôi" at 16kHz for User turns,
+   * or "audio của AI" at 24kHz for AI turns). Falls back to Web Speech API TTS if
+   * the turn was loaded from history without raw PCM in memory.
+   */
+  const replayTurnAudio = useCallback(
+    async (turn: { turnId: string; speaker: 'user' | 'ai'; englishLine1: string }) => {
+      if (!turn.turnId) return;
+
+      // Toggle off if this exact turn is currently replaying
+      if (replayingTurnId === turn.turnId) {
+        stopReplayAudio();
+        return;
+      }
+
+      stopReplayAudio();
+
+      const rawChunks =
+        turn.speaker === 'user'
+          ? userAudioChunksByTurnRef.current.get(turn.turnId)
+          : aiAudioChunksByTurnRef.current.get(turn.turnId);
+
+      const sampleRate = turn.speaker === 'user' ? 16000 : 24000;
+
+      if (rawChunks && rawChunks.length > 0) {
+        let activeChunks = rawChunks;
+
+        // Trim leading and trailing dead silence on user recordings so playback starts crisply
+        if (turn.speaker === 'user' && rawChunks.length > 4) {
+          const threshold = 0.0035;
+          let firstVoice = -1;
+          let lastVoice = -1;
+          for (let i = 0; i < rawChunks.length; i++) {
+            if (computeChunkRms(rawChunks[i]) >= threshold) {
+              if (firstVoice === -1) firstVoice = i;
+              lastVoice = i;
+            }
+          }
+          if (firstVoice !== -1 && lastVoice >= firstVoice) {
+            const startIdx = Math.max(0, firstVoice - 2);
+            const endIdx = Math.min(rawChunks.length, lastVoice + 4);
+            activeChunks = rawChunks.slice(startIdx, endIdx);
+          }
+        }
+
+        const totalSamples = activeChunks.reduce((sum, c) => sum + c.length, 0);
+        if (totalSamples > 0) {
+          const float32 = new Float32Array(totalSamples);
+          let offset = 0;
+          let peak = 0;
+
+          for (const chunk of activeChunks) {
+            for (let i = 0; i < chunk.length; i++) {
+              const s = chunk[i] / 32768.0;
+              const abs = Math.abs(s);
+              if (abs > peak) peak = abs;
+              float32[offset++] = s;
+            }
+          }
+
+          // Normalize quiet microphone recordings gently so the user can hear their voice clearly
+          if (turn.speaker === 'user' && peak > 0.008 && peak < 0.45) {
+            const gain = Math.min(3.2, 0.78 / peak);
+            for (let i = 0; i < float32.length; i++) {
+              float32[i] = Math.max(-1, Math.min(1, float32[i] * gain));
+            }
+          }
+
+          try {
+            if (!replayCtxRef.current || replayCtxRef.current.state === 'closed') {
+              replayCtxRef.current = new AudioContext();
+            }
+            const ctx = replayCtxRef.current;
+            if (ctx.state === 'suspended') {
+              await ctx.resume();
+            }
+
+            const audioBuffer = ctx.createBuffer(1, float32.length, sampleRate);
+            audioBuffer.copyToChannel(float32, 0);
+
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ctx.destination);
+
+            replaySourceRef.current = source;
+            setReplayingTurnId(turn.turnId);
+
+            source.onended = () => {
+              if (replaySourceRef.current === source) {
+                replaySourceRef.current = null;
+                setReplayingTurnId(null);
+              }
+            };
+
+            source.start(0);
+            return;
+          } catch {
+            // Fall through to speechSynthesis fallback if AudioContext fails
+          }
+        }
+      }
+
+      // Fallback when replaying a turn from persisted DB history (no raw PCM in RAM)
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && turn.englishLine1) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(turn.englishLine1);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.95;
+        setReplayingTurnId(turn.turnId);
+        utterance.onend = () => setReplayingTurnId(null);
+        utterance.onerror = () => setReplayingTurnId(null);
+        window.speechSynthesis.speak(utterance);
+      }
+    },
+    [replayingTurnId, stopReplayAudio]
+  );
 
   const upsertCorrectionItem = useCallback((item: GrammarCorrectionItem) => {
     receivedCorrectionTurnsRef.current.add(item.turnId);
@@ -179,7 +339,7 @@ export function useThreeHubLiveSession() {
   /**
    * Triggers Grammar & Vocabulary analysis for a specific turn via TutorConversationHub
    * ('AnalyzeTurnGrammar'), with automatic client-side fallback if SignalR does not emit
-   * 'ReceiveLanguageCorrection' within 1.8s.
+   * 'ReceiveLanguageCorrection' within 1.6s.
    */
   const analyzeTurnGrammar = useCallback(
     async (turnId: string, transcriptText: string, forceReanalyze = true) => {
@@ -199,7 +359,6 @@ export function useThreeHubLiveSession() {
       if (hub && hub.state === signalR.HubConnectionState.Connected) {
         try {
           await hub.invoke('AnalyzeTurnGrammar', convId, turnId, cleaned, cefr);
-          // Wait briefly to see if Backend broadcasts ReceiveLanguageCorrection
           setTimeout(() => {
             if (!receivedCorrectionTurnsRef.current.has(turnId)) {
               void analyzeWithGeminiClientFallback(turnId, cleaned, cefr, apiKey);
@@ -261,15 +420,32 @@ export function useThreeHubLiveSession() {
     setAiAudioLevel(0);
   }, []);
 
-  const scheduleAiPcm24kChunk = useCallback((pcmBase64: string) => {
+  const scheduleAiPcm24kChunk = useCallback((turnId: string | undefined, pcmBase64: string) => {
+    const int16 = base64ToInt16Array(pcmBase64);
+    if (int16.length === 0) return;
+
+    // Close active user turn recording if AI starts speaking
+    if (activeUserTurnIdRef.current) {
+      activeUserTurnIdRef.current = null;
+      pendingUserVoiceChunksRef.current = [];
+      preRollUserChunksRef.current = [];
+      silentChunksSinceVoiceRef.current = 0;
+    }
+
+    // Store AI 24kHz PCM chunk under its turnId for "Nghe lại câu tiếng Anh"
+    const targetAiTurnId = turnId || activeAiTurnIdRef.current;
+    if (targetAiTurnId) {
+      activeAiTurnIdRef.current = targetAiTurnId;
+      const existing = aiAudioChunksByTurnRef.current.get(targetAiTurnId) ?? [];
+      existing.push(new Int16Array(int16));
+      aiAudioChunksByTurnRef.current.set(targetAiTurnId, existing);
+    }
+
     const ctx = playbackCtxRef.current;
     if (!ctx) return;
     if (ctx.state === 'suspended') {
       void ctx.resume();
     }
-
-    const int16 = base64ToInt16Array(pcmBase64);
-    if (int16.length === 0) return;
 
     const float32 = new Float32Array(int16.length);
     let sumSq = 0;
@@ -375,6 +551,11 @@ export function useThreeHubLiveSession() {
     clearGrammarTimers();
     const convId = sessionIdRef.current;
     sessionIdRef.current = '';
+    activeUserTurnIdRef.current = null;
+    activeAiTurnIdRef.current = null;
+    pendingUserVoiceChunksRef.current = [];
+    preRollUserChunksRef.current = [];
+    silentChunksSinceVoiceRef.current = 0;
 
     try {
       workletNodeRef.current?.disconnect();
@@ -478,9 +659,11 @@ export function useThreeHubLiveSession() {
 
       tutorHub.on(
         'ReceiveTutorAudio',
-        (dto: { turnId: string; base64Pcm24k: string; interactionStatus?: string }) => {
-          if (dto?.base64Pcm24k) {
-            scheduleAiPcm24kChunk(dto.base64Pcm24k);
+        (dto: { turnId?: string; TurnId?: string; base64Pcm24k?: string; Base64Pcm24k?: string }) => {
+          const pcm = dto?.base64Pcm24k ?? dto?.Base64Pcm24k;
+          const tId = dto?.turnId ?? dto?.TurnId;
+          if (pcm) {
+            scheduleAiPcm24kChunk(tId, pcm);
           }
         }
       );
@@ -508,6 +691,34 @@ export function useThreeHubLiveSession() {
           isFinal: boolean;
         }) => {
           if (dto?.turnId && dto.fullTranscriptText) {
+            if (dto.speaker === 'user') {
+              // Bind any pre-roll / pending user microphone PCM chunks to this user turnId
+              if (activeUserTurnIdRef.current !== dto.turnId) {
+                activeUserTurnIdRef.current = dto.turnId;
+                const existing = userAudioChunksByTurnRef.current.get(dto.turnId) ?? [];
+                if (pendingUserVoiceChunksRef.current.length > 0) {
+                  existing.push(...pendingUserVoiceChunksRef.current);
+                  pendingUserVoiceChunksRef.current = [];
+                  preRollUserChunksRef.current = [];
+                } else if (existing.length === 0 && preRollUserChunksRef.current.length > 0) {
+                  existing.push(...preRollUserChunksRef.current);
+                  preRollUserChunksRef.current = [];
+                }
+                userAudioChunksByTurnRef.current.set(dto.turnId, existing);
+                silentChunksSinceVoiceRef.current = 0;
+              }
+              if (dto.isFinal) {
+                activeUserTurnIdRef.current = null;
+              }
+            } else if (dto.speaker === 'ai') {
+              activeAiTurnIdRef.current = dto.turnId;
+              if (activeUserTurnIdRef.current) {
+                activeUserTurnIdRef.current = null;
+                pendingUserVoiceChunksRef.current = [];
+                preRollUserChunksRef.current = [];
+              }
+            }
+
             upsertTurnLine1(dto.turnId, dto.speaker, dto.fullTranscriptText, dto.isFinal);
             if (dto.speaker === 'user') {
               scheduleAutoGrammarAnalysisForUserTurn(
@@ -602,6 +813,40 @@ export function useThreeHubLiveSession() {
           const rms = int16.length > 0 ? Math.sqrt(sumSq / int16.length) : 0;
           setMicLevel(Math.min(1, rms * 6));
 
+          // Record 16kHz user audio per turnId for "Nghe lại câu tiếng Anh"
+          if (!isAiSpeakingRef.current || rms > 0.035) {
+            const copy = new Int16Array(int16);
+            const currentUserTurnId = activeUserTurnIdRef.current;
+
+            if (currentUserTurnId) {
+              const list = userAudioChunksByTurnRef.current.get(currentUserTurnId) ?? [];
+              list.push(copy);
+              userAudioChunksByTurnRef.current.set(currentUserTurnId, list);
+            } else if (rms >= 0.0045 || pendingUserVoiceChunksRef.current.length > 0) {
+              if (pendingUserVoiceChunksRef.current.length === 0 && preRollUserChunksRef.current.length > 0) {
+                pendingUserVoiceChunksRef.current.push(...preRollUserChunksRef.current);
+                preRollUserChunksRef.current = [];
+              }
+              pendingUserVoiceChunksRef.current.push(copy);
+
+              if (rms >= 0.0045) {
+                silentChunksSinceVoiceRef.current = 0;
+              } else {
+                silentChunksSinceVoiceRef.current += 1;
+                // If > 4.5s of dead silence elapsed without any transcript arriving, reset pending noise
+                if (silentChunksSinceVoiceRef.current > 36) {
+                  pendingUserVoiceChunksRef.current = [];
+                  silentChunksSinceVoiceRef.current = 0;
+                }
+              }
+            } else {
+              preRollUserChunksRef.current.push(copy);
+              if (preRollUserChunksRef.current.length > 10) {
+                preRollUserChunksRef.current.shift();
+              }
+            }
+          }
+
           const base64Pcm16k = arrayBufferToBase64(pcmBuffer);
           const payload = {
             conversationId: convId,
@@ -664,14 +909,16 @@ export function useThreeHubLiveSession() {
 
   const loadPersistedSessionData = useCallback(
     (loadedTurns: BilingualTurnItem[], loadedCorrections: GrammarCorrectionItem[]) => {
+      stopReplayAudio();
       setTurns(loadedTurns);
       setCorrections(loadedCorrections);
       receivedCorrectionTurnsRef.current = new Set(loadedCorrections.map((c) => c.turnId));
     },
-    []
+    [stopReplayAudio]
   );
 
   const resetConversationWorkspace = useCallback(async () => {
+    stopReplayAudio();
     await stopSession();
     setTurns([]);
     setCorrections([]);
@@ -679,13 +926,16 @@ export function useThreeHubLiveSession() {
     setIsAnalyzingGrammar(false);
     receivedCorrectionTurnsRef.current.clear();
     latestUserTextByTurnRef.current.clear();
-  }, [stopSession]);
+    userAudioChunksByTurnRef.current.clear();
+    aiAudioChunksByTurnRef.current.clear();
+  }, [stopReplayAudio, stopSession]);
 
   useEffect(() => {
     return () => {
+      stopReplayAudio();
       void stopSession();
     };
-  }, [stopSession]);
+  }, [stopReplayAudio, stopSession]);
 
   return {
     phase,
@@ -696,8 +946,11 @@ export function useThreeHubLiveSession() {
     errorBanner,
     micLevel,
     aiAudioLevel,
+    replayingTurnId,
     startSession,
     stopSession,
+    replayTurnAudio,
+    stopReplayAudio,
     analyzeTurnGrammar,
     loadPersistedSessionData,
     resetConversationWorkspace,

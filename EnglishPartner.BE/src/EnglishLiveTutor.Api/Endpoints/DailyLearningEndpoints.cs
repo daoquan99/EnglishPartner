@@ -12,16 +12,17 @@ public static class DailyLearningEndpoints
 {
     public static IEndpointRouteBuilder MapDailyLearningEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/learning/flashcards");
+        var group = app.MapGroup("/api/learning/flashcards").RequireAuthorization();
 
         group.MapGet("/today", async (
             string? timeZoneId,
             int? target,
+            ICurrentUser currentUser,
             IQueryHandler<GetDailyVocabularyPlanQuery, DailyVocabularyPlanResponseDto> handler,
             CancellationToken ct) =>
         {
             var plan = await handler.HandleAsync(
-                new GetDailyVocabularyPlanQuery("default-learner", timeZoneId, target),
+                new GetDailyVocabularyPlanQuery(currentUser.UserId!, timeZoneId, target),
                 ct);
             return Results.Ok(plan);
         });

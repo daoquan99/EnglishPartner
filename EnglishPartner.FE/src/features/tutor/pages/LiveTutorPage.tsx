@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Mic,
   PhoneOff,
@@ -7,6 +7,11 @@ import {
   Wifi,
   AlertCircle,
   MessageSquarePlus,
+  Sparkles,
+  ArrowRight,
+  Lightbulb,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import { TutorSetupSidebar as TutorSetupModal } from '../components/TutorSetupSidebar';
 import { ConversationHistoryModal } from '../components/ConversationHistoryModal';
@@ -25,6 +30,7 @@ import {
   type ConversationDetailDto,
   type GrammarCorrectionItem,
 } from '../types/tutor.types';
+import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
@@ -58,13 +64,18 @@ export const LiveTutorPage: React.FC = () => {
     errorBanner,
     micLevel,
     aiAudioLevel,
+    replayingTurnId,
     startSession,
     stopSession,
+    replayTurnAudio,
     analyzeTurnGrammar,
     loadPersistedSessionData,
     resetConversationWorkspace,
     clearError,
   } = useThreeHubLiveSession();
+
+  const [selectedCorrectionModal, setSelectedCorrectionModal] =
+    useState<GrammarCorrectionItem | null>(null);
 
   const { data: historyList = [] } = useConversationsListQuery();
   const createConvMutation = useCreateConversationMutation();
@@ -198,6 +209,15 @@ export const LiveTutorPage: React.FC = () => {
     );
   };
 
+  const speakCorrectedSample = (text: string) => {
+    if (!('speechSynthesis' in window) || !text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.95;
+    window.speechSynthesis.speak(utterance);
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Action & Configuration Bar */}
@@ -321,6 +341,13 @@ export const LiveTutorPage: React.FC = () => {
           <LiveMessengerStream
             turns={turns}
             corrections={corrections}
+            replayingTurnId={replayingTurnId}
+            onReplayTurnAudio={(turn) => {
+              void replayTurnAudio(turn);
+            }}
+            onSelectCorrection={(corr) => {
+              setSelectedCorrectionModal(corr);
+            }}
             onAnalyzeTurn={(turnId, englishText) => {
               void analyzeTurnGrammar(turnId, englishText, true);
             }}
@@ -388,6 +415,14 @@ export const LiveTutorPage: React.FC = () => {
             corrections={corrections}
             isAnalyzing={isAnalyzingGrammar}
             canAnalyzeLatestTurn={Boolean(latestUserTurn)}
+            replayingTurnId={replayingTurnId}
+            onReplayUserTurnAudio={(turnId, fallbackText) => {
+              void replayTurnAudio({
+                turnId,
+                speaker: 'user',
+                englishLine1: fallbackText,
+              });
+            }}
             onAnalyzeLatestTurn={() => {
               if (latestUserTurn) {
                 void analyzeTurnGrammar(latestUserTurn.turnId, latestUserTurn.englishLine1, true);
@@ -400,27 +435,122 @@ export const LiveTutorPage: React.FC = () => {
       {/* Modal 1: Session Setup Dialog */}
       <TutorSetupModal
         isOpen={isSetupModalOpen}
-        isSessionActive={isSessionActive}
+        open={isSetupModalOpen}
         onClose={() => setSetupModalOpen(false)}
-        onSaveSettings={() => void handleSaveSettingsOnly()}
         onStartSpeaking={() => void handleStartLive()}
+        onApplyAndStart={() => void handleStartLive()}
+        onSaveSettings={() => void handleSaveSettingsOnly()}
+        onSaveOnly={() => void handleSaveSettingsOnly()}
+        isSessionActive={isSessionActive}
       />
 
-      {/* Modal 2: Conversation History Dialog */}
+      {/* Modal 2: Persisted Conversation History Dialog */}
       <ConversationHistoryModal
         isOpen={isHistoryDrawerOpen}
+        open={isHistoryDrawerOpen}
         onClose={() => setHistoryDrawerOpen(false)}
         conversations={historyList}
         activeConversationId={activeConversationId}
         onResumeConversation={handleResumeFromModal}
+        onSelectAndResume={handleResumeFromModal}
         onStartNewConversation={() => void handleSwitchNewConversation()}
-        onDeleteConversation={async (id) => {
-          await deleteConvMutation.mutateAsync(id);
-          if (activeConversationId === id) {
-            await handleSwitchNewConversation();
-          }
-        }}
+        onDeleteConversation={(id) => deleteConvMutation.mutate(id)}
       />
+
+      {/* Modal 3: Grammar Correction Detail Dialog when clicking inline badge under User message */}
+      <Dialog
+        isOpen={Boolean(selectedCorrectionModal)}
+        onClose={() => setSelectedCorrectionModal(null)}
+        maxWidth="lg"
+        icon={<Sparkles className="w-5 h-5" />}
+        title="Chi tiết Sửa lỗi Ngữ pháp & Nâng cấp câu"
+        description={selectedCorrectionModal?.errorCategory || 'Grammar & Vocabulary'}
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedCorrectionModal(null)}
+            >
+              Đóng
+            </Button>
+          </div>
+        }
+      >
+        {selectedCorrectionModal && (
+          <div className="space-y-3 text-xs">
+            <div className="flex items-start justify-between gap-2 bg-rose-50/70 border border-rose-200 rounded-xl p-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">
+                  Câu gốc của bạn
+                </span>
+                <p className="text-rose-800 font-semibold text-sm leading-relaxed">
+                  {selectedCorrectionModal.originalSentence}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  void replayTurnAudio({
+                    turnId: selectedCorrectionModal.turnId,
+                    speaker: 'user',
+                    englishLine1: selectedCorrectionModal.originalSentence,
+                  })
+                }
+                title="Nghe lại giọng thu âm của bạn"
+                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-100 shrink-0 cursor-pointer"
+              >
+                {replayingTurnId === selectedCorrectionModal.turnId ? (
+                  <Square className="w-4 h-4 fill-current animate-pulse" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-start justify-between gap-2 bg-emerald-50/80 border border-emerald-200 rounded-xl p-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                  <ArrowRight className="w-3 h-3" />
+                  Câu chuẩn / Nâng cấp diễn đạt
+                </span>
+                <p className="text-emerald-900 font-bold text-sm leading-relaxed">
+                  {selectedCorrectionModal.correctedSentence}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => speakCorrectedSample(selectedCorrectionModal.correctedSentence)}
+                title="Nghe phát âm mẫu câu đã sửa"
+                className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-100 shrink-0 cursor-pointer"
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {selectedCorrectionModal.naturalAlternative && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 leading-relaxed text-slate-700">
+                <strong className="text-slate-900">Cách nói tự nhiên (Native):</strong>{' '}
+                {selectedCorrectionModal.naturalAlternative}
+              </div>
+            )}
+
+            {(selectedCorrectionModal.explanationVi || selectedCorrectionModal.overallTipVi) && (
+              <div className="bg-white border border-slate-200 rounded-xl p-3 leading-relaxed text-slate-700">
+                <strong className="text-slate-900">Giải thích chi tiết:</strong>{' '}
+                {selectedCorrectionModal.explanationVi || selectedCorrectionModal.overallTipVi}
+              </div>
+            )}
+
+            {selectedCorrectionModal.cefrTip && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900">
+                <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span className="font-medium leading-relaxed">{selectedCorrectionModal.cefrTip}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 };

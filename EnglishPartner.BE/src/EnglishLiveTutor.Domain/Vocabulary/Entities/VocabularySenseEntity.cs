@@ -90,6 +90,21 @@ public sealed class VocabularySenseEntity : Entity<Guid>
         return relation;
     }
 
+    public void UpdateDetails(string partOfSpeech, string definitionEn, string meaningVi, string cefrLevel, string? descriptionEn)
+    {
+        UpdateDefinition(definitionEn, meaningVi, descriptionEn);
+        PartOfSpeech = string.IsNullOrWhiteSpace(partOfSpeech) ? "noun" : partOfSpeech.Trim().ToLowerInvariant();
+        CefrLevel = string.IsNullOrWhiteSpace(cefrLevel) ? "B1" : cefrLevel.Trim().ToUpperInvariant();
+    }
+
+    public void ClearRelatedContent()
+    {
+        _relations.Clear();
+        _collocations.Clear();
+        _examples.Clear();
+        _grammarPatterns.Clear();
+    }
+
     public VocabularyCollocationEntity AddCollocation(
         string phraseEn,
         string? meaningVi = null,

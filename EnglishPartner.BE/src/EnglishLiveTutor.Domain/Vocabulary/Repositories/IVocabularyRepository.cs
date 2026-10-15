@@ -1,3 +1,5 @@
+using EnglishLiveTutor.Domain.Vocabulary.Entities;
+
 namespace EnglishLiveTutor.Domain.Vocabulary.Repositories;
 
 public interface IVocabularyRepository
@@ -7,6 +9,7 @@ public interface IVocabularyRepository
     Task<List<string>> ListAllNormalizedWordsAsync(CancellationToken ct = default);
     Task AddAsync(VocabularyEntity vocabulary, CancellationToken ct = default);
     Task UpdateAsync(VocabularyEntity vocabulary, CancellationToken ct = default);
+    void RemoveFlashcardDetails(VocabularyEntity vocabulary, VocabularySenseEntity? sense);
     Task AddGenerationAuditAsync(VocabularyGenerationAuditEntity audit, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

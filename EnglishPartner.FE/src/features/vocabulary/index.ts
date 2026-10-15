@@ -5,6 +5,13 @@ export {
   useGenerateVocabularyMutation,
   useAssessPronunciationMutation,
   useSynthesizePronunciationMutation,
+  useBuildVocabularyGenerationPromptMutation,
+  useImportVocabularyJsonMutation,
 } from './hooks/useDailyVocabulary';
-export { FALLBACK_VOCABULARY_CARDS } from './api/vocabularyApi';
-export type { VocabularyFlashcardDto } from './types/vocabulary.types';
+export { FALLBACK_VOCABULARY_CARDS, vocabularyApi } from './api/vocabularyApi';
+export type {
+  VocabularyFlashcardDto,
+  BuildVocabularyGenerationPromptRequestDto,
+  VocabularyGenerationPromptDto,
+  ImportVocabularyJsonRequestDto,
+} from './types/vocabulary.types';

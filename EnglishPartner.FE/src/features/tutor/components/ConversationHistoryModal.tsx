@@ -18,25 +18,32 @@ import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { conversationsApi } from '../api/conversationsApi';
 import type { ConversationDetailDto, ConversationSummaryDto } from '../types/tutor.types';
 
-interface ConversationHistoryModalProps {
-  isOpen: boolean;
+export interface ConversationHistoryModalProps {
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   conversations: ConversationSummaryDto[];
   activeConversationId?: string | null;
-  onResumeConversation: (detail: ConversationDetailDto) => void;
+  onResumeConversation?: (detail: ConversationDetailDto) => void;
+  onSelectAndResume?: (detail: ConversationDetailDto) => void;
   onStartNewConversation: () => void;
   onDeleteConversation: (id: string) => Promise<void> | void;
 }
 
 export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> = ({
   isOpen,
+  open,
   onClose,
   conversations,
   activeConversationId,
   onResumeConversation,
+  onSelectAndResume,
   onStartNewConversation,
   onDeleteConversation,
 }) => {
+  const visible = Boolean(isOpen ?? open);
+  const handleResumeCallback = onResumeConversation ?? onSelectAndResume;
+
   const [selectedDetail, setSelectedDetail] = useState<ConversationDetailDto | null>(null);
   const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ConversationSummaryDto | null>(null);
@@ -65,7 +72,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
     try {
       const detail = await conversationsApi.getConversationDetail(conv.id);
       if (detail) {
-        onResumeConversation(detail);
+        handleResumeCallback?.(detail);
         onClose();
         return;
       }
@@ -74,7 +81,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
     } finally {
       setLoadingDetailId(null);
     }
-    onResumeConversation({
+    handleResumeCallback?.({
       ...conv,
       messages: [],
       corrections: [],
@@ -99,7 +106,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
   return (
     <>
       <Dialog
-        isOpen={isOpen}
+        isOpen={visible}
         onClose={() => {
           setSelectedDetail(null);
           onClose();
@@ -141,7 +148,7 @@ export const ConversationHistoryModal: React.FC<ConversationHistoryModalProps> =
                     variant="primary"
                     size="sm"
                     onClick={() => {
-                      onResumeConversation(selectedDetail);
+                      handleResumeCallback?.(selectedDetail);
                       setSelectedDetail(null);
                       onClose();
                     }}

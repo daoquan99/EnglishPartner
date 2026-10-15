@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Volume2,
   Gauge,
   Brain,
-  Sparkles,
   MessageSquareCode,
   FileText,
   Star,
@@ -34,29 +34,38 @@ const CEFR_LEVELS: { id: CefrLevel; label: string; badge: string }[] = [
   { id: 'C2', label: 'C2', badge: 'Mastery' },
 ];
 
-interface TutorSetupModalProps {
-  isOpen: boolean;
+export interface TutorSetupModalProps {
+  isOpen?: boolean;
+  open?: boolean;
   isSessionActive: boolean;
   onClose: () => void;
-  onSaveSettings: () => void;
-  onStartSpeaking: () => void;
+  onSaveSettings?: () => void;
+  onSaveOnly?: () => void;
+  onStartSpeaking?: () => void;
+  onApplyAndStart?: () => void;
 }
 
 /**
  * Modern, spacious Dialog/Modal for "Thiết lập Phiên Luyện Nói":
  * - Contains CEFR Level, Conversation Mode (19 DB Modes), Teacher Voice (30 Google Voices),
  *   Speech Speed, Topic (DB suggestions + custom input), Custom System Prompt, and Extended Thinking.
- * - Has its own independent internal scroll (`overflow-y-auto`).
+ * - Rendered via React Portal so it is never clipped by parent containers.
  * - Includes "Lưu thiết lập" and "Bắt đầu luyện nói" action buttons in the modal footer.
- * - Note: Google AI Studio API Key is kept exclusively in the Left Menu.
  */
 export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
   isOpen,
+  open,
   isSessionActive,
   onClose,
   onSaveSettings,
+  onSaveOnly,
   onStartSpeaking,
+  onApplyAndStart,
 }) => {
+  const visible = Boolean(isOpen ?? open);
+  const handleSave = onSaveSettings ?? onSaveOnly ?? onClose;
+  const handleStart = onStartSpeaking ?? onApplyAndStart ?? onClose;
+
   const {
     cefrLevel,
     conversationMode,
@@ -85,15 +94,15 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
   });
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!visible) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [visible, onClose]);
 
-  if (!isOpen) return null;
+  if (!visible) return null;
 
   const displayedVoices = showOnlyFeaturedVoices
     ? allVoices.filter((v) => v.isFeatured)
@@ -104,9 +113,9 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
   const currentModeObj = modes.find((m) => m.modeCode === conversationMode);
   const currentVoiceObj = allVoices.find((v) => v.id === voiceName);
 
-  return (
+  const modalNode = (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
       onClick={onClose}
     >
       <div
@@ -162,10 +171,9 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                     <button
                       key={lvl.id}
                       type="button"
-                      disabled={isSessionActive}
                       onClick={() => setCefrLevel(lvl.id)}
                       className={cn(
-                        'py-2 px-1 rounded-xl border text-center transition-all cursor-pointer disabled:opacity-60',
+                        'py-2 px-1 rounded-xl border text-center transition-all cursor-pointer',
                         active
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -198,9 +206,8 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
 
               <select
                 value={conversationMode}
-                disabled={isSessionActive}
                 onChange={(e) => setConversationMode(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 disabled:bg-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               >
                 {workplaceModes.length > 0 && (
                   <optgroup label="Giao tiếp & Công sở (Communication & Workplace)">
@@ -256,10 +263,9 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                     <button
                       key={v.id}
                       type="button"
-                      disabled={isSessionActive}
                       onClick={() => setVoiceName(v.id)}
                       className={cn(
-                        'p-2.5 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-60',
+                        'p-2.5 rounded-xl border text-left transition-all cursor-pointer',
                         active
                           ? 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500/30'
                           : 'bg-white hover:bg-slate-50 border-slate-200'
@@ -302,7 +308,6 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
 
               <select
                 value={speechSpeed}
-                disabled={isSessionActive}
                 onChange={(e) => setSpeechSpeed(parseFloat(e.target.value))}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
               >
@@ -323,7 +328,6 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               value={topic}
               onChange={setTopic}
               topics={conversationTopics}
-              disabled={isSessionActive}
               activeModeCode={conversationMode}
               helperText="Chọn nhanh chủ đề gợi ý từ Database (tự động ưu tiên theo Chế độ luyện nói) hoặc tự gõ chủ đề bất kỳ."
             />
@@ -336,7 +340,6 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               </label>
               <textarea
                 rows={4}
-                disabled={isSessionActive}
                 value={customSystemPrompt}
                 onChange={(e) => setCustomSystemPrompt(e.target.value)}
                 placeholder="Dán JD tuyển dụng, tóm tắt CV hoặc yêu cầu đóng vai cụ thể..."
@@ -350,7 +353,6 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
                 </span>
                 <input
                   type="checkbox"
-                  disabled={isSessionActive}
                   checked={extendedThinking}
                   onChange={(e) => setExtendedThinking(e.target.checked)}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
@@ -370,22 +372,22 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 ml-auto">
-            <Button variant="outline" size="md" onClick={onSaveSettings}>
+            <Button variant="outline" size="md" onClick={handleSave}>
               <Save className="w-4 h-4" />
               Lưu thiết lập
             </Button>
-            <Button
-              variant="primary"
-              size="md"
-              disabled={isSessionActive}
-              onClick={onStartSpeaking}
-            >
+            <Button variant="primary" size="md" onClick={handleStart}>
               <Mic className="w-4 h-4" />
-              Bắt đầu luyện nói
+              {isSessionActive ? 'Áp dụng & Khởi động lại phiên' : 'Bắt đầu luyện nói'}
             </Button>
           </div>
         </div>
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modalNode, document.body);
+  }
+  return modalNode;
 };

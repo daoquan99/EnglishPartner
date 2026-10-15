@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLiveTutor.Infrastructure;
 
@@ -54,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IPromptConfigurationRepository, PromptConfigurationRepository>();
+        services.AddScoped<ISpeechSpeedRepository, SpeechSpeedRepository>();
         services.AddScoped<ITeacherVoiceRepository, TeacherVoiceRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddSingleton<IConversationRepository, ConversationRepository>();
@@ -69,7 +71,19 @@ public static class DependencyInjection
         services.AddHttpClient();
         services.AddSingleton<FastTextTranslatorFallback>();
         services.AddSingleton<GrammarCorrectionAnalyzerService>();
-        services.AddScoped<IVocabularyAiGenerator, GeminiVocabularyAiGenerator>();
+        services.AddSingleton<IVocabularyGenerationContent, VocabularyGenerationContent>();
+
+        services.AddOptions<VocabularyGenerationOptions>()
+            .Bind(configuration.GetSection(VocabularyGenerationOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds > 0 && options.TimeoutSeconds <= 3600,
+                "Ai:VocabularyGeneration:TimeoutSeconds must be between 1 and 3600.")
+            .ValidateOnStart();
+
+        services.AddHttpClient<IVocabularyAiGenerator, GeminiVocabularyAiGenerator>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<VocabularyGenerationOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();
         services.AddScoped<ILivePronunciationTtsSynthesizer, GeminiLivePronunciationTtsSynthesizer>();
         services.AddSingleton<GeminiLiveConnectionManager>();

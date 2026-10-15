@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import {
   BookOpen,
   Volume2,
@@ -15,6 +16,9 @@ import {
   Loader2,
   Code2,
   Settings,
+  Copy,
+  Check,
+  FileText,
 } from 'lucide-react';
 import {
   useActiveScoringRubricQuery,
@@ -27,8 +31,10 @@ import {
 import { useTutorSessionStore } from '@/features/tutor';
 import {
   useAssessPronunciationMutation,
+  useBuildVocabularyGenerationPromptMutation,
   useDailyVocabularyPlanQuery,
   useGenerateVocabularyMutation,
+  useImportVocabularyJsonMutation,
   useSubmitVocabularyReviewMutation,
   useSynthesizePronunciationMutation,
 } from '../hooks/useDailyVocabulary';
@@ -77,6 +83,8 @@ export const DailyVocabularyPage: React.FC = () => {
 
   const reviewMutation = useSubmitVocabularyReviewMutation();
   const generateMutation = useGenerateVocabularyMutation();
+  const buildPromptMutation = useBuildVocabularyGenerationPromptMutation();
+  const importJsonMutation = useImportVocabularyJsonMutation();
   const assessMutation = useAssessPronunciationMutation();
   const synthesizeMutation = useSynthesizePronunciationMutation();
 
@@ -102,12 +110,18 @@ export const DailyVocabularyPage: React.FC = () => {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // AI Vocabulary Generator Modal State
+  const [genMode, setGenMode] = useState<'direct' | 'manual'>('direct');
   const [genCefr, setGenCefr] = useState<CefrLevel>('B2');
   const [genTopic, setGenTopic] = useState<string>(
     'Essential Workplace Phrasal Verbs & Executive Idioms'
   );
   const [genCount, setGenCount] = useState<number>(3);
   const [selectedVocabModel, setSelectedVocabModel] = useState<string>('gemini-3.8-flash');
+  const [manualPrompt, setManualPrompt] = useState<string>('');
+  const [isPromptCopied, setIsPromptCopied] = useState(false);
+  const [manualJsonInput, setManualJsonInput] = useState<string>('');
+  const [assignToTodayPlan, setAssignToTodayPlan] = useState(true);
+  const [manualError, setManualError] = useState<string | null>(null);
 
   // Audio Pronunciation Studio State (Right Column 45%)
   const [selectedAudioModel, setSelectedAudioModel] = useState<string>('gemini-3.8-flash');
@@ -115,6 +129,7 @@ export const DailyVocabularyPage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [assessmentResult, setAssessmentResult] =
     useState<PronunciationAssessmentResultDto | null>(null);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -162,6 +177,7 @@ export const DailyVocabularyPage: React.FC = () => {
     }
     setIsRecording(false);
     setAssessmentResult(null);
+    setAssessmentError(null);
   }, []);
 
   useEffect(() => {
@@ -302,6 +318,68 @@ export const DailyVocabularyPage: React.FC = () => {
     }
   };
 
+  const handleBuildPrompt = async () => {
+    setManualError(null);
+    try {
+      const res = await buildPromptMutation.mutateAsync({
+        requestedCount: genCount,
+        cefrLevel: genCefr,
+        topic: genTopic || 'General English',
+      });
+      setManualPrompt(res.prompt);
+    } catch (err: any) {
+      setManualError(
+        err?.response?.data?.error ||
+          err?.message ||
+          'Không thể tạo prompt. Hãy kiểm tra kết nối Backend.'
+      );
+    }
+  };
+
+  const handleCopyPrompt = async () => {
+    if (!manualPrompt) return;
+    try {
+      await navigator.clipboard.writeText(manualPrompt);
+      setIsPromptCopied(true);
+      setTimeout(() => setIsPromptCopied(false), 2000);
+    } catch {
+      // Fallback if clipboard API is not available
+    }
+  };
+
+  const handleImportManualJson = async () => {
+    if (!manualJsonInput.trim()) {
+      setManualError('Vui lòng dán nội dung JSON từ Web AI vào ô nhập liệu.');
+      return;
+    }
+    setManualError(null);
+    try {
+      const imported = await importJsonMutation.mutateAsync({
+        jsonText: manualJsonInput.trim(),
+        cefrLevel: genCefr,
+        topic: genTopic || 'General English',
+        modelCode: 'manual-web-ai',
+        assignToTodayPlan,
+      });
+      if (imported && imported.length > 0) {
+        resetPronunciationAndStopRecordingSafely();
+        setCards((prev) => [...imported, ...prev]);
+        setCurrentIndex(0);
+        setIsFlipped(false);
+        setIsAiGeneratorModalOpen(false);
+        setManualPrompt('');
+        setManualJsonInput('');
+        setManualError(null);
+      }
+    } catch (err: any) {
+      setManualError(
+        err?.response?.data?.error ||
+          err?.message ||
+          'Không thể nhập từ vựng từ JSON. Hãy kiểm tra định dạng JSON từ AI.'
+      );
+    }
+  };
+
   const startRecording = async () => {
     if (!currentCard || assessMutation.isPending) return;
     if (!apiKey.trim()) {
@@ -313,6 +391,7 @@ export const DailyVocabularyPage: React.FC = () => {
     }
     setApiKeyWarning(null);
     setAssessmentResult(null);
+    setAssessmentError(null);
     discardRecordingRef.current = false;
 
     const capturedCard = currentCard;
@@ -358,50 +437,18 @@ export const DailyVocabularyPage: React.FC = () => {
           mimeType: blob.type || 'audio/webm',
           durationMs,
           modelCode: selectedAudioModel,
+          accent: ttsAccent,
         });
         if (!discardRecordingRef.current) {
           setAssessmentResult(res);
         }
-      } catch {
+      } catch (error: unknown) {
         if (!discardRecordingRef.current) {
-          setAssessmentResult({
-            assessmentId: `offline-${Date.now()}`,
-            overallScore: 88,
-            cefrPronunciationGrade: capturedCard.cefrLevel,
-            recognizedTranscript: referenceText,
-            referenceText,
-            modelCodeUsed: selectedAudioModel,
-            rubricCode: activeRubric?.code || 'ENGLISH_PRONUNCIATION_V1',
-            phonemeAndStressFeedbackVi: `Trọng âm từ '${capturedCard.word}' rõ ràng, âm cuối phát âm tốt.`,
-            coachingSuggestionVi: 'Giữ nhịp điệu tự nhiên và nối âm mượt hơn ở cụm từ tiếp theo.',
-            criterionScores: [
-              {
-                criterionCode: 'Accuracy',
-                criterionName: 'Accuracy (40%)',
-                weight: 40,
-                score: 90,
-                weightedScore: 36,
-                feedbackVi: 'Chuẩn xác âm vị.',
-              },
-              {
-                criterionCode: 'Clarity',
-                criterionName: 'Clarity (30%)',
-                weight: 30,
-                score: 86,
-                weightedScore: 25.8,
-                feedbackVi: 'Âm cuối rõ ràng.',
-              },
-              {
-                criterionCode: 'Fluency',
-                criterionName: 'Fluency (30%)',
-                weight: 30,
-                score: 87,
-                weightedScore: 26.1,
-                feedbackVi: 'Nhịp độ tự nhiên.',
-              },
-            ],
-            assessedAtUtc: new Date().toISOString(),
-          });
+          setAssessmentResult(null);
+          const message = isAxiosError<{ error?: string }>(error)
+            ? error.response?.data?.error || error.message
+            : error instanceof Error ? error.message : 'Không thể chấm phát âm. Vui lòng thử lại.';
+          setAssessmentError(message);
         }
       }
     };
@@ -465,7 +512,12 @@ export const DailyVocabularyPage: React.FC = () => {
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setIsAiGeneratorModalOpen(true)}
+            onClick={() => {
+              if (!apiKey.trim()) {
+                setGenMode('manual');
+              }
+              setIsAiGeneratorModalOpen(true);
+            }}
           >
             <Sparkles className="w-4 h-4" />
             Tạo từ vựng bằng AI
@@ -912,13 +964,21 @@ export const DailyVocabularyPage: React.FC = () => {
                   <span>Accuracy 40% · Clarity 30% · Fluency 30%</span>
                 </div>
 
+                {assessmentError && (
+                  <p role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">
+                    {assessmentError}
+                  </p>
+                )}
+
                 {assessmentResult ? (
                   <div className="pt-2 space-y-3">
                     <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-600 text-white">
                       <div className="flex items-center gap-2">
                         <Award className="w-5 h-5" />
                         <span className="text-sm font-extrabold">
-                          Tổng điểm: {assessmentResult.overallScore}/100
+                          {assessmentResult.overallScore === null
+                            ? 'Không thể chấm điểm bản ghi này'
+                            : `Tổng điểm: ${assessmentResult.overallScore}/100`}
                         </span>
                       </div>
                       <span className="text-xs font-bold bg-white/20 px-2.5 py-0.5 rounded-full">
@@ -1101,100 +1161,287 @@ export const DailyVocabularyPage: React.FC = () => {
         maxWidth="2xl"
         icon={<Sparkles className="w-5 h-5" />}
         title="Tạo Từ Vựng Thông Minh bằng AI"
-        description="Chọn Model Tạo Từ Vựng (Gemini & Gemma 4 từ DB) và Chủ đề gợi ý từ Database hoặc tự nhập"
+        description="Sinh từ vựng tự động bằng AI qua Google API hoặc qua Web AI (ChatGPT, Claude, Gemini Web) miễn phí"
         footer={
           <div className="flex items-center justify-end gap-2.5 w-full">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsAiGeneratorModalOpen(false)}
-              disabled={generateMutation.isPending}
+              disabled={generateMutation.isPending || importJsonMutation.isPending}
             >
               Hủy
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={generateMutation.isPending}
-              onClick={() => void handleGenerateMoreWords()}
-            >
-              <Sparkles className="w-4 h-4" />
-              {generateMutation.isPending
-                ? `Đang tạo với ${selectedVocabModel}...`
-                : 'Tạo thêm từ vựng vào bộ thẻ'}
-            </Button>
+            {genMode === 'direct' ? (
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={generateMutation.isPending}
+                onClick={() => void handleGenerateMoreWords()}
+              >
+                <Sparkles className="w-4 h-4" />
+                {generateMutation.isPending
+                  ? `Đang tạo với ${selectedVocabModel}...`
+                  : 'Tạo thêm từ vựng vào bộ thẻ'}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={importJsonMutation.isPending || !manualJsonInput.trim()}
+                onClick={() => void handleImportManualJson()}
+              >
+                <Sparkles className="w-4 h-4" />
+                {importJsonMutation.isPending ? 'Đang lưu vào DB...' : 'Nhập Từ Vựng Vào Bộ Thẻ'}
+              </Button>
+            )}
           </div>
         }
       >
         <div className="space-y-4 text-xs">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                Model Tạo Từ Vựng AI (Gemini & Gemma 4)
-              </label>
-              <Badge variant="emerald">DB ({vocabModels.length})</Badge>
-            </div>
-            <select
-              value={selectedVocabModel}
-              onChange={(e) => setSelectedVocabModel(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
+          {/* Mode Switch Tabs */}
+          <div className="flex border-b border-slate-200 mb-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setGenMode('direct')}
+              className={cn(
+                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer',
+                genMode === 'direct'
+                  ? 'border-emerald-600 text-emerald-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              )}
             >
-              {vocabModels.map((m) => (
-                <option key={m.modelCode} value={m.modelCode}>
-                  {m.displayName} —{' '}
-                  {m.supportsAudioInput ? 'Đa phương thức' : 'Text Generation Only'}
-                </option>
-              ))}
-            </select>
-            {vocabModels.find((m) => m.modelCode === selectedVocabModel) && (
-              <p className="text-[11px] text-slate-500">
-                {vocabModels.find((m) => m.modelCode === selectedVocabModel)?.capabilityNote}
-              </p>
-            )}
+              <Cpu className="w-3.5 h-3.5" />
+              Gọi AI Trực Tiếp (API Key)
+            </button>
+            <button
+              type="button"
+              onClick={() => setGenMode('manual')}
+              className={cn(
+                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer',
+                genMode === 'manual'
+                  ? 'border-emerald-600 text-emerald-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              )}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Web AI: Copy Prompt & Nhập JSON
+              <Badge variant="emerald" className="text-[10px] py-0 px-1.5 ml-1">
+                Miễn phí
+              </Badge>
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Trình độ CEFR
-              </label>
-              <select
-                value={genCefr}
-                onChange={(e) => setGenCefr(e.target.value as CefrLevel)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
-              >
-                {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as CefrLevel[]).map((l) => (
-                  <option key={l} value={l}>
-                    CEFR {l}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Số lượng từ tạo mới
-              </label>
-              <select
-                value={genCount}
-                onChange={(e) => setGenCount(Number(e.target.value))}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
-              >
-                <option value={2}>2 từ vựng chuyên sâu</option>
-                <option value={3}>3 từ vựng chuyên sâu</option>
-                <option value={5}>5 từ vựng chuyên sâu</option>
-              </select>
-            </div>
-          </div>
+          {genMode === 'direct' ? (
+            <>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+                    Model Tạo Từ Vựng AI (Gemini & Gemma 4)
+                  </label>
+                  <Badge variant="emerald">DB ({vocabModels.length})</Badge>
+                </div>
+                <select
+                  value={selectedVocabModel}
+                  onChange={(e) => setSelectedVocabModel(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
+                >
+                  {vocabModels.map((m) => (
+                    <option key={m.modelCode} value={m.modelCode}>
+                      {m.displayName} —{' '}
+                      {m.supportsAudioInput ? 'Đa phương thức' : 'Text Generation Only'}
+                    </option>
+                  ))}
+                </select>
+                {vocabModels.find((m) => m.modelCode === selectedVocabModel) && (
+                  <p className="text-[11px] text-slate-500">
+                    {vocabModels.find((m) => m.modelCode === selectedVocabModel)?.capabilityNote}
+                  </p>
+                )}
+              </div>
 
-          <TopicCreatablePicker
-            label="Chủ đề tạo thêm từ (DB Suggestions + Tự nhập)"
-            value={genTopic}
-            onChange={setGenTopic}
-            topics={vocabTopics}
-            placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý bên dưới..."
-            helperText="Gợi ý chủ đề từ vựng được lấy trực tiếp từ bảng Topics trong Database, đồng thời hỗ trợ tự nhập chủ đề tùy ý."
-          />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Trình độ CEFR
+                  </label>
+                  <select
+                    value={genCefr}
+                    onChange={(e) => setGenCefr(e.target.value as CefrLevel)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
+                  >
+                    {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as CefrLevel[]).map((l) => (
+                      <option key={l} value={l}>
+                        CEFR {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Số lượng từ tạo mới
+                  </label>
+                  <select
+                    value={genCount}
+                    onChange={(e) => setGenCount(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
+                  >
+                    <option value={2}>2 từ vựng chuyên sâu</option>
+                    <option value={3}>3 từ vựng chuyên sâu</option>
+                    <option value={5}>5 từ vựng chuyên sâu</option>
+                    <option value={10}>10 từ vựng chuyên sâu</option>
+                  </select>
+                </div>
+              </div>
+
+              <TopicCreatablePicker
+                label="Chủ đề tạo thêm từ (DB Suggestions + Tự nhập)"
+                value={genTopic}
+                onChange={setGenTopic}
+                topics={vocabTopics}
+                placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý bên dưới..."
+                helperText="Gợi ý chủ đề từ vựng được lấy trực tiếp từ bảng Topics trong Database, đồng thời hỗ trợ tự nhập chủ đề tùy ý."
+              />
+            </>
+          ) : (
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Trình độ CEFR
+                  </label>
+                  <select
+                    value={genCefr}
+                    onChange={(e) => setGenCefr(e.target.value as CefrLevel)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-xs"
+                  >
+                    {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as CefrLevel[]).map((l) => (
+                      <option key={l} value={l}>
+                        CEFR {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    Số lượng từ mong muốn
+                  </label>
+                  <select
+                    value={genCount}
+                    onChange={(e) => setGenCount(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-xs"
+                  >
+                    <option value={2}>2 từ vựng</option>
+                    <option value={3}>3 từ vựng</option>
+                    <option value={5}>5 từ vựng</option>
+                    <option value={10}>10 từ vựng</option>
+                  </select>
+                </div>
+              </div>
+
+              <TopicCreatablePicker
+                label="Chủ đề từ vựng"
+                value={genTopic}
+                onChange={setGenTopic}
+                topics={vocabTopics}
+                placeholder="Nhập chủ đề từ vựng muốn học hoặc chọn từ gợi ý..."
+              />
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    Bước 1: Lấy Prompt cho Web AI
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={buildPromptMutation.isPending}
+                    onClick={() => void handleBuildPrompt()}
+                  >
+                    {buildPromptMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Đang tạo prompt...
+                      </>
+                    ) : (
+                      'Tạo Prompt'
+                    )}
+                  </Button>
+                </div>
+
+                {manualPrompt && (
+                  <div className="space-y-2 pt-1">
+                    <div className="relative">
+                      <textarea
+                        readOnly
+                        value={manualPrompt}
+                        rows={4}
+                        className="w-full p-2.5 rounded-xl bg-slate-900 text-emerald-300 font-mono text-[11px] leading-relaxed resize-none focus:outline-hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyPrompt()}
+                        className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs cursor-pointer transition-colors"
+                      >
+                        {isPromptCopied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            Đã chép!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            Sao chép Prompt
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      💡 Sao chép prompt trên dán vào ChatGPT, Claude, Gemini Web hoặc DeepSeek. Sau đó copy JSON kết quả dán vào Bước 2 bên dưới.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                    Bước 2: Nhập JSON kết quả từ Web AI
+                  </span>
+                  <Badge variant="sky">Nguồn: manual-web-ai</Badge>
+                </div>
+
+                <textarea
+                  value={manualJsonInput}
+                  onChange={(e) => setManualJsonInput(e.target.value)}
+                  rows={4}
+                  placeholder="Dán mảng JSON hoặc cả khối ```json ... ``` từ Web AI vào đây..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-mono text-[11px] placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+
+                <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={assignToTodayPlan}
+                    onChange={(e) => setAssignToTodayPlan(e.target.checked)}
+                    className="w-4 h-4 rounded-sm border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  Gán các từ vựng này vào kế hoạch học tập hôm nay (Daily Plan)
+                </label>
+              </div>
+
+              {manualError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{manualError}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Dialog>
     </div>

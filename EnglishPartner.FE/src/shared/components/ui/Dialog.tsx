@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { IconButton } from './IconButton';
 
 export interface DialogProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -27,12 +29,14 @@ const MAX_WIDTH_CLASSES: Record<NonNullable<DialogProps['maxWidth']>, string> = 
 
 /**
  * Shared Accessible Dialog / Modal Primitive:
- * - Centered overlay with backdrop blur
+ * - Rendered via React Portal into `document.body` so parent overflow/stacking contexts never clip it
+ * - Accepts both `isOpen` and `open` props for compatibility
  * - Supports ESC key and click-outside to close
  * - Fixed Header, independently scrollable Body (`max-h-[85vh] overflow-y-auto`), and sticky Footer
  */
 export const Dialog: React.FC<DialogProps> = ({
   isOpen,
+  open,
   onClose,
   title,
   description,
@@ -42,8 +46,10 @@ export const Dialog: React.FC<DialogProps> = ({
   children,
   bodyClassName,
 }) => {
+  const visible = Boolean(isOpen ?? open);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!visible) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -51,13 +57,13 @@ export const Dialog: React.FC<DialogProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [visible, onClose]);
 
-  if (!isOpen) return null;
+  if (!visible) return null;
 
-  return (
+  const dialogContent = (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[100] bg-slate-900/55 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
       onClick={onClose}
     >
       <div
@@ -108,4 +114,9 @@ export const Dialog: React.FC<DialogProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(dialogContent, document.body);
+  }
+  return dialogContent;
 };
