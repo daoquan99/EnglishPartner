@@ -44,7 +44,7 @@ const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
     ],
     examples: [
       {
-        id: 'ex1',
+        id: '30000000-0000-0000-0000-000000001006',
         sentenceEn: 'We designed a stateless API so the backend remains horizontally scalable under peak load.',
         translationVi: 'Chúng tôi thiết kế API phi trạng thái để backend có thể mở rộng theo chiều ngang khi tải tăng cao.',
         cefrLevel: 'B2',
@@ -88,7 +88,7 @@ const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
     ],
     examples: [
       {
-        id: 'ex2',
+        id: '30000000-0000-0000-0000-000000001007',
         sentenceEn: 'Missing indexes on the Orders table became the main bottleneck during flash sales.',
         translationVi: 'Việc thiếu index trên bảng Orders đã trở thành điểm nghẽn chính trong đợt mở bán chớp nhoáng.',
         cefrLevel: 'B2',
@@ -135,7 +135,7 @@ const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
     ],
     examples: [
       {
-        id: 'ex3',
+        id: '30000000-0000-0000-0000-000000001008',
         sentenceEn: 'Adding automatic retry policies made our payment service much more resilient to network timeouts.',
         translationVi: 'Việc bổ sung cơ chế tự động thử lại đã giúp dịch vụ thanh toán của chúng tôi chịu lỗi mất mạng tốt hơn nhiều.',
         cefrLevel: 'B2',
@@ -169,15 +169,90 @@ export const vocabularyApi = {
     );
     return data;
   },
+
+  async getPronunciationAudio(params: {
+    targetType: 'word' | 'sentence';
+    targetId: string;
+    voiceName?: string;
+    speechSpeed?: number;
+    accent?: 'US' | 'UK';
+    modelCode?: string;
+    vocabularyId?: string;
+    senseId?: string;
+  }): Promise<SynthesizePronunciationAudioResponseDto> {
+    const { data } = await httpClient.get<SynthesizePronunciationAudioResponseDto>(
+      '/api/pronunciation/audio',
+      { params }
+    );
+    return data;
+  },
   async getTodayPlan(targetWordCount = 10): Promise<DailyVocabularyPlanResponseDto> {
     try {
       const timeZoneId = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
-      const { data } = await httpClient.get<DailyVocabularyPlanResponseDto>(
+      const { data } = await httpClient.get<any>(
         '/api/learning/flashcards/today',
         { params: { timeZoneId, target: targetWordCount } }
       );
-      if (data && Array.isArray(data.items) && data.items.length > 0) {
-        return data;
+      const rawCards = data?.items || data?.flashcards || [];
+      if (Array.isArray(rawCards) && rawCards.length > 0) {
+        const items: VocabularyFlashcardDto[] = rawCards.map((c: any) => ({
+          vocabularyId: c.vocabularyId,
+          senseId: c.senseId,
+          word: c.word,
+          partOfSpeech: c.partOfSpeech,
+          cefrLevel: c.cefrLevel,
+          definitionEn: c.definitionEn,
+          meaningVi: c.meaningVi,
+          descriptionEn: c.descriptionEn ?? '',
+          topicCategory: c.topicCategory,
+          frequencyRank: c.frequencyRank,
+          pronunciations: c.pronunciations || [],
+          synonyms: c.synonyms || [],
+          antonyms: c.antonyms || [],
+          wordFamilies: (c.wordFamilies || []).map((wf: any) => ({
+            id: wf.id,
+            wordForm: wf.relatedWord || wf.wordForm,
+            partOfSpeech: wf.partOfSpeech,
+            note: wf.note ?? '',
+          })),
+          collocations: (c.collocations || []).map((col: any) => ({
+            id: col.id,
+            phrase: col.phraseEn || col.phrase,
+            meaningVi: col.meaningVi,
+            exampleSentence: col.exampleSentence,
+          })),
+          examples: (c.examples || []).map((ex: any) => ({
+            id: ex.id,
+            sentenceEn: ex.sentenceEn,
+            translationVi: ex.sentenceVi || ex.translationVi || '',
+            cefrLevel: ex.cefrLevel || c.cefrLevel,
+          })),
+          grammarPatterns: (c.grammarPatterns || []).map((gp: any) => ({
+            id: gp.id,
+            pattern: gp.pattern,
+            explanationVi: gp.explanation || gp.explanationVi || '',
+            sampleSentence: gp.example || gp.sampleSentence || '',
+          })),
+          learningStatus: c.learningStatus || 'New',
+          repetitionCount: c.repetitionCount || 0,
+          intervalDays: c.intervalDays || 0,
+          easeFactor: c.easeFactor || 2.5,
+          nextReviewAtUtc: c.nextReviewAt,
+          lastPronunciationScore: c.latestPronunciationScore,
+          isCompletedToday: c.itemStatus === 'Completed',
+        }));
+
+        return {
+          planId: data.planId,
+          userId: data.userId,
+          planDate: data.learningDate || new Date().toISOString().slice(0, 10),
+          timeZoneId: data.timeZoneId || timeZoneId,
+          targetWordCount: data.newVocabularyTarget || targetWordCount,
+          completedWordCount: data.completedCount || 0,
+          dueReviewCount: data.pendingReviewCount || 0,
+          newWordCount: data.newCount || 0,
+          items,
+        };
       }
     } catch {
       // Fallback when offline
@@ -267,6 +342,11 @@ export const vocabularyApi = {
     );
     return {
       assessmentId: data.assessmentId,
+      vocabularyId: data.vocabularyId ?? payload.vocabularyId,
+      senseId: data.senseId ?? payload.senseId,
+      targetType: data.targetType ?? (payload.exampleId ? 'Sentence' : 'Word'),
+      targetId: data.targetId ?? payload.exampleId,
+      accent: data.accent ?? payload.accent ?? 'US',
       overallScore: data.overallScore,
       isAssessable: data.isAssessable,
       status: data.status,

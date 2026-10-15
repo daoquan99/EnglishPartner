@@ -66,6 +66,11 @@ describe('Pronunciation assessment API contract', () => {
     const result = await vocabularyApi.assessPronunciation(input);
     expect(result).toEqual({
       assessmentId: 'assessment-1',
+      vocabularyId: input.vocabularyId,
+      senseId: input.senseId,
+      targetType: 'Word',
+      targetId: undefined,
+      accent: 'US',
       overallScore: 86,
       isAssessable: true,
       status: 'Completed',

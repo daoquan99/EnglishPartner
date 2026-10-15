@@ -268,6 +268,26 @@ Each feature (`Conversations`, `Learning`, `Pronunciation`, `Vocabulary`) is org
 - **Queries** use `AsNoTracking()` projections via `IAppDbContextFactory` to optimize read performance without unnecessary aggregate materialization.
 - **API Relocation**: `EnglishLiveTutor.Api` resides under `src/EnglishLiveTutor.Api/`, keeping HTTP endpoints and SignalR hubs thin and focused on transport, routing, and serialization while preserving all existing frontend contracts.
 
+`VocabularyEndpoints`, `PronunciationEndpoints` (including `/api/ai-models`), and `PromptEndpoints` dispatch every use case through `ICommandHandler` or `IQueryHandler`. Their HTTP layer binds requests, enforces permissions, and formats results; it does not create EF contexts or call AI services directly. List queries execute filtering, counting, ordering, and paging in Application through `IAppDbContextFactory`. Commands persist tracked aggregates through specialized repositories, including `ISpeechSpeedRepository` for speech-speed configuration. Vocabulary and AI-model updates modify existing rows, preserving aggregate IDs and creation audit; vocabulary updates also preserve the primary sense ID and other senses.
+
+Speech-speed lists read the database only. Default speech speeds belong to database seeding; empty filters/pages do not synthesize fallback entries inside the GET endpoint.
+
+### Vocabulary generation timeout
+
+`GeminiVocabularyAiGenerator` receives a typed `HttpClient` registered in Infrastructure. Configure its timeout in the API configuration:
+
+```json
+{
+  "Ai": {
+    "VocabularyGeneration": {
+      "TimeoutSeconds": 300
+    }
+  }
+}
+```
+
+The default is 300 seconds; allowed values are 1–3600 seconds. Set `Ai__VocabularyGeneration__TimeoutSeconds=600` to allow ten minutes through an environment variable. This setting affects vocabulary generation only. The request cancellation token still propagates to the Google HTTP call and may cancel it earlier. Changing the setting requires restarting the API. The HTTP timeout is separate from database command timeouts and from any browser/proxy request limits.
+
 ---
 
 ## 7. Identity, Prompts (DB-Backed `CefrPromptBuilder`), and Teacher Voices Catalog

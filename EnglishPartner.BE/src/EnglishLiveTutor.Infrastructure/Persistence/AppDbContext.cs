@@ -74,6 +74,7 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public DbSet<AudioRecordingEntity> AudioRecordings => Set<AudioRecordingEntity>();
     public DbSet<PronunciationAssessmentEntity> PronunciationAssessments => Set<PronunciationAssessmentEntity>();
     public DbSet<PronunciationCriterionScoreEntity> PronunciationCriterionScores => Set<PronunciationCriterionScoreEntity>();
+    public DbSet<GeneratedPronunciationAudioEntity> GeneratedPronunciationAudios => Set<GeneratedPronunciationAudioEntity>();
 
     /// <summary>
     /// Explicit access to soft-deleted Aggregate Roots when authorized administrative or audit operations require it.

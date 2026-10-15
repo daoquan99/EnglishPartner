@@ -68,6 +68,7 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     DbSet<AudioRecordingEntity> AudioRecordings { get; }
     DbSet<PronunciationAssessmentEntity> PronunciationAssessments { get; }
     DbSet<PronunciationCriterionScoreEntity> PronunciationCriterionScores { get; }
+    DbSet<GeneratedPronunciationAudioEntity> GeneratedPronunciationAudios { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

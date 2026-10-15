@@ -10,6 +10,7 @@ using EnglishLiveTutor.Application.Features.Pronunciation.Commands.DeleteScoring
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.SynthesizePronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetActiveScoringRubric;
+using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationHistory;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationModels;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.ListScoringRubrics;
@@ -42,6 +43,51 @@ public static class PronunciationEndpoints
             {
                 var result = await handler.HandleAsync(new SynthesizePronunciationAudioCommand(req), ct);
                 return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        // Query Persisted Pronunciation Audio from Cache
+        group.MapGet("/audio", async (
+            string targetType,
+            string? targetId,
+            string? voiceName,
+            double? speechSpeed,
+            string? accent,
+            string? modelCode,
+            string? vocabularyId,
+            string? senseId,
+            IQueryHandler<GetPronunciationAudioQuery, SynthesizePronunciationAudioResponseDto?> handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(targetId) || !Guid.TryParse(targetId, out var parsedTargetId) || parsedTargetId == Guid.Empty)
+            {
+                return Results.NotFound(new { error = "Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm." });
+            }
+
+            Guid? parsedVocabId = Guid.TryParse(vocabularyId, out var vid) ? vid : null;
+            Guid? parsedSenseId = Guid.TryParse(senseId, out var sid) ? sid : null;
+
+            try
+            {
+                var result = await handler.HandleAsync(
+                    new GetPronunciationAudioQuery(
+                        targetType,
+                        parsedTargetId,
+                        voiceName,
+                        speechSpeed,
+                        accent,
+                        modelCode,
+                        parsedVocabId,
+                        parsedSenseId),
+                    ct);
+
+                return result is null
+                    ? Results.NotFound(new { error = "Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm." })
+                    : Results.Ok(result);
             }
             catch (InvalidOperationException ex)
             {

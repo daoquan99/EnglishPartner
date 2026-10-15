@@ -1,0 +1,24 @@
+@baseUrl = http://localhost:5000
+
+### Lấy prompt để copy sang web AI (không cần API key)
+POST {{baseUrl}}/api/vocabularies/generation/prompt
+Content-Type: application/json
+
+{
+  "requestedCount": 3,
+  "cefrLevel": "B2",
+  "topic": "Workplace communication",
+  "excludedWords": []
+}
+
+### Nhập response từ web AI (ghi DB, không gọi Google API)
+POST {{baseUrl}}/api/vocabularies/generation/import
+Content-Type: application/json
+
+{
+  "jsonText": "[{\"word\":\"resilient\",\"partOfSpeech\":\"adjective\",\"definitionEn\":\"Able to recover quickly\",\"meaningVi\":\"Kiên cường\",\"synonyms\":[\"strong\"],\"antonyms\":[\"fragile\"]}]",
+  "modelCode": "manual-web-ai",
+  "cefrLevel": "B2",
+  "topic": "Workplace communication",
+  "assignToTodayPlan": true
+}

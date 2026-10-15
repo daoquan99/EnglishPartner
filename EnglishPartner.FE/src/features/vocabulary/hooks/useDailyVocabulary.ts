@@ -9,6 +9,18 @@ import type {
 
 export const VOCAB_QUERY_KEYS = {
   todayPlan: (target = 10) => ['vocabulary', 'today-plan', target] as const,
+  pronunciationHistory: (params: {
+    userId?: string;
+    vocabularyId?: string;
+    senseId?: string;
+    targetType?: string;
+    targetId?: string;
+  }) => ['vocabulary', 'pronunciation-history', params] as const,
+  learningHistory: (params: {
+    userId?: string;
+    vocabularyId?: string;
+    senseId?: string;
+  }) => ['vocabulary', 'learning-history', params] as const,
 };
 
 export function useDailyVocabularyPlanQuery(target = 10) {
@@ -26,6 +38,7 @@ export function useSubmitVocabularyReviewMutation() {
       vocabularyApi.submitReview(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'today-plan'] });
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'learning-history'] });
     },
   });
 }
@@ -47,6 +60,7 @@ export function useAssessPronunciationMutation() {
     mutationFn: vocabularyApi.assessPronunciation,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'today-plan'] });
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'pronunciation-history'] });
     },
   });
 }

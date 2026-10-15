@@ -38,11 +38,13 @@ using EnglishLiveTutor.Application.Features.Prompts.Queries.ListCefrLevelPrompts
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListConversationModePrompts;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.ListSpeechSpeeds;
 using EnglishLiveTutor.Application.Features.Prompts.Queries.PreviewSystemPrompt;
+using EnglishLiveTutor.Application.Features.Pronunciation;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.AssessPronunciation;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.DeleteScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.SynthesizePronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.UpdateScoringRubric;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetActiveScoringRubric;
+using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationAudio;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationHistory;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.GetPronunciationModels;
 using EnglishLiveTutor.Application.Features.Pronunciation.Queries.ListScoringRubrics;
@@ -278,6 +280,11 @@ public static class DependencyInjection
 
         services.AddTransient<UpdateAiModelConfigCommandHandler>();
         services.AddTransient<ICommandHandler<UpdateAiModelConfigCommand, AiModelConfigEntity?>>(sp => sp.GetRequiredService<UpdateAiModelConfigCommandHandler>());
+
+        services.AddScoped<IPronunciationTargetResolver, PronunciationTargetResolver>();
+
+        services.AddTransient<GetPronunciationAudioQueryHandler>();
+        services.AddTransient<IQueryHandler<GetPronunciationAudioQuery, SynthesizePronunciationAudioResponseDto?>>(sp => sp.GetRequiredService<GetPronunciationAudioQueryHandler>());
 
         services.AddTransient<SynthesizePronunciationAudioCommandHandler>();
         services.AddTransient<ICommandHandler<SynthesizePronunciationAudioCommand, SynthesizePronunciationAudioResponseDto>>(sp => sp.GetRequiredService<SynthesizePronunciationAudioCommandHandler>());

@@ -159,13 +159,19 @@ public sealed class GeminiLivePronunciationTtsSynthesizer : ILivePronunciationTt
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(18));
+        bool turnCompleted = false;
         try
         {
             await turnCompleteTcs.Task.WaitAsync(timeoutCts.Token);
+            turnCompleted = true;
         }
         catch (OperationCanceledException)
         {
-            // If we already received audio chunks before timeout, return them
+            if (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            // If we already received audio chunks before internal timeout, return them without caching
         }
 
         byte[] rawPcmBytes;
@@ -193,7 +199,8 @@ public sealed class GeminiLivePronunciationTtsSynthesizer : ILivePronunciationTt
             MimeType: "audio/wav",
             SampleRate: 24000,
             DurationMs: durationMs,
-            AudioBase64: Convert.ToBase64String(wavBytes)
+            AudioBase64: Convert.ToBase64String(wavBytes),
+            IsComplete: turnCompleted
         );
     }
 

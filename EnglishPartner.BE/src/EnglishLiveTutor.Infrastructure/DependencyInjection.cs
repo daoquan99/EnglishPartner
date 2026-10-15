@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IUserVocabularyProgressRepository, UserVocabularyProgressRepository>();
         services.AddScoped<IScoringRubricRepository, ScoringRubricRepository>();
         services.AddScoped<IPronunciationAssessmentRepository, PronunciationAssessmentRepository>();
+        services.AddScoped<IGeneratedPronunciationAudioRepository, GeneratedPronunciationAudioRepository>();
 
         // AI & Realtime Services
         services.AddSingleton<ICefrPromptBuilder, CefrPromptBuilder>();
@@ -86,6 +87,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();
         services.AddScoped<ILivePronunciationTtsSynthesizer, GeminiLivePronunciationTtsSynthesizer>();
+        services.AddSingleton<IPronunciationSynthesisLock, PronunciationSynthesisLock>();
         services.AddSingleton<GeminiLiveConnectionManager>();
 
         return services;

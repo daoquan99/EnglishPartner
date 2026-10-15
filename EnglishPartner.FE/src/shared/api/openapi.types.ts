@@ -184,12 +184,15 @@ export interface UpsertSpeechSpeedRequestDto {
 
 export interface SynthesizePronunciationAudioRequestDto {
   apiKey: string;
-  text: string;
+  text?: string;
   targetType?: 'word' | 'sentence';
   accent: 'US' | 'UK';
   voiceName: TeacherVoiceName;
   speechSpeed: number;
   modelCode: 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking' | string;
+  targetId?: string;
+  vocabularyId?: string;
+  senseId?: string;
 }
 
 export interface SynthesizePronunciationAudioResponseDto {

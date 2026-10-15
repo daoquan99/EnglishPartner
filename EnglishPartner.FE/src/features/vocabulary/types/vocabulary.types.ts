@@ -144,11 +144,18 @@ export interface SubmitPronunciationAssessmentRequestDto {
 
 export interface PronunciationAssessmentApiResultDto {
   assessmentId: string;
+  vocabularyId?: string | null;
+  senseId?: string | null;
+  targetType?: string | null;
+  targetId?: string | null;
+  accent?: string | null;
   overallScore: number | null;
   expectedText: string;
   recognizedText: string | null;
   modelCode: string;
   rubricCode: string;
+  rubricVersion?: number | null;
+  confidence?: number | null;
   isAssessable: boolean;
   status: string;
   criteria: {
@@ -167,6 +174,11 @@ export interface PronunciationAssessmentApiResultDto {
 
 export interface PronunciationAssessmentResultDto {
   assessmentId: string;
+  vocabularyId?: string | null;
+  senseId?: string | null;
+  targetType?: string | null;
+  targetId?: string | null;
+  accent?: string | null;
   overallScore: number | null;
   isAssessable: boolean;
   status: string;
@@ -179,3 +191,44 @@ export interface PronunciationAssessmentResultDto {
   criterionScores: CriterionScoreDto[];
   assessedAtUtc: string;
 }
+
+export interface PronunciationHistoryItemDto {
+  assessmentId: string;
+  vocabularyId?: string | null;
+  senseId?: string | null;
+  targetType: 'Word' | 'Sentence' | string;
+  targetId?: string | null;
+  expectedText: string;
+  recognizedText: string | null;
+  accent: string;
+  modelCode: string;
+  rubricCode: string;
+  rubricVersion?: number | null;
+  overallScore: number | null;
+  confidence?: number | null;
+  isAssessable: boolean;
+  status: string;
+  criteria: {
+    code: string;
+    name: string;
+    weight: number;
+    score: number;
+    weightedScore: number;
+    feedback: string;
+  }[];
+  strengths: string[];
+  improvements: string[];
+  suggestedPractice: string[];
+  createdAt: string;
+}
+
+export interface FlashcardReviewHistoryItemDto {
+  id: string;
+  vocabularyId: string;
+  senseId: string;
+  rating: ReviewRating;
+  reviewType: string;
+  reviewedAtUtc: string;
+  nextReviewAtUtc?: string | null;
+}
+

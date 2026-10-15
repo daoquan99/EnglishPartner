@@ -1,4 +1,5 @@
 export { DailyVocabularyPage } from './pages/DailyVocabularyPage';
+export { PronunciationHistoryDialog } from './components/PronunciationHistoryDialog';
 export {
   useDailyVocabularyPlanQuery,
   useSubmitVocabularyReviewMutation,

@@ -12,7 +12,7 @@ public static class DailyLearningEndpoints
 {
     public static IEndpointRouteBuilder MapDailyLearningEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/learning/flashcards").RequireAuthorization();
+        var group = app.MapGroup("/api/learning/flashcards");
 
         group.MapGet("/today", async (
             string? timeZoneId,

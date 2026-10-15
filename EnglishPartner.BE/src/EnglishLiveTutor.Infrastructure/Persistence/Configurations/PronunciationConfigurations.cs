@@ -129,3 +129,38 @@ public sealed class PronunciationCriterionScoreEntityConfiguration : IEntityType
         builder.ConfigureAudit<PronunciationCriterionScoreEntity, Guid>();
     }
 }
+
+public sealed class GeneratedPronunciationAudioConfiguration : IEntityTypeConfiguration<GeneratedPronunciationAudioEntity>
+{
+    public void Configure(EntityTypeBuilder<GeneratedPronunciationAudioEntity> builder)
+    {
+        builder.ToTable("GeneratedPronunciationAudios");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+
+        builder.Property(e => e.TargetType).HasMaxLength(32).IsRequired();
+        builder.Property(e => e.TargetId).IsRequired();
+        builder.Property(e => e.VoiceName).HasMaxLength(64).IsRequired();
+        builder.Property(e => e.SpeechSpeed).HasColumnType("decimal(3,2)").IsRequired();
+        builder.Property(e => e.Accent).HasMaxLength(16).HasDefaultValue("US").IsRequired();
+        builder.Property(e => e.ModelCode).HasMaxLength(128).IsRequired();
+        builder.Property(e => e.TextSnapshot).HasMaxLength(2000).IsRequired();
+        builder.Property(e => e.TextHash).HasMaxLength(64).IsRequired();
+        builder.Property(e => e.AudioData).HasColumnType("varbinary(max)").IsRequired();
+        builder.Property(e => e.MimeType).HasMaxLength(64).HasDefaultValue("audio/wav").IsRequired();
+        builder.Property(e => e.SampleRate).HasDefaultValue(24000).IsRequired();
+        builder.Property(e => e.DurationMs).IsRequired();
+        builder.Property(e => e.SystemPromptUsed).HasMaxLength(4000).IsRequired();
+        builder.Property(e => e.IsValid).HasDefaultValue(true).IsRequired();
+
+        builder.ConfigureAudit<GeneratedPronunciationAudioEntity, Guid>();
+        builder.ConfigureSoftDelete<GeneratedPronunciationAudioEntity, Guid>();
+
+        // Composite index required with the exact four root columns:
+        builder.HasIndex(e => new { e.TargetType, e.VoiceName, e.SpeechSpeed, e.TargetId });
+
+        // Full lookup query index:
+        builder.HasIndex(e => new { e.TargetType, e.TargetId, e.VoiceName, e.SpeechSpeed, e.Accent, e.ModelCode, e.TextHash })
+            .HasDatabaseName("IX_GeneratedPronunciationAudios_Lookup");
+    }
+}
