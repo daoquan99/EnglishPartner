@@ -15,15 +15,15 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
     primary:
-      'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-600 disabled:bg-emerald-300',
+      'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-xs border border-emerald-600 hover:border-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:shadow-none',
     secondary:
-      'bg-amber-500 text-white hover:bg-amber-600 shadow-sm border border-amber-500 disabled:bg-amber-300',
+      'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 shadow-xs border border-amber-500 hover:border-amber-600 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:shadow-none',
     outline:
-      'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-xs disabled:opacity-50',
+      'bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100 border border-slate-200 shadow-2xs disabled:bg-slate-50 disabled:text-slate-300 disabled:border-slate-100 disabled:shadow-none',
     ghost:
-      'bg-transparent text-slate-600 hover:bg-slate-100 border border-transparent disabled:opacity-50',
+      'bg-transparent text-slate-600 hover:bg-slate-100 active:bg-slate-200 border border-transparent disabled:opacity-40 disabled:hover:bg-transparent',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 shadow-sm border border-rose-600 disabled:bg-rose-300',
+      'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 shadow-xs border border-rose-600 hover:border-rose-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:shadow-none',
   };
 
   const sizes: Record<NonNullable<ButtonProps['size']>, string> = {

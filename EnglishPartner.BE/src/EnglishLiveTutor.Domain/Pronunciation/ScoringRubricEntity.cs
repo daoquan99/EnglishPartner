@@ -12,6 +12,11 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
     public string Description { get; private set; } = string.Empty;
     public int Version { get; private set; } = 1;
     public string AssessmentType { get; private set; } = "Pronunciation";
+    public string AssessmentScope { get; private set; } = "Pronunciation"; // Pronunciation | LessonExercise
+    public int? ExerciseType { get; private set; }
+    public string? SubQuestionKind { get; private set; } // ShortAnswer | null
+    public string CefrLevel { get; private set; } = "All"; // All | A1 | A2 | B1 | B2 | C1 | C2
+    public string? ApplicableExerciseTypes { get; private set; } // e.g. "ReadingComprehension,ListeningComprehension"
     public bool IsActive { get; private set; } = true;
 
     public IReadOnlyCollection<ScoringRubricCriterionEntity> Criteria => _criteria.AsReadOnly();
@@ -27,6 +32,11 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
         int version = 1,
         string assessmentType = "Pronunciation",
         bool isActive = true,
+        string? assessmentScope = null,
+        int? exerciseType = null,
+        string? subQuestionKind = null,
+        string cefrLevel = "All",
+        string? applicableExerciseTypes = null,
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
@@ -40,6 +50,11 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
         Description = description?.Trim() ?? string.Empty;
         Version = version <= 0 ? 1 : version;
         AssessmentType = string.IsNullOrWhiteSpace(assessmentType) ? "Pronunciation" : assessmentType.Trim();
+        AssessmentScope = !string.IsNullOrWhiteSpace(assessmentScope) ? assessmentScope.Trim() : AssessmentType;
+        ExerciseType = exerciseType;
+        SubQuestionKind = subQuestionKind?.Trim();
+        CefrLevel = string.IsNullOrWhiteSpace(cefrLevel) ? "All" : cefrLevel.Trim();
+        ApplicableExerciseTypes = applicableExerciseTypes?.Trim();
         IsActive = isActive;
     }
 
@@ -52,6 +67,11 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
         decimal minimumScore = 0m,
         decimal maximumScore = 100m,
         bool isEnabled = true,
+        string? descriptorLevel0 = null,
+        string? descriptorLevel1 = null,
+        string? descriptorLevel2 = null,
+        string? descriptorLevel3 = null,
+        string? descriptorLevel4 = null,
         Guid? id = null)
     {
         int order = displayOrder ?? (_criteria.Count == 0 ? 1 : _criteria.Max(c => c.DisplayOrder) + 1);
@@ -65,6 +85,11 @@ public sealed class ScoringRubricEntity : AggregateRoot<Guid>
             minimumScore: minimumScore,
             maximumScore: maximumScore,
             isEnabled: isEnabled,
+            descriptorLevel0: descriptorLevel0,
+            descriptorLevel1: descriptorLevel1,
+            descriptorLevel2: descriptorLevel2,
+            descriptorLevel3: descriptorLevel3,
+            descriptorLevel4: descriptorLevel4,
             id: id);
 
         _criteria.Add(criterion);

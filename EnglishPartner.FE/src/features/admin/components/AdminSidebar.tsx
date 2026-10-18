@@ -29,7 +29,7 @@ export interface AdminNavItem {
   labelKey?: string;
   descriptionKey?: string;
   requiredPermissions: string[];
-  iconName: 'dashboard' | 'vocabularies' | 'users' | 'roles' | 'prompts' | 'voices' | 'topics' | 'rubrics';
+  iconName: 'dashboard' | 'vocabularies' | 'users' | 'roles' | 'prompts' | 'voices' | 'topics' | 'rubrics' | 'lessons' | 'lesson-rubrics';
 }
 
 export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
@@ -47,8 +47,29 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
       'topics.manage',
       'rubrics.manage',
       'vocabularies.manage',
+      'lessons.manage',
+      'lessons.read',
+      'lessons.publish',
     ],
     iconName: 'dashboard',
+  },
+  {
+    to: '/admin/lessons',
+    label: 'Giáo án & Bài học',
+    description: '16 loại bài tập tương tác CEFR',
+    labelKey: 'nav.adminLessons',
+    descriptionKey: 'nav.adminLessonsSub',
+    requiredPermissions: ['lessons.manage', 'lessons.read', 'lessons.publish'],
+    iconName: 'lessons',
+  },
+  {
+    to: '/admin/lesson-rubrics',
+    label: 'Rubrics Bài tập',
+    description: 'Tiêu chí chấm điểm CEFR 0-4',
+    labelKey: 'nav.adminLessonRubrics',
+    descriptionKey: 'nav.adminLessonRubricsSub',
+    requiredPermissions: ['rubrics.manage', 'lessons.manage'],
+    iconName: 'lesson-rubrics',
   },
   {
     to: '/admin/vocabularies',
@@ -136,6 +157,8 @@ const ADMIN_NAV_SVG_ICONS: Record<AdminNavItem['iconName'], string> = {
   rubrics: '/assets/icons/navigation/nav-rubrics.svg',
   users: '/assets/icons/navigation/nav-account.svg',
   roles: '/assets/icons/navigation/nav-roles.svg',
+  lessons: '/assets/icons/navigation/nav-study.svg',
+  'lesson-rubrics': '/assets/icons/navigation/nav-rubrics.svg',
 };
 
 function renderIcon(name: AdminNavItem['iconName']) {

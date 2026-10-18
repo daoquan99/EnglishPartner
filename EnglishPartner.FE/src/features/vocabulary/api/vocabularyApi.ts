@@ -12,6 +12,8 @@ import type {
   PronunciationAssessmentResultDto,
   SubmitPronunciationAssessmentRequestDto,
   SubmitVocabularyReviewRequestDto,
+  UpdateLearningSettingsRequestDto,
+  UserLearningSettingsDto,
   VocabularyFlashcardDto,
   VocabularyGenerationPromptDto,
 } from '../types/vocabulary.types';
@@ -159,6 +161,92 @@ const FALLBACK_FLASHCARDS: VocabularyFlashcardDto[] = [
 
 export const FALLBACK_VOCABULARY_CARDS = FALLBACK_FLASHCARDS;
 
+export function mapPlanResponse(data: any): DailyVocabularyPlanResponseDto {
+  const rawCards = data?.items || data?.flashcards || [];
+  const items: VocabularyFlashcardDto[] = Array.isArray(rawCards)
+    ? rawCards.map((c: any) => ({
+        dailyItemId: c.dailyItemId,
+        vocabularyId: c.vocabularyId,
+        senseId: c.senseId,
+        word: c.word,
+        partOfSpeech: c.partOfSpeech,
+        cefrLevel: c.cefrLevel,
+        definitionEn: c.definitionEn,
+        meaningVi: c.meaningVi,
+        descriptionEn: c.descriptionEn ?? '',
+        topicCategory: c.topicCategory,
+        frequencyRank: c.frequencyRank,
+        pronunciations: c.pronunciations || [],
+        synonyms: c.synonyms || [],
+        antonyms: c.antonyms || [],
+        wordFamilies: (c.wordFamilies || []).map((wf: any) => ({
+          id: wf.id,
+          wordForm: wf.relatedWord || wf.wordForm,
+          partOfSpeech: wf.partOfSpeech,
+          note: wf.note ?? '',
+        })),
+        collocations: (c.collocations || []).map((col: any) => ({
+          id: col.id,
+          phrase: col.phraseEn || col.phrase,
+          meaningVi: col.meaningVi,
+          exampleSentence: col.exampleSentence,
+        })),
+        examples: (c.examples || []).map((ex: any) => ({
+          id: ex.id,
+          sentenceEn: ex.sentenceEn,
+          translationVi: ex.sentenceVi || ex.translationVi || '',
+          cefrLevel: ex.cefrLevel || c.cefrLevel,
+        })),
+        grammarPatterns: (c.grammarPatterns || []).map((gp: any) => ({
+          id: gp.id,
+          pattern: gp.pattern,
+          explanationVi: gp.explanation || gp.explanationVi || '',
+          sampleSentence: gp.example || gp.sampleSentence || '',
+        })),
+        itemType: ((): 'New' | 'Review' | 'CarryOver' => {
+          const raw = String(c.itemType || '').toLowerCase();
+          if (raw === 'carryover' || raw === 'carry_over') return 'CarryOver';
+          if (raw === 'review') return 'Review';
+          return 'New';
+        })(),
+        itemStatus: c.itemStatus,
+        learningStatus: c.learningStatus || 'New',
+        repetitionCount: c.repetitionCount || 0,
+        intervalDays: c.intervalDays || 0,
+        easeFactor: c.easeFactor || 2.5,
+        nextReviewAtUtc: c.nextReviewAt,
+        lastPronunciationScore: c.latestPronunciationScore,
+        isCompletedToday: c.itemStatus === 'Completed',
+      }))
+    : [];
+
+  const newWordCount = data.newCount ?? 0;
+  const carryOverCount = data.carryOverCount ?? 0;
+  const targetWordCount = data.newVocabularyTarget ?? 20;
+  const firstLearningAssigned = data.firstLearningAssignedCount ?? (newWordCount + carryOverCount);
+
+  return {
+    planId: data.planId,
+    userId: data.userId,
+    planDate: data.learningDate || new Date().toISOString().slice(0, 10),
+    timeZoneId: data.timeZoneId || 'Asia/Ho_Chi_Minh',
+    targetWordCount,
+    completedWordCount: data.completedCount ?? 0,
+    dueReviewCount: data.pendingReviewCount ?? 0,
+    newWordCount,
+    targetCefrLevel: data.targetCefrLevel,
+    firstLearningAssignedCount: firstLearningAssigned,
+    firstLearningCompletedCount: data.firstLearningCompletedCount ?? 0,
+    firstLearningRemainingCount: data.firstLearningRemainingCount ?? 0,
+    remainingReviewCount: data.remainingReviewCount ?? (data.pendingReviewCount ?? 0),
+    shortfallCount: data.shortfallCount ?? Math.max(0, targetWordCount - firstLearningAssigned),
+    overflowCount: data.overflowCount ?? Math.max(0, firstLearningAssigned - targetWordCount),
+    carryOverCount,
+    isLegacyPlan: !!data.isLegacyPlan,
+    items,
+  };
+}
+
 export const vocabularyApi = {
   async synthesizePronunciationAudio(
     payload: SynthesizePronunciationAudioRequestDto
@@ -186,95 +274,50 @@ export const vocabularyApi = {
     );
     return data;
   },
-  async getTodayPlan(targetWordCount = 10): Promise<DailyVocabularyPlanResponseDto> {
-    try {
-      const timeZoneId = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
-      const { data } = await httpClient.get<any>(
-        '/api/learning/flashcards/today',
-        { params: { timeZoneId, target: targetWordCount } }
-      );
-      const rawCards = data?.items || data?.flashcards || [];
-      if (Array.isArray(rawCards) && rawCards.length > 0) {
-        const items: VocabularyFlashcardDto[] = rawCards.map((c: any) => ({
-          vocabularyId: c.vocabularyId,
-          senseId: c.senseId,
-          word: c.word,
-          partOfSpeech: c.partOfSpeech,
-          cefrLevel: c.cefrLevel,
-          definitionEn: c.definitionEn,
-          meaningVi: c.meaningVi,
-          descriptionEn: c.descriptionEn ?? '',
-          topicCategory: c.topicCategory,
-          frequencyRank: c.frequencyRank,
-          pronunciations: c.pronunciations || [],
-          synonyms: c.synonyms || [],
-          antonyms: c.antonyms || [],
-          wordFamilies: (c.wordFamilies || []).map((wf: any) => ({
-            id: wf.id,
-            wordForm: wf.relatedWord || wf.wordForm,
-            partOfSpeech: wf.partOfSpeech,
-            note: wf.note ?? '',
-          })),
-          collocations: (c.collocations || []).map((col: any) => ({
-            id: col.id,
-            phrase: col.phraseEn || col.phrase,
-            meaningVi: col.meaningVi,
-            exampleSentence: col.exampleSentence,
-          })),
-          examples: (c.examples || []).map((ex: any) => ({
-            id: ex.id,
-            sentenceEn: ex.sentenceEn,
-            translationVi: ex.sentenceVi || ex.translationVi || '',
-            cefrLevel: ex.cefrLevel || c.cefrLevel,
-          })),
-          grammarPatterns: (c.grammarPatterns || []).map((gp: any) => ({
-            id: gp.id,
-            pattern: gp.pattern,
-            explanationVi: gp.explanation || gp.explanationVi || '',
-            sampleSentence: gp.example || gp.sampleSentence || '',
-          })),
-          learningStatus: c.learningStatus || 'New',
-          repetitionCount: c.repetitionCount || 0,
-          intervalDays: c.intervalDays || 0,
-          easeFactor: c.easeFactor || 2.5,
-          nextReviewAtUtc: c.nextReviewAt,
-          lastPronunciationScore: c.latestPronunciationScore,
-          isCompletedToday: c.itemStatus === 'Completed',
-        }));
 
-        return {
-          planId: data.planId,
-          userId: data.userId,
-          planDate: data.learningDate || new Date().toISOString().slice(0, 10),
-          timeZoneId: data.timeZoneId || timeZoneId,
-          targetWordCount: data.newVocabularyTarget || targetWordCount,
-          completedWordCount: data.completedCount || 0,
-          dueReviewCount: data.pendingReviewCount || 0,
-          newWordCount: data.newCount || 0,
-          items,
-        };
-      }
-    } catch {
-      // Fallback when offline
-    }
-    return {
-      planId: 'fallback-plan-today',
-      userId: 'default-learner',
-      planDate: new Date().toISOString().slice(0, 10),
-      timeZoneId: 'Asia/Ho_Chi_Minh',
-      targetWordCount,
-      completedWordCount: FALLBACK_FLASHCARDS.filter((x) => x.isCompletedToday).length,
-      dueReviewCount: 1,
-      newWordCount: FALLBACK_FLASHCARDS.length,
-      items: FALLBACK_FLASHCARDS,
-    };
+  async getLearningSettings(): Promise<UserLearningSettingsDto> {
+    const { data } = await httpClient.get<UserLearningSettingsDto>('/api/learning/settings');
+    return data;
   },
 
-  async submitReview(payload: SubmitVocabularyReviewRequestDto): Promise<VocabularyFlashcardDto> {
-    const { data } = await httpClient.post<VocabularyFlashcardDto>(
-      '/api/learning/flashcards/review',
+  async updateLearningSettings(
+    payload: UpdateLearningSettingsRequestDto
+  ): Promise<UserLearningSettingsDto> {
+    const { data } = await httpClient.put<UserLearningSettingsDto>(
+      '/api/learning/settings',
       payload
     );
+    return data;
+  },
+
+  async getTodayPlan(timeZoneId?: string): Promise<DailyVocabularyPlanResponseDto> {
+    const params: Record<string, string> = {};
+    if (timeZoneId) {
+      params.timeZoneId = timeZoneId;
+    }
+    const { data } = await httpClient.get<any>(
+      '/api/learning/flashcards/today',
+      { params }
+    );
+    return mapPlanResponse(data);
+  },
+
+  async initializeTodayPlan(): Promise<DailyVocabularyPlanResponseDto> {
+    const { data } = await httpClient.post<any>(
+      '/api/learning/flashcards/today/initialize',
+      {}
+    );
+    return mapPlanResponse(data);
+  },
+
+  async submitReview(
+    payload: SubmitVocabularyReviewRequestDto,
+    dailyItemId?: string
+  ): Promise<VocabularyFlashcardDto> {
+    const url = dailyItemId
+      ? `/api/learning/flashcards/${dailyItemId}/review`
+      : '/api/learning/flashcards/review';
+    const { data } = await httpClient.post<VocabularyFlashcardDto>(url, payload);
     return data;
   },
 

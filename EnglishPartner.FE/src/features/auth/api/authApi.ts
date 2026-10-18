@@ -32,6 +32,13 @@ const DEMO_USERS: Record<string, UserProfileDto> = {
       'users.read',
       'users.manage',
       'roles.manage',
+      'vocabularies.manage',
+      'lessons.read',
+      'lessons.manage',
+      'lessons.publish',
+      'lessons.generate',
+      'lesson-exercises.attempt',
+      'lesson-rubrics.manage',
     ],
   },
   learner: {
@@ -49,6 +56,8 @@ const DEMO_USERS: Record<string, UserProfileDto> = {
       'vocabularies.read',
       'vocabularies.generate',
       'pronunciation.assess',
+      'lessons.read',
+      'lesson-exercises.attempt',
     ],
   },
 };

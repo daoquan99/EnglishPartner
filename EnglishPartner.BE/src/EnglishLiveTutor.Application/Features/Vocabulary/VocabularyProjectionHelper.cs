@@ -102,6 +102,23 @@ public static class VocabularyProjectionHelper
             flashcards.Add(MapToFlashcardDto(item.Id, vocab, sense, item.ItemType, item.Status, prog, latestScore));
         }
 
+        int newCount = orderedItems.Count(i => i.ItemType == "New");
+        int carryOverCount = orderedItems.Count(i => i.ItemType == "CarryOver");
+        int pendingReviewCount = orderedItems.Count(i => i.ItemType == "Review");
+        int completedCount = orderedItems.Count(i => i.Status == "Completed");
+
+        var firstLearningItems = orderedItems.Where(i => i.ItemType is "New" or "CarryOver").ToList();
+        int firstLearningAssigned = firstLearningItems.Count;
+        int firstLearningCompleted = firstLearningItems.Count(i => i.Status == "Completed");
+        int firstLearningRemaining = firstLearningAssigned - firstLearningCompleted;
+
+        var reviewItems = orderedItems.Where(i => i.ItemType == "Review").ToList();
+        int remainingReview = reviewItems.Count(i => i.Status != "Completed");
+
+        int overflowCount = Math.Max(0, firstLearningAssigned - plan.NewVocabularyTarget);
+        int shortfallCount = Math.Max(0, plan.NewVocabularyTarget - firstLearningAssigned);
+        bool isLegacyPlan = string.IsNullOrWhiteSpace(plan.TargetCefrLevel);
+
         return new DailyVocabularyPlanResponseDto(
             PlanId: plan.Id,
             UserId: plan.UserId,
@@ -109,12 +126,20 @@ public static class VocabularyProjectionHelper
             TimeZoneId: plan.TimeZoneId,
             NewVocabularyTarget: plan.NewVocabularyTarget,
             TotalAssignedCount: orderedItems.Count,
-            NewCount: orderedItems.Count(i => i.ItemType == "New"),
-            PendingReviewCount: orderedItems.Count(i => i.ItemType == "Review"),
-            CarryOverCount: orderedItems.Count(i => i.ItemType == "CarryOver"),
-            CompletedCount: orderedItems.Count(i => i.Status == "Completed"),
+            NewCount: newCount,
+            PendingReviewCount: pendingReviewCount,
+            CarryOverCount: carryOverCount,
+            CompletedCount: completedCount,
             Status: plan.Status,
-            Flashcards: flashcards
+            Flashcards: flashcards,
+            TargetCefrLevel: plan.TargetCefrLevel,
+            FirstLearningAssignedCount: firstLearningAssigned,
+            FirstLearningCompletedCount: firstLearningCompleted,
+            FirstLearningRemainingCount: firstLearningRemaining,
+            RemainingReviewCount: remainingReview,
+            ShortfallCount: shortfallCount,
+            OverflowCount: overflowCount,
+            IsLegacyPlan: isLegacyPlan
         );
     }
 

@@ -265,6 +265,9 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
         }
 
+        // 3b. Seed Default Lesson Exercise AI Rubric Templates
+        await LessonRubricSeeder.SeedAsync(db);
+
         // 4. Seed Starter Vocabulary Catalog (A1, A2, B1, B2) idempotently
         if (!await db.Vocabularies.AnyAsync())
         {
@@ -977,10 +980,38 @@ public static class DatabaseSeeder
                 new("users.manage", "Manage Users & Role Assignments", "Identity", "Assign roles and activate/deactivate users", id: Guid.Parse("60000000-0000-0000-0000-000000000009")),
                 new("roles.manage", "Manage Roles & Permissions", "Identity", "Create roles and configure role-permission mappings", id: Guid.Parse("60000000-0000-0000-0000-000000000010")),
                 new("topics.manage", "Manage Topics Catalog", "Topics", "Create, update, and curate conversation & vocabulary topics", id: Guid.Parse("60000000-0000-0000-0000-000000000011")),
-                new("vocabularies.manage", "Manage Vocabulary & Flashcards Catalog", "Vocabulary", "Create, update, and delete vocabulary flashcards in database", id: Guid.Parse("60000000-0000-0000-0000-000000000012"))
+                new("vocabularies.manage", "Manage Vocabulary & Flashcards Catalog", "Vocabulary", "Create, update, and delete vocabulary flashcards in database", id: Guid.Parse("60000000-0000-0000-0000-000000000012")),
+                new("lessons.read", "View Lessons & Catalog", "Lessons", "Access published lessons, exercises, and catalog", id: Guid.Parse("60000000-0000-0000-0000-000000000013")),
+                new("lessons.manage", "Manage Lessons & Exercises", "Lessons", "Create, update, and manage draft lessons and exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000014")),
+                new("lessons.publish", "Publish & Archive Lessons", "Lessons", "Publish validated draft lessons and archive deprecated lessons", id: Guid.Parse("60000000-0000-0000-0000-000000000015")),
+                new("lessons.generate", "AI Lesson Generation & Prompt Builder", "Lessons", "Generate candidate lessons with AI and build prompts", id: Guid.Parse("60000000-0000-0000-0000-000000000016")),
+                new("lesson-exercises.attempt", "Submit Lesson Attempts & Role Play", "Lessons", "Start attempts, submit answers, and participate in role play", id: Guid.Parse("60000000-0000-0000-0000-000000000017")),
+                new("lesson-rubrics.manage", "Manage Lesson Scoring Rubrics", "Lessons", "Create and version rubrics for lesson exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000018"))
             };
             db.Permissions.AddRange(permissions);
             await db.SaveChangesAsync();
+        }
+        else
+        {
+            var existingCodes = await db.Permissions.Select(p => p.Code).ToListAsync();
+            var missingPermissions = new List<PermissionEntity>();
+            void EnsurePerm(string code, string name, string module, string desc, Guid id)
+            {
+                if (!existingCodes.Contains(code))
+                    missingPermissions.Add(new PermissionEntity(code, name, module, desc, id: id));
+            }
+            EnsurePerm("lessons.read", "View Lessons & Catalog", "Lessons", "Access published lessons, exercises, and catalog", Guid.Parse("60000000-0000-0000-0000-000000000013"));
+            EnsurePerm("lessons.manage", "Manage Lessons & Exercises", "Lessons", "Create, update, and manage draft lessons and exercises", Guid.Parse("60000000-0000-0000-0000-000000000014"));
+            EnsurePerm("lessons.publish", "Publish & Archive Lessons", "Lessons", "Publish validated draft lessons and archive deprecated lessons", Guid.Parse("60000000-0000-0000-0000-000000000015"));
+            EnsurePerm("lessons.generate", "AI Lesson Generation & Prompt Builder", "Lessons", "Generate candidate lessons with AI and build prompts", Guid.Parse("60000000-0000-0000-0000-000000000016"));
+            EnsurePerm("lesson-exercises.attempt", "Submit Lesson Attempts & Role Play", "Lessons", "Start attempts, submit answers, and participate in role play", Guid.Parse("60000000-0000-0000-0000-000000000017"));
+            EnsurePerm("lesson-rubrics.manage", "Manage Lesson Scoring Rubrics", "Lessons", "Create and version rubrics for lesson exercises", Guid.Parse("60000000-0000-0000-0000-000000000018"));
+
+            if (missingPermissions.Count > 0)
+            {
+                db.Permissions.AddRange(missingPermissions);
+                await db.SaveChangesAsync();
+            }
         }
 
         if (!await db.Roles.AnyAsync())
@@ -1016,12 +1047,47 @@ public static class DatabaseSeeder
                 isSystemRole: true,
                 id: Guid.Parse("70000000-0000-0000-0000-000000000003"));
             foreach (var p in allPermissions.Where(x =>
-                x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess"))
+                x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt"))
             {
                 learnerRole.GrantPermission(p.Id);
             }
 
             db.Roles.AddRange(adminRole, teacherRole, learnerRole);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            var allPermissions = await db.Permissions.AsNoTracking().ToListAsync();
+            var existingRoles = await db.Roles.Include(r => r.RolePermissions).ToListAsync();
+
+            var adminRole = existingRoles.FirstOrDefault(r => r.Code == "ADMIN");
+            if (adminRole != null)
+            {
+                foreach (var p in allPermissions)
+                {
+                    adminRole.GrantPermission(p.Id);
+                }
+            }
+
+            var teacherRole = existingRoles.FirstOrDefault(r => r.Code == "TEACHER");
+            if (teacherRole != null)
+            {
+                foreach (var p in allPermissions.Where(x => x.Module != "Identity"))
+                {
+                    teacherRole.GrantPermission(p.Id);
+                }
+            }
+
+            var learnerRole = existingRoles.FirstOrDefault(r => r.Code == "LEARNER");
+            if (learnerRole != null)
+            {
+                foreach (var p in allPermissions.Where(x =>
+                    x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt"))
+                {
+                    learnerRole.GrantPermission(p.Id);
+                }
+            }
+
             await db.SaveChangesAsync();
         }
 

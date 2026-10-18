@@ -17,6 +17,8 @@ public sealed class DailyVocabularyPlanEntityConfiguration : IEntityTypeConfigur
         builder.Property(e => e.TimeZoneId).HasMaxLength(64).HasDefaultValue("Asia/Ho_Chi_Minh").IsRequired();
         builder.Property(e => e.Status).HasMaxLength(32).HasDefaultValue("Active").IsRequired();
 
+        builder.Property(e => e.TargetCefrLevel).HasMaxLength(8);
+
         builder.ConfigureAudit<DailyVocabularyPlanEntity, Guid>(
             createdAtColumnName: "CreatedAt",
             updatedAtColumnName: "UpdatedAtUtc");
@@ -49,6 +51,7 @@ public sealed class DailyVocabularyItemEntityConfiguration : IEntityTypeConfigur
         builder.ConfigureAudit<DailyVocabularyItemEntity, Guid>();
 
         builder.HasIndex(e => new { e.PlanId, e.SenseId }).IsUnique();
+        builder.HasIndex(e => new { e.PlanId, e.VocabularyId });
     }
 }
 
@@ -82,8 +85,32 @@ public sealed class VocabularyReviewAttemptEntityConfiguration : IEntityTypeConf
         builder.Property(e => e.UserId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.ReviewType).HasMaxLength(32).IsRequired();
         builder.Property(e => e.Rating).HasMaxLength(16).IsRequired();
+        builder.Property(e => e.ClientRequestId).HasMaxLength(64);
 
         builder.ConfigureAudit<VocabularyReviewAttemptEntity, Guid>();
         builder.ConfigureSoftDelete<VocabularyReviewAttemptEntity, Guid>();
+
+        builder.HasIndex(e => new { e.UserId, e.ClientRequestId })
+            .IsUnique()
+            .HasFilter("[ClientRequestId] IS NOT NULL");
+    }
+}
+
+public sealed class UserLearningSettingsEntityConfiguration : IEntityTypeConfiguration<UserLearningSettingsEntity>
+{
+    public void Configure(EntityTypeBuilder<UserLearningSettingsEntity> builder)
+    {
+        builder.ToTable("UserLearningSettings");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.UserId).HasMaxLength(64).IsRequired();
+        builder.Property(e => e.DailyVocabularyTarget).IsRequired();
+        builder.Property(e => e.CefrLevel).HasMaxLength(8).HasDefaultValue("B1").IsRequired();
+        builder.Property(e => e.RowVersion).IsRowVersion();
+
+        builder.ConfigureAudit<UserLearningSettingsEntity, Guid>();
+        builder.ConfigureSoftDelete<UserLearningSettingsEntity, Guid>();
+
+        builder.HasIndex(e => e.UserId).IsUnique();
     }
 }

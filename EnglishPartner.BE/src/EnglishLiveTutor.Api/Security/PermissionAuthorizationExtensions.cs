@@ -24,8 +24,8 @@ public static class PermissionAuthorizationExtensions
                     statusCode: StatusCodes.Status401Unauthorized);
             }
 
-            bool isAdmin = user.Claims.Any(c =>
-                (c.Type == ClaimTypes.Role || c.Type == "role") &&
+            bool isAdmin = user.IsInRole("ADMIN") || user.IsInRole("Admin") || user.Claims.Any(c =>
+                (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "roles") &&
                 string.Equals(c.Value, "ADMIN", StringComparison.OrdinalIgnoreCase));
 
             bool hasPerm = isAdmin || user.Claims.Any(c =>

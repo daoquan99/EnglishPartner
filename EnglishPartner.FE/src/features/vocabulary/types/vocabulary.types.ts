@@ -39,7 +39,21 @@ export interface VocabularyGrammarPatternDto {
   sampleSentence?: string | null;
 }
 
+export interface UserLearningSettingsDto {
+  dailyVocabularyTarget: number;
+  cefrLevel: CefrLevel;
+  isPersisted: boolean;
+  effectiveFromLearningDate: string;
+  timeZoneId: string;
+}
+
+export interface UpdateLearningSettingsRequestDto {
+  dailyVocabularyTarget: number;
+  cefrLevel: CefrLevel;
+}
+
 export interface VocabularyFlashcardDto {
+  dailyItemId?: string;
   vocabularyId: string;
   senseId: string;
   word: string;
@@ -57,6 +71,8 @@ export interface VocabularyFlashcardDto {
   collocations: VocabularyCollocationDto[];
   examples: VocabularyExampleDto[];
   grammarPatterns: VocabularyGrammarPatternDto[];
+  itemType?: 'New' | 'Review' | 'CarryOver';
+  itemStatus?: 'Pending' | 'InProgress' | 'Completed';
   learningStatus: string;
   repetitionCount: number;
   intervalDays: number;
@@ -75,6 +91,15 @@ export interface DailyVocabularyPlanResponseDto {
   completedWordCount: number;
   dueReviewCount: number;
   newWordCount: number;
+  targetCefrLevel?: CefrLevel | string;
+  firstLearningAssignedCount: number;
+  firstLearningCompletedCount: number;
+  firstLearningRemainingCount: number;
+  remainingReviewCount: number;
+  shortfallCount: number;
+  overflowCount: number;
+  carryOverCount: number;
+  isLegacyPlan?: boolean;
   items: VocabularyFlashcardDto[];
 }
 
@@ -113,10 +138,12 @@ export interface ImportVocabularyJsonRequestDto {
 
 export interface SubmitVocabularyReviewRequestDto {
   userId?: string;
-  vocabularyId: string;
-  senseId: string;
+  vocabularyId?: string;
+  senseId?: string;
   rating: ReviewRating;
   responseTimeMs?: number;
+  timeZoneId?: string;
+  clientRequestId?: string;
 }
 
 export interface CriterionScoreDto {

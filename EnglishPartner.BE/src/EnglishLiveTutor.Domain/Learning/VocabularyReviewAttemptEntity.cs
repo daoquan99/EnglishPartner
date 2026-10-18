@@ -11,6 +11,7 @@ public sealed class VocabularyReviewAttemptEntity : AggregateRoot<Guid>
     public string Rating { get; private set; } = "Good"; // Again | Hard | Good | Easy
     public DateTimeOffset ReviewedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? NextReviewAtSnapshot { get; private set; }
+    public string? ClientRequestId { get; private set; }
 
     private VocabularyReviewAttemptEntity()
     {
@@ -24,6 +25,7 @@ public sealed class VocabularyReviewAttemptEntity : AggregateRoot<Guid>
         DateTimeOffset reviewedAt,
         DateTimeOffset? nextReviewAtSnapshot,
         string reviewType = "FlashcardRecall",
+        string? clientRequestId = null,
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
@@ -34,5 +36,6 @@ public sealed class VocabularyReviewAttemptEntity : AggregateRoot<Guid>
         Rating = string.IsNullOrWhiteSpace(rating) ? "Good" : rating.Trim();
         ReviewedAt = reviewedAt;
         NextReviewAtSnapshot = nextReviewAtSnapshot;
+        ClientRequestId = string.IsNullOrWhiteSpace(clientRequestId) ? null : clientRequestId.Trim();
     }
 }

@@ -7,6 +7,10 @@ using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Learning.Entities;
+using EnglishLiveTutor.Domain.Lessons;
+using EnglishLiveTutor.Domain.Lessons.Entities;
+using EnglishLiveTutor.Domain.LessonAttempts;
+using EnglishLiveTutor.Domain.LessonAttempts.Entities;
 using EnglishLiveTutor.Domain.Prompts;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Pronunciation.Entities;
@@ -63,6 +67,7 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public DbSet<VocabularyGenerationAuditEntity> VocabularyGenerationAudits => Set<VocabularyGenerationAuditEntity>();
 
     // Daily Learning & Spaced Repetition Aggregate
+    public DbSet<UserLearningSettingsEntity> UserLearningSettings => Set<UserLearningSettingsEntity>();
     public DbSet<DailyVocabularyPlanEntity> DailyVocabularyPlans => Set<DailyVocabularyPlanEntity>();
     public DbSet<DailyVocabularyItemEntity> DailyVocabularyItems => Set<DailyVocabularyItemEntity>();
     public DbSet<UserVocabularyProgressEntity> UserVocabularyProgresses => Set<UserVocabularyProgressEntity>();
@@ -75,6 +80,14 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public DbSet<PronunciationAssessmentEntity> PronunciationAssessments => Set<PronunciationAssessmentEntity>();
     public DbSet<PronunciationCriterionScoreEntity> PronunciationCriterionScores => Set<PronunciationCriterionScoreEntity>();
     public DbSet<GeneratedPronunciationAudioEntity> GeneratedPronunciationAudios => Set<GeneratedPronunciationAudioEntity>();
+
+    // Lessons & Exercises Aggregate
+    public DbSet<LessonEntity> Lessons => Set<LessonEntity>();
+    public DbSet<ExerciseEntity> Exercises => Set<ExerciseEntity>();
+
+    // Lesson Attempts & Submissions Aggregate
+    public DbSet<LessonAttemptEntity> LessonAttempts => Set<LessonAttemptEntity>();
+    public DbSet<ExerciseAnswerEntity> ExerciseAnswers => Set<ExerciseAnswerEntity>();
 
     /// <summary>
     /// Explicit access to soft-deleted Aggregate Roots when authorized administrative or audit operations require it.

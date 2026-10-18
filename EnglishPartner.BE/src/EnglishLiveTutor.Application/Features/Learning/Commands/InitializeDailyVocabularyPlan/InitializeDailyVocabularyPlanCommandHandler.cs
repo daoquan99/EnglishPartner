@@ -1,178 +1,230 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Vocabulary;
-using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Domain.Learning;
-using EnglishLiveTutor.Domain.Learning.Entities;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Learning.Commands.InitializeDailyVocabularyPlan;
 
 public sealed class InitializeDailyVocabularyPlanCommandHandler : ICommandHandler<InitializeDailyVocabularyPlanCommand, DailyVocabularyPlanResponseDto>
 {
-    private readonly IAppDbContextFactory _dbFactory;
-    private readonly ISender _sender;
+    private readonly IAppDbContext _db;
+    private readonly TimeProvider _timeProvider;
 
     public InitializeDailyVocabularyPlanCommandHandler(
-        IAppDbContextFactory dbFactory,
-        ISender sender)
+        IAppDbContext db,
+        TimeProvider? timeProvider = null)
     {
-        _dbFactory = dbFactory;
-        _sender = sender;
+        _db = db;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<DailyVocabularyPlanResponseDto> HandleAsync(InitializeDailyVocabularyPlanCommand command, CancellationToken ct = default)
     {
-        var req = command.Request;
-        var userId = command.UserId;
+        string userId = command.UserId;
+        var now = _timeProvider.GetUtcNow();
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        string learningDate = DailyVocabularyPlanEntity.ResolveLocalLearningDate(req.TimeZoneId);
-        int targetNew = Math.Clamp(req.NewVocabularyTarget <= 0 ? 20 : req.NewVocabularyTarget, 1, 100);
-        var now = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId không được để trống.", nameof(userId));
 
-        var plan = await db.DailyVocabularyPlans
+        // 1. Resolve user profile for default timezone and cefr level
+        var user = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Id.ToString() == userId || u.Username == userId)
+            .Select(u => new { u.TimeZoneId, u.PreferredCefrLevel })
+            .FirstOrDefaultAsync(ct);
+
+        string timeZoneId = string.IsNullOrWhiteSpace(user?.TimeZoneId) ? "Asia/Ho_Chi_Minh" : user.TimeZoneId;
+        string defaultLevel = UserLearningSettingsEntity.NormalizeCefrLevel(user?.PreferredCefrLevel, "B1");
+
+        // 2. Resolve or persist UserLearningSettings
+        var settings = await _db.UserLearningSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
+
+        int target;
+        string targetLevel;
+
+        bool isNewSettings = false;
+        if (settings is null)
+        {
+            target = 20;
+            targetLevel = defaultLevel;
+            settings = new UserLearningSettingsEntity(userId, target, targetLevel);
+            _db.UserLearningSettings.Add(settings);
+            isNewSettings = true;
+        }
+        else
+        {
+            target = settings.DailyVocabularyTarget;
+            targetLevel = UserLearningSettingsEntity.NormalizeCefrLevel(settings.CefrLevel, defaultLevel);
+        }
+
+        // 3. Resolve local learning date based on user's timezone policy
+        string learningDate = DailyVocabularyPlanEntity.ResolveLocalLearningDate(timeZoneId, _timeProvider);
+
+        // 4. Check if plan already exists for today -> Idempotency: return existing plan untouched!
+        var existingPlan = await _db.DailyVocabularyPlans
             .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.UserId == userId && p.LearningDate == learningDate, ct);
 
-        if (plan is null)
+        if (existingPlan is not null)
         {
-            plan = new DailyVocabularyPlanEntity(
-                userId: userId,
-                learningDate: learningDate,
-                timeZoneId: string.IsNullOrWhiteSpace(req.TimeZoneId) ? "Asia/Ho_Chi_Minh" : req.TimeZoneId,
-                newVocabularyTarget: targetNew,
-                status: "InProgress");
-            db.DailyVocabularyPlans.Add(plan);
-            await db.SaveChangesAsync(ct);
-        }
-        else if (plan.NewVocabularyTarget != targetNew && req.NewVocabularyTarget > 0)
-        {
-            plan.UpdateTarget(targetNew);
-            await db.SaveChangesAsync(ct);
+            // If settings were newly staged, commit them
+            if (isNewSettings)
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+
+            return await VocabularyProjectionHelper.BuildDailyPlanResponseAsync(_db, existingPlan.Id, userId, ct);
         }
 
-        var existingSenseIdsInPlan = plan.Items.Select(i => i.SenseId).ToHashSet();
-        int nextOrder = plan.Items.Count == 0 ? 1 : plan.Items.Max(i => i.DisplayOrder) + 1;
+        // 5. Create new plan snapshot
+        var plan = new DailyVocabularyPlanEntity(
+            userId: userId,
+            learningDate: learningDate,
+            timeZoneId: timeZoneId,
+            newVocabularyTarget: target,
+            targetCefrLevel: targetLevel,
+            status: "InProgress");
 
-        // 1. Carry-over unfinished items from earlier dates
-        var unfinishedPastItems = await (
-            from i in db.DailyVocabularyItems
-            join p in db.DailyVocabularyPlans on i.PlanId equals p.Id
+        _db.DailyVocabularyPlans.Add(plan);
+
+        // 6. Identify learned vocabularies (Review evidence: ReviewCount > 0)
+        var learnedVocabIds = await _db.UserVocabularyProgresses
+            .AsNoTracking()
+            .Where(p => p.UserId == userId && p.ReviewCount > 0)
+            .Select(p => p.VocabularyId)
+            .Distinct()
+            .ToListAsync(ct);
+        var learnedVocabSet = learnedVocabIds.ToHashSet();
+
+        // 7. Carry-over unfinished items from past dates (learningDate < today), deduplicated by VocabularyId
+        // Keep sense originally assigned, order by earliest assignment with stable tie-breaker
+        var pastAssignedItems = await (
+            from i in _db.DailyVocabularyItems.AsNoTracking()
+            join p in _db.DailyVocabularyPlans.AsNoTracking() on i.PlanId equals p.Id
+            join v in _db.Vocabularies.AsNoTracking() on i.VocabularyId equals v.Id
             where p.UserId == userId &&
-                  p.LearningDate != learningDate &&
-                  i.Status != "Completed"
-            orderby i.AssignedAt
-            select i
+                  string.Compare(p.LearningDate, learningDate) < 0 &&
+                  v.IsActive && !v.IsDeleted
+            orderby i.AssignedAt, i.Id
+            select new
+            {
+                i.VocabularyId,
+                i.SenseId,
+                i.AssignedAt
+            }
         ).ToListAsync(ct);
 
-        foreach (var pastItem in unfinishedPastItems)
+        int nextOrder = 1;
+        var distinctCarryOverMap = new Dictionary<Guid, (Guid SenseId, DateTimeOffset AssignedAt)>();
+        foreach (var past in pastAssignedItems)
         {
-            if (existingSenseIdsInPlan.Add(pastItem.SenseId))
+            if (learnedVocabSet.Contains(past.VocabularyId))
+                continue;
+
+            if (!distinctCarryOverMap.ContainsKey(past.VocabularyId))
             {
-                db.DailyVocabularyItems.Add(new DailyVocabularyItemEntity(
-                    planId: plan.Id,
-                    vocabularyId: pastItem.VocabularyId,
-                    senseId: pastItem.SenseId,
-                    itemType: "CarryOver",
-                    status: "Pending",
-                    assignedAt: now,
-                    displayOrder: nextOrder++));
+                distinctCarryOverMap[past.VocabularyId] = (past.SenseId, past.AssignedAt);
             }
         }
 
-        // 2. Pending due reviews (NextReviewAt <= now)
-        var dueProgresses = await db.UserVocabularyProgresses
+        foreach (var (vocabId, (senseId, assignedAt)) in distinctCarryOverMap)
+        {
+            plan.AddItem(
+                vocabularyId: vocabId,
+                senseId: senseId,
+                itemType: "CarryOver",
+                displayOrder: nextOrder++,
+                assignedAt: assignedAt);
+        }
+
+        // 8. Quota calculation for first learning items
+        int carryOverCount = plan.Items.Count(i => i.ItemType == "CarryOver");
+        int needed = Math.Max(0, target - carryOverCount);
+
+        // 9. Catalog selection for needed new items
+        if (needed > 0)
+        {
+            var excludedVocabIds = plan.Items.Select(i => i.VocabularyId).Union(learnedVocabSet).ToHashSet();
+
+            var candidateSenses = await (
+                from s in _db.VocabularySenses.AsNoTracking()
+                join v in _db.Vocabularies.AsNoTracking() on s.VocabularyId equals v.Id
+                where v.IsActive && !v.IsDeleted && s.CefrLevel == targetLevel && !excludedVocabIds.Contains(v.Id)
+                select new
+                {
+                    VocabularyId = v.Id,
+                    SenseId = s.Id,
+                    FrequencyRank = v.FrequencyRank ?? 99999,
+                    s.IsPrimary,
+                    s.DisplayOrder
+                }
+            ).ToListAsync(ct);
+
+            var chosenCandidates = candidateSenses
+                .GroupBy(s => s.VocabularyId)
+                .Select(g => g.OrderByDescending(s => s.IsPrimary).ThenBy(s => s.DisplayOrder).ThenBy(s => s.SenseId).First())
+                .OrderBy(s => s.FrequencyRank)
+                .ThenBy(s => s.VocabularyId)
+                .Take(needed)
+                .ToList();
+
+            foreach (var candidate in chosenCandidates)
+            {
+                plan.AddItem(
+                    vocabularyId: candidate.VocabularyId,
+                    senseId: candidate.SenseId,
+                    itemType: "New",
+                    displayOrder: nextOrder++,
+                    assignedAt: now);
+            }
+        }
+
+        // 10. Due reviews (Pending reviews with NextReviewAt <= now, limit 30, separate from first learning quota)
+        var dueProgresses = await _db.UserVocabularyProgresses
             .AsNoTracking()
             .Where(p => p.UserId == userId && p.NextReviewAt != null && p.NextReviewAt <= now)
             .OrderBy(p => p.NextReviewAt)
             .Take(30)
             .ToListAsync(ct);
 
+        var planSenseIds = plan.Items.Select(i => i.SenseId).ToHashSet();
+
         foreach (var due in dueProgresses)
         {
-            if (existingSenseIdsInPlan.Add(due.SenseId))
+            // A sense must not appear twice in the same plan
+            if (planSenseIds.Add(due.SenseId))
             {
-                db.DailyVocabularyItems.Add(new DailyVocabularyItemEntity(
-                    planId: plan.Id,
+                plan.AddItem(
                     vocabularyId: due.VocabularyId,
                     senseId: due.SenseId,
                     itemType: "Review",
-                    status: "Pending",
-                    assignedAt: now,
-                    displayOrder: nextOrder++));
+                    displayOrder: nextOrder++,
+                    assignedAt: now);
             }
         }
 
-        await db.SaveChangesAsync(ct);
-
-        // Reload plan items to check how many New items are currently assigned
-        var currentPlanItems = await db.DailyVocabularyItems
-            .Where(i => i.PlanId == plan.Id)
-            .ToListAsync(ct);
-        existingSenseIdsInPlan = currentPlanItems.Select(i => i.SenseId).ToHashSet();
-
-        int currentNewCount = currentPlanItems.Count(i => i.ItemType == "New");
-        int neededNewCount = Math.Max(0, plan.NewVocabularyTarget - currentNewCount);
-
-        if (neededNewCount > 0)
+        // 11. Atomic commit with concurrency collision resolution
+        try
         {
-            var learnedSenseIds = await db.UserVocabularyProgresses
-                .Where(p => p.UserId == userId)
-                .Select(p => p.SenseId)
-                .ToListAsync(ct);
-            var excludedSenses = existingSenseIdsInPlan.Union(learnedSenseIds).ToHashSet();
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Another concurrent request created the plan for this user and date
+            var winner = await _db.DailyVocabularyPlans
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.LearningDate == learningDate, ct);
 
-            var candidateSenses = await (
-                from s in db.VocabularySenses.AsNoTracking()
-                join v in db.Vocabularies.AsNoTracking() on s.VocabularyId equals v.Id
-                where v.IsActive && !excludedSenses.Contains(s.Id)
-                orderby v.FrequencyRank ?? 99999, s.DisplayOrder
-                select s
-            )
-            .Take(neededNewCount)
-            .ToListAsync(ct);
-
-            foreach (var sense in candidateSenses)
+            if (winner is not null)
             {
-                if (existingSenseIdsInPlan.Add(sense.Id))
-                {
-                    db.DailyVocabularyItems.Add(new DailyVocabularyItemEntity(
-                        planId: plan.Id,
-                        vocabularyId: sense.VocabularyId,
-                        senseId: sense.Id,
-                        itemType: "New",
-                        status: "Pending",
-                        assignedAt: now,
-                        displayOrder: nextOrder++));
-                    neededNewCount--;
-                }
+                return await VocabularyProjectionHelper.BuildDailyPlanResponseAsync(_db, winner.Id, userId, ct);
             }
 
-            await db.SaveChangesAsync(ct);
+            throw;
         }
 
-        // 3. Generate additional vocabulary using AI when requested and API key is supplied
-        if (req.GenerateWithAiIfNeeded && neededNewCount > 0 && !string.IsNullOrWhiteSpace(req.ApiKey))
-        {
-            int batchToGenerate = Math.Min(neededNewCount, 5);
-            await _sender.Send(
-                new GenerateVocabularyCommand(
-                    userId,
-                    new GenerateVocabularyRequest(
-                        ApiKey: req.ApiKey!,
-                        ModelCode: req.GenerationModelCode ?? "gemini-3.8-flash",
-                        RequestedCount: batchToGenerate,
-                        CefrLevel: req.CefrLevel,
-                        Topic: req.Topic,
-                        ExcludedWords: null,
-                        AssignToTodayPlan: true
-                    )
-                ),
-                ct);
-        }
-
-        return await VocabularyProjectionHelper.BuildDailyPlanResponseAsync(db, plan.Id, userId, ct);
+        return await VocabularyProjectionHelper.BuildDailyPlanResponseAsync(_db, plan.Id, userId, ct);
     }
 }

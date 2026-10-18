@@ -194,6 +194,36 @@ export const StudentLayout: React.FC = () => {
                 </div>
               )}
             </NavLink>
+
+            <NavLink
+              to="/student/lessons"
+              title={t('nav.lessons') || 'Bài học & Luyện tập'}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center rounded-2xl transition-all',
+                  isStudentSidebarCollapsed
+                    ? 'justify-center w-12 h-12 mx-auto'
+                    : 'gap-3 px-3.5 py-3',
+                  isActive
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                )
+              }
+            >
+              <img
+                src="/assets/icons/navigation/nav-reviews.svg"
+                alt=""
+                className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
+              />
+              {!isStudentSidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">Bài học & Luyện tập</div>
+                  <div className="text-[10px] opacity-80 truncate">
+                    16 loại bài tập đa kỹ năng
+                  </div>
+                </div>
+              )}
+            </NavLink>
           </nav>
 
           {/* Single Google AI Studio API Key Setup inside Left Menu */}

@@ -21,7 +21,9 @@ import {
   Check,
   FileText,
   History,
+  Target,
 } from 'lucide-react';
+import { DailyLearningSettingsDialog } from '../components/DailyLearningSettingsDialog';
 import { PronunciationHistoryDialog } from '../components/PronunciationHistoryDialog';
 import {
   useActiveScoringRubricQuery,
@@ -38,8 +40,11 @@ import {
   useDailyVocabularyPlanQuery,
   useGenerateVocabularyMutation,
   useImportVocabularyJsonMutation,
+  useInitializeDailyPlanMutation,
+  useLearningSettingsQuery,
   useSubmitVocabularyReviewMutation,
   useSynthesizePronunciationMutation,
+  useUpdateLearningSettingsMutation,
 } from '../hooks/useDailyVocabulary';
 import type {
   PronunciationAssessmentResultDto,
@@ -75,7 +80,16 @@ export const DailyVocabularyPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { apiKey, requestFocusLeftMenuApiKey } = useTutorSessionStore();
 
-  const { data: plan, isLoading } = useDailyVocabularyPlanQuery(10);
+  const {
+    data: plan,
+    isLoading: isPlanLoading,
+    error: planError,
+    refetch: refetchPlan,
+  } = useDailyVocabularyPlanQuery();
+  const { data: learningSettings } = useLearningSettingsQuery();
+  const updateSettingsMutation = useUpdateLearningSettingsMutation();
+  const initPlanMutation = useInitializeDailyPlanMutation();
+
   const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
   const { data: audioModels = [] } = usePronunciationModelsQuery();
   const { data: allVoices = [] } = useTeacherVoicesQuery(true, false);
@@ -97,8 +111,10 @@ export const DailyVocabularyPage: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [apiKeyWarning, setApiKeyWarning] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   // Dialog Open States (Toolbar Modals)
+  const [isLearningSettingsOpen, setIsLearningSettingsOpen] = useState(false);
   const [isTtsSettingsModalOpen, setIsTtsSettingsModalOpen] = useState(false);
   const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -152,10 +168,14 @@ export const DailyVocabularyPage: React.FC = () => {
   const lastExampleIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (plan?.items && plan.items.length > 0) {
+    if (plan?.items) {
       setCards(plan.items);
+      setCurrentIndex((prev) => (plan.items.length === 0 ? 0 : Math.min(prev, plan.items.length - 1)));
+    } else if (!plan && !isPlanLoading) {
+      setCards([]);
+      setCurrentIndex(0);
     }
-  }, [plan]);
+  }, [plan, isPlanLoading]);
 
   useEffect(() => {
     if (vocabModels.length > 0 && !vocabModels.some((m) => m.modelCode === selectedVocabModel)) {
@@ -365,28 +385,53 @@ export const DailyVocabularyPage: React.FC = () => {
   const handleReview = async (rating: ReviewRating) => {
     if (!currentCard) return;
     resetPronunciationAndStopRecordingSafely();
+    setReviewError(null);
+
+    const clientRequestId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     try {
       const updated = await reviewMutation.mutateAsync({
-        vocabularyId: currentCard.vocabularyId,
-        senseId: currentCard.senseId,
-        rating,
-        responseTimeMs: 2500,
+        payload: {
+          vocabularyId: currentCard.vocabularyId,
+          senseId: currentCard.senseId,
+          rating,
+          responseTimeMs: 2500,
+          clientRequestId,
+        },
+        dailyItemId: currentCard.dailyItemId,
       });
       setCards((prev) =>
         prev.map((c, idx) =>
           idx === currentIndex ? { ...c, ...updated, isCompletedToday: true } : c
         )
       );
-    } catch {
-      setCards((prev) =>
-        prev.map((c, idx) => (idx === currentIndex ? { ...c, isCompletedToday: true } : c))
+      setIsFlipped(false);
+      if (currentIndex < cards.length - 1) {
+        setCurrentIndex((i) => i + 1);
+      }
+    } catch (err: any) {
+      // Do not mark completed or navigate when review fails!
+      setReviewError(
+        err?.response?.data?.error ||
+          err?.message ||
+          'Không thể ghi nhận đánh giá ôn tập. Vui lòng thử lại.'
       );
     }
+  };
 
-    setIsFlipped(false);
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex((i) => i + 1);
+  const handleInitializeTodayPlan = async () => {
+    setApiKeyWarning(null);
+    try {
+      await initPlanMutation.mutateAsync();
+    } catch (err: any) {
+      setApiKeyWarning(
+        err?.response?.data?.error ||
+          err?.message ||
+          'Không thể khởi tạo kế hoạch học tập hôm nay. Vui lòng thử lại.'
+      );
     }
   };
 
@@ -599,17 +644,24 @@ export const DailyVocabularyPage: React.FC = () => {
     setIsRecording(false);
   };
 
-  if (isLoading && cards.length === 0) {
+  const is404Uninitialized =
+    Boolean(planError) &&
+    (isAxiosError(planError)
+      ? planError.response?.status === 404
+      : (planError as any)?.status === 404);
+
+  if (isPlanLoading && cards.length === 0) {
     return (
-      <div className="p-8 text-center text-sm text-slate-500">
-        {t('vocab.loadingPlan')}
+      <div className="p-12 text-center text-sm text-slate-500 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+        <span>{t('vocab.loadingPlan')}</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Top Toolbar: Progress Badges + Settings Button (TTS Modal) + "Tạo từ vựng bằng AI" Button */}
+      {/* Top Toolbar: Progress Badges + Settings Button (TTS Modal & Learning Settings) + "Tạo từ vựng bằng AI" Button */}
       <div className="bg-white rounded-3xl border border-slate-200/90 px-5 py-4 flex flex-wrap items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
@@ -620,12 +672,30 @@ export const DailyVocabularyPage: React.FC = () => {
               {t('vocab.pageTitle')}
             </h1>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <Badge variant="emerald">
-                {t('vocab.completedBadge')}: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} {t('vocab.wordsUnit')}
-              </Badge>
-              <Badge variant="sky">
-                {t('vocab.cardBadge')}: {cards.length > 0 ? currentIndex + 1 : 0}/{cards.length}
-              </Badge>
+              {plan ? (
+                <>
+                  <Badge variant="emerald">
+                    {t('vocab.firstLearningLabel')}: {plan.firstLearningCompletedCount}/{plan.firstLearningAssignedCount} (Chuyển tiếp: {plan.carryOverCount} · Mới: {plan.newWordCount})
+                  </Badge>
+                  {plan.dueReviewCount > 0 && (
+                    <Badge variant="sky">
+                      {t('vocab.dueReviewLabel')}: {plan.dueReviewCount - plan.remainingReviewCount}/{plan.dueReviewCount}
+                    </Badge>
+                  )}
+                  <Badge variant="amber">
+                    {t('vocab.todayPlanSummary', { target: plan.targetWordCount, level: plan.targetCefrLevel ?? 'B1' })}
+                  </Badge>
+                </>
+              ) : (
+                <Badge variant="emerald">
+                  {t('vocab.completedBadge')}: {cards.filter((c) => c.isCompletedToday).length}/{cards.length} {t('vocab.wordsUnit')}
+                </Badge>
+              )}
+              {cards.length > 0 && (
+                <Badge variant="sky">
+                  {t('vocab.cardBadge')}: {currentIndex + 1}/{cards.length}
+                </Badge>
+              )}
               <Badge variant="violet">
                 {t('vocab.teacherVoiceBadge')}: {ttsVoiceName} ({ttsAccent} · {ttsSpeed.toFixed(2)}x)
               </Badge>
@@ -635,6 +705,15 @@ export const DailyVocabularyPage: React.FC = () => {
 
         {/* Action Buttons opening Dialogs/Modals */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLearningSettingsOpen(true)}
+          >
+            <Target className="w-4 h-4 text-emerald-600" />
+            {t('vocab.targetSettingsBtn')}
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -660,6 +739,70 @@ export const DailyVocabularyPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Target Setting Effective Note */}
+      {plan && learningSettings?.isPersisted && (learningSettings.dailyVocabularyTarget !== plan.targetWordCount || learningSettings.cefrLevel !== plan.targetCefrLevel) && (
+        <div className="bg-sky-50 border border-sky-200 rounded-2xl px-4 py-2.5 flex items-center gap-2 text-xs text-sky-900">
+          <Target className="w-4 h-4 text-sky-600 shrink-0" />
+          <span>
+            {t('vocab.effectiveSettingsNote', {
+              target: learningSettings.dailyVocabularyTarget,
+              level: learningSettings.cefrLevel,
+              date: learningSettings.effectiveFromLearningDate || 'ngày mai',
+            })}
+          </span>
+        </div>
+      )}
+
+      {/* Shortfall Alert Banner */}
+      {plan && plan.shortfallCount > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              {t('vocab.shortfallBanner', {
+                newCount: plan.newWordCount,
+                level: plan.targetCefrLevel ?? 'B1',
+                shortfall: plan.shortfallCount,
+                target: plan.targetWordCount,
+              })}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Overflow Alert Banner */}
+      {plan && plan.overflowCount > 0 && (
+        <div className="bg-blue-50 border border-blue-300 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-xs text-blue-900">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              {t('vocab.overflowBanner', {
+                carryOver: plan.carryOverCount,
+                assigned: plan.firstLearningAssignedCount,
+                overflow: plan.overflowCount,
+              })}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Review Submission Error Banner */}
+      {reviewError && (
+        <div className="bg-rose-50 border border-rose-300 rounded-2xl p-3.5 flex items-center justify-between gap-2 text-xs text-rose-900">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{reviewError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReviewError(null)}
+            className="font-bold hover:underline cursor-pointer"
+          >
+            {t('common.close', 'Đóng')}
+          </button>
+        </div>
+      )}
+
       {apiKeyWarning && (
         <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-center justify-between gap-2 text-xs text-amber-900">
           <div className="flex items-center gap-2">
@@ -676,8 +819,64 @@ export const DailyVocabularyPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main 2-Column Layout: Left 55% (Flashcard) — Right 45% (Phòng Chấm Phát Âm Audio AI) */}
-      {cards.length === 0 ? (
+      {/* Main Content Area */}
+      {is404Uninitialized && cards.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-xs">
+          <EmptyState
+            illustration="no-plan"
+            title={t('vocab.uninitializedPlanTitle')}
+            description={t('vocab.uninitializedPlanDesc', {
+              target: learningSettings?.dailyVocabularyTarget ?? 20,
+              level: learningSettings?.cefrLevel ?? 'B1',
+            })}
+            action={
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={initPlanMutation.isPending}
+                  onClick={() => void handleInitializeTodayPlan()}
+                >
+                  {initPlanMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t('common.processing', 'Đang khởi tạo...')}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      {t('vocab.startTodayPlan')}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsLearningSettingsOpen(true)}
+                >
+                  <Target className="w-4 h-4 text-emerald-600" />
+                  {t('vocab.adjustTarget')}
+                </Button>
+              </div>
+            }
+          />
+        </div>
+      ) : planError && cards.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-rose-200 p-8 shadow-xs text-center space-y-4">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h2 className="text-base font-extrabold text-slate-900">
+            {t('vocab.loadErrorTitle', 'Không thể tải kế hoạch học tập')}
+          </h2>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
+            {isAxiosError(planError)
+              ? planError.response?.data?.error || planError.message
+              : (planError as any)?.message || 'Có lỗi xảy ra khi kết nối máy chủ.'}
+          </p>
+          <Button variant="primary" size="sm" onClick={() => void refetchPlan()}>
+            {t('common.retry', 'Thử lại')}
+          </Button>
+        </div>
+      ) : cards.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-xs">
           <EmptyState
             illustration="no-plan"
@@ -713,7 +912,20 @@ export const DailyVocabularyPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="emerald">{currentCard.cefrLevel}</Badge>
+                  {currentCard.itemType === 'CarryOver' ? (
+                    <Badge variant="amber">{t('vocab.carryOverBadge')}</Badge>
+                  ) : currentCard.itemType === 'Review' ? (
+                    <Badge variant="sky">{t('vocab.dueReviewBadge')}</Badge>
+                  ) : (
+                    <Badge variant="emerald">{t('vocab.newBadge')}</Badge>
+                  )}
                   <Badge variant="amber">{currentCard.partOfSpeech}</Badge>
+                  {currentCard.isCompletedToday && (
+                    <Badge variant="emerald">
+                      <Check className="w-3 h-3 mr-1 inline" />
+                      {t('vocab.completedTodayBadge')}
+                    </Badge>
+                  )}
                   {currentCard.topicCategory && (
                     <span className="text-xs text-slate-500 truncate max-w-xs">
                       {currentCard.topicCategory}
@@ -1750,6 +1962,22 @@ export const DailyVocabularyPage: React.FC = () => {
         selectedExample={selectedExample}
         selectedExampleIndex={selectedExampleIndex}
         recentAssessmentResult={assessmentResult}
+      />
+
+      {/* MODAL 4: Cấu hình Mục Tiêu Học Từ Vựng Hằng Ngày */}
+      <DailyLearningSettingsDialog
+        isOpen={isLearningSettingsOpen}
+        onClose={() => setIsLearningSettingsOpen(false)}
+        settings={learningSettings}
+        todayPlan={plan}
+        onSave={async (target, level) => {
+          await updateSettingsMutation.mutateAsync({
+            dailyVocabularyTarget: target,
+            cefrLevel: level,
+          });
+          setIsLearningSettingsOpen(false);
+        }}
+        isSaving={updateSettingsMutation.isPending}
       />
     </div>
   );

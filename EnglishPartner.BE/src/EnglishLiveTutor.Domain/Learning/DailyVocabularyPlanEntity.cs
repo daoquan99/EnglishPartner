@@ -11,6 +11,7 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
     public string LearningDate { get; private set; } = string.Empty; // yyyy-MM-dd in User TimeZone
     public string TimeZoneId { get; private set; } = "Asia/Ho_Chi_Minh";
     public int NewVocabularyTarget { get; private set; } = 20;
+    public string? TargetCefrLevel { get; private set; }
     public string Status { get; private set; } = "Active"; // Active | InProgress | Completed
     public DateTimeOffset? CompletedAt { get; private set; }
 
@@ -25,23 +26,30 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
         string learningDate,
         string? timeZoneId = "Asia/Ho_Chi_Minh",
         int newVocabularyTarget = 20,
+        string? targetCefrLevel = null,
         string status = "InProgress",
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId không được để trống.", nameof(userId));
+        if (newVocabularyTarget < 1 || newVocabularyTarget > 100)
+            throw new ArgumentOutOfRangeException(nameof(newVocabularyTarget), newVocabularyTarget, "Mục tiêu học từ vựng mỗi ngày phải nằm trong khoảng từ 1 đến 100 từ.");
+
+        UserId = userId.Trim();
         LearningDate = string.IsNullOrWhiteSpace(learningDate) ? ResolveLocalLearningDate(timeZoneId) : learningDate.Trim();
         TimeZoneId = string.IsNullOrWhiteSpace(timeZoneId) ? "Asia/Ho_Chi_Minh" : timeZoneId.Trim();
-        NewVocabularyTarget = Math.Clamp(newVocabularyTarget <= 0 ? 20 : newVocabularyTarget, 1, 100);
+        NewVocabularyTarget = newVocabularyTarget;
+        TargetCefrLevel = string.IsNullOrWhiteSpace(targetCefrLevel) ? null : targetCefrLevel.Trim().ToUpperInvariant();
         Status = string.IsNullOrWhiteSpace(status) ? "InProgress" : status.Trim();
     }
 
     public void UpdateTarget(int newTarget)
     {
-        if (newTarget > 0)
-        {
-            NewVocabularyTarget = Math.Clamp(newTarget, 1, 100);
-        }
+        if (newTarget < 1 || newTarget > 100)
+            throw new ArgumentOutOfRangeException(nameof(newTarget), newTarget, "Mục tiêu học từ vựng mỗi ngày phải nằm trong khoảng từ 1 đến 100 từ.");
+
+        NewVocabularyTarget = newTarget;
     }
 
     public DailyVocabularyItemEntity AddItem(
@@ -52,7 +60,7 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
         DateTimeOffset? assignedAt = null,
         Guid? id = null)
     {
-        var existing = _items.FirstOrDefault(i => i.SenseId == senseId);
+        var existing = _items.FirstOrDefault(i => i.VocabularyId == vocabularyId || i.SenseId == senseId);
         if (existing is not null)
         {
             return existing;
@@ -107,14 +115,15 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
         CompletedAt = now;
     }
 
-    public static string ResolveLocalLearningDate(string? timeZoneId)
+    public static string ResolveLocalLearningDate(string? timeZoneId, TimeProvider? timeProvider = null)
     {
+        var now = (timeProvider ?? TimeProvider.System).GetUtcNow();
         try
         {
             if (!string.IsNullOrWhiteSpace(timeZoneId))
             {
                 var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-                var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz);
+                var localNow = TimeZoneInfo.ConvertTime(now, tz);
                 return localNow.ToString("yyyy-MM-dd");
             }
         }
@@ -122,6 +131,6 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
         {
             // Fallback to UTC+7 (Asia/Ho_Chi_Minh)
         }
-        return DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd");
+        return now.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd");
     }
 }

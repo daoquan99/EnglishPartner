@@ -71,6 +71,19 @@ public sealed record VocabularyFlashcardDto(
     int? FrequencyRank = null
 );
 
+public sealed record UserLearningSettingsDto(
+    int DailyVocabularyTarget,
+    string CefrLevel,
+    bool IsPersisted,
+    string EffectiveFromLearningDate,
+    string TimeZoneId
+);
+
+public sealed record UpdateLearningSettingsRequest(
+    int DailyVocabularyTarget,
+    string CefrLevel
+);
+
 public sealed record DailyVocabularyPlanResponseDto(
     Guid PlanId,
     string UserId,
@@ -83,15 +96,23 @@ public sealed record DailyVocabularyPlanResponseDto(
     int CarryOverCount,
     int CompletedCount,
     string Status,
-    List<VocabularyFlashcardDto> Flashcards
+    List<VocabularyFlashcardDto> Flashcards,
+    string? TargetCefrLevel = null,
+    int FirstLearningAssignedCount = 0,
+    int FirstLearningCompletedCount = 0,
+    int FirstLearningRemainingCount = 0,
+    int RemainingReviewCount = 0,
+    int ShortfallCount = 0,
+    int OverflowCount = 0,
+    bool IsLegacyPlan = false
 );
 
 public sealed record InitializeDailyPlanRequest(
-    string? ApiKey,
+    string? ApiKey = null,
     string? GenerationModelCode = "gemini-3.8-flash",
-    string CefrLevel = "B1",
-    int NewVocabularyTarget = 20,
-    string TimeZoneId = "Asia/Ho_Chi_Minh",
+    string? CefrLevel = null,
+    int? NewVocabularyTarget = null,
+    string? TimeZoneId = null,
     string? Topic = null,
     bool GenerateWithAiIfNeeded = false
 );
@@ -111,7 +132,8 @@ public sealed record SubmitVocabularyReviewRequest(
     Guid? VocabularyId = null,
     Guid? SenseId = null,
     int? ResponseTimeMs = null,
-    string TimeZoneId = "Asia/Ho_Chi_Minh"
+    string TimeZoneId = "Asia/Ho_Chi_Minh",
+    string? ClientRequestId = null
 );
 
 public sealed record SubmitPronunciationAssessmentRequest(

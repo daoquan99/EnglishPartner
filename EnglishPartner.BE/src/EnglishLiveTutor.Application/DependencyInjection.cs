@@ -41,6 +41,27 @@ public static class DependencyInjection
         services.AddTransient<VocabularyGenerationWriter>();
         services.AddScoped<IPronunciationTargetResolver, PronunciationTargetResolver>();
 
+        // Register custom CQRS handler interfaces (IQueryHandler, ICommandHandler) for direct injection
+        var handlerTypes = assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract);
+
+        foreach (var type in handlerTypes)
+        {
+            foreach (var iface in type.GetInterfaces())
+            {
+                if (iface.IsGenericType)
+                {
+                    var genericDef = iface.GetGenericTypeDefinition();
+                    if (genericDef == typeof(IQueryHandler<,>) ||
+                        genericDef == typeof(ICommandHandler<,>) ||
+                        genericDef == typeof(ICommandHandler<>))
+                    {
+                        services.AddTransient(iface, type);
+                    }
+                }
+            }
+        }
+
         return services;
     }
 }

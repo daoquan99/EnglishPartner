@@ -38,6 +38,33 @@ public sealed class SubmitVocabularyReviewCommandHandler : ICommandHandler<Submi
         var req = command.Request;
         var now = _timeProvider.GetUtcNow();
 
+        // 0. Check idempotency if ClientRequestId is provided
+        if (!string.IsNullOrWhiteSpace(req.ClientRequestId))
+        {
+            var existingAttempt = await _db.VocabularyReviewAttempts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.ClientRequestId == req.ClientRequestId.Trim(), ct);
+
+            if (existingAttempt is not null)
+            {
+                var cachedCard = await VocabularyProjectionHelper.GetFlashcardByVocabularyIdAsync(_db, existingAttempt.VocabularyId, existingAttempt.SenseId, userId, ct);
+                if (cachedCard is not null)
+                {
+                    if (dailyItemId.HasValue && dailyItemId.Value != Guid.Empty)
+                    {
+                        var existingItem = await _db.DailyVocabularyItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == dailyItemId.Value, ct);
+                        return cachedCard with
+                        {
+                            DailyItemId = dailyItemId.Value,
+                            ItemType = existingItem?.ItemType ?? "New",
+                            ItemStatus = existingItem?.Status ?? "Completed"
+                        };
+                    }
+                    return cachedCard;
+                }
+            }
+        }
+
         // 1. Verify plan and ownership
         DailyVocabularyPlanEntity? plan = null;
         DailyVocabularyItemEntity? item = null;
@@ -121,7 +148,8 @@ public sealed class SubmitVocabularyReviewCommandHandler : ICommandHandler<Submi
             rating: rating,
             reviewedAt: now,
             nextReviewAtSnapshot: progress.NextReviewAt,
-            reviewType: "FlashcardRecall"), ct);
+            reviewType: "FlashcardRecall",
+            clientRequestId: string.IsNullOrWhiteSpace(req.ClientRequestId) ? null : req.ClientRequestId.Trim()), ct);
 
         // 5. Commit all staged changes atomically in ONE transaction
         await _unitOfWork.CommitChangesAsync(ct);

@@ -98,6 +98,12 @@ public static class DependencyInjection
         services.AddSingleton<GeminiLiveConnectionManager>();
         services.AddSingleton<ILiveSessionService>(sp => sp.GetRequiredService<GeminiLiveConnectionManager>());
 
+        // Lesson Services
+        services.AddSingleton<IDictationScorer, Lessons.DictationScorer>();
+        services.AddSingleton<IDeterministicExerciseGrader, Lessons.DeterministicExerciseGrader>();
+        services.AddSingleton<ILessonSanitizer, Lessons.LessonSanitizer>();
+        services.AddScoped<ILessonAiGrader, Lessons.LessonAiGrader>();
+
         return services;
     }
 }

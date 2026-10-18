@@ -163,27 +163,41 @@ public sealed class VocabularyGenerationWriter(IAppDbContextFactory dbFactory, I
             accepted++;
         }
 
-        // Optional: assign to today's plan immediately
+        // Optional: assign to today's plan if plan already exists and has available quota
         if (context.AssignToTodayPlan && resultSenseIds.Count > 0)
         {
-            string today = DailyVocabularyPlanEntity.ResolveLocalLearningDate("Asia/Ho_Chi_Minh");
+            var user = await db.Users
+                .AsNoTracking()
+                .Where(u => u.Id.ToString() == userId || u.Username == userId)
+                .Select(u => new { u.TimeZoneId })
+                .FirstOrDefaultAsync(ct);
+
+            string userTz = string.IsNullOrWhiteSpace(user?.TimeZoneId) ? "Asia/Ho_Chi_Minh" : user.TimeZoneId;
+            string today = DailyVocabularyPlanEntity.ResolveLocalLearningDate(userTz);
+
             var todayPlan = await db.DailyVocabularyPlans
                 .Include(p => p.Items)
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.LearningDate == today, ct);
 
-            if (todayPlan is null)
+            if (todayPlan is not null)
             {
-                todayPlan = new DailyVocabularyPlanEntity(userId, today, newVocabularyTarget: context.RequestedCount);
-                db.DailyVocabularyPlans.Add(todayPlan);
-            }
+                int firstLearningAssigned = todayPlan.Items.Count(i => i.ItemType is "New" or "CarryOver");
+                int availableQuota = Math.Max(0, todayPlan.NewVocabularyTarget - firstLearningAssigned);
 
-            int nextOrder = todayPlan.Items.Count == 0 ? 1 : todayPlan.Items.Max(i => i.DisplayOrder) + 1;
-            foreach (var (vId, sId) in resultSenseIds)
-            {
-                if (!todayPlan.Items.Any(i => i.SenseId == sId))
+                if (availableQuota > 0)
                 {
-                    var addedItem = todayPlan.AddItem(vId, sId, "New", nextOrder++, DateTimeOffset.UtcNow);
-                    db.DailyVocabularyItems.Add(addedItem);
+                    int nextOrder = todayPlan.Items.Count == 0 ? 1 : todayPlan.Items.Max(i => i.DisplayOrder) + 1;
+                    foreach (var (vId, sId) in resultSenseIds)
+                    {
+                        if (availableQuota <= 0) break;
+
+                        if (!todayPlan.Items.Any(i => i.VocabularyId == vId || i.SenseId == sId))
+                        {
+                            var addedItem = todayPlan.AddItem(vId, sId, "New", nextOrder++, DateTimeOffset.UtcNow);
+                            db.DailyVocabularyItems.Add(addedItem);
+                            availableQuota--;
+                        }
+                    }
                 }
             }
         }

@@ -16,6 +16,11 @@ public sealed class ScoringRubricEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Name).HasMaxLength(160).IsRequired();
         builder.Property(e => e.Description).HasMaxLength(500);
         builder.Property(e => e.AssessmentType).HasMaxLength(32).HasDefaultValue("Pronunciation").IsRequired();
+        builder.Property(e => e.AssessmentScope).HasMaxLength(32).HasDefaultValue("Pronunciation").IsRequired();
+        builder.Property(e => e.ExerciseType);
+        builder.Property(e => e.SubQuestionKind).HasMaxLength(32);
+        builder.Property(e => e.CefrLevel).HasMaxLength(8).HasDefaultValue("All").IsRequired();
+        builder.Property(e => e.ApplicableExerciseTypes).HasMaxLength(256);
 
         builder.ConfigureAudit<ScoringRubricEntity, Guid>(
             createdAtColumnName: "CreatedAt",
@@ -49,6 +54,11 @@ public sealed class ScoringRubricCriterionEntityConfiguration : IEntityTypeConfi
         builder.Property(e => e.Weight).HasColumnType("decimal(5,2)").IsRequired();
         builder.Property(e => e.MinimumScore).HasColumnType("decimal(5,2)").HasDefaultValue(0m);
         builder.Property(e => e.MaximumScore).HasColumnType("decimal(5,2)").HasDefaultValue(100m);
+        builder.Property(e => e.DescriptorLevel0).HasMaxLength(1000);
+        builder.Property(e => e.DescriptorLevel1).HasMaxLength(1000);
+        builder.Property(e => e.DescriptorLevel2).HasMaxLength(1000);
+        builder.Property(e => e.DescriptorLevel3).HasMaxLength(1000);
+        builder.Property(e => e.DescriptorLevel4).HasMaxLength(1000);
 
         builder.ConfigureAudit<ScoringRubricCriterionEntity, Guid>();
     }

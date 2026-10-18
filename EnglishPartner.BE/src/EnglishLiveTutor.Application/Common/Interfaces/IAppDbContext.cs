@@ -5,6 +5,10 @@ using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Learning.Entities;
+using EnglishLiveTutor.Domain.Lessons;
+using EnglishLiveTutor.Domain.Lessons.Entities;
+using EnglishLiveTutor.Domain.LessonAttempts;
+using EnglishLiveTutor.Domain.LessonAttempts.Entities;
 using EnglishLiveTutor.Domain.Prompts;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Pronunciation.Entities;
@@ -57,6 +61,7 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     DbSet<VocabularyGenerationAuditEntity> VocabularyGenerationAudits { get; }
 
     // Daily Learning & Spaced Repetition
+    DbSet<UserLearningSettingsEntity> UserLearningSettings { get; }
     DbSet<DailyVocabularyPlanEntity> DailyVocabularyPlans { get; }
     DbSet<DailyVocabularyItemEntity> DailyVocabularyItems { get; }
     DbSet<UserVocabularyProgressEntity> UserVocabularyProgresses { get; }
@@ -69,6 +74,14 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     DbSet<PronunciationAssessmentEntity> PronunciationAssessments { get; }
     DbSet<PronunciationCriterionScoreEntity> PronunciationCriterionScores { get; }
     DbSet<GeneratedPronunciationAudioEntity> GeneratedPronunciationAudios { get; }
+
+    // Lessons & Exercises
+    DbSet<LessonEntity> Lessons { get; }
+    DbSet<ExerciseEntity> Exercises { get; }
+
+    // Lesson Attempts & Submissions
+    DbSet<LessonAttemptEntity> LessonAttempts { get; }
+    DbSet<ExerciseAnswerEntity> ExerciseAnswers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

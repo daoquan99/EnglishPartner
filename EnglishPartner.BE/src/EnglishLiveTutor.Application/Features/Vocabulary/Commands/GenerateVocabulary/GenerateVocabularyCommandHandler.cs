@@ -12,21 +12,8 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
 
     private readonly IAppDbContextFactory _dbFactory;
     private readonly IVocabularyAiGenerator _aiGenerator;
-    private readonly ISender? _sender;
-    private readonly IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto>? _promptHandler;
+    private readonly IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto> _promptHandler;
     private readonly VocabularyGenerationWriter _writer;
-
-    public GenerateVocabularyCommandHandler(
-        IAppDbContextFactory dbFactory,
-        IVocabularyAiGenerator aiGenerator,
-        ISender sender,
-        VocabularyGenerationWriter writer)
-    {
-        _dbFactory = dbFactory;
-        _aiGenerator = aiGenerator;
-        _sender = sender;
-        _writer = writer;
-    }
 
     public GenerateVocabularyCommandHandler(
         IAppDbContextFactory dbFactory,
@@ -54,9 +41,7 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
             throw new InvalidOperationException($"Model '{model.DisplayName}' không hỗ trợ tạo từ vựng cấu trúc JSON.");
 
         var query = new BuildVocabularyGenerationPromptQuery(new(req.RequestedCount, req.CefrLevel, req.Topic, req.ExcludedWords));
-        var prompt = _sender != null
-            ? await _sender.Send(query, ct)
-            : await _promptHandler!.HandleAsync(query, ct);
+        var prompt = await _promptHandler.HandleAsync(query, ct);
 
         var context = new VocabularyGenerationContext(command.UserId, requestedModelCode, prompt.RequestedCount,
             prompt.CefrLevel, prompt.Topic, req.AssignToTodayPlan);

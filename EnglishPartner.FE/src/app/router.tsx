@@ -43,6 +43,28 @@ const AdminRolesPermissionsPage = lazy(() =>
   import('@/features/admin').then((m) => ({ default: m.AdminRolesPermissionsPage }))
 );
 
+const AdminLessonsPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.AdminLessonsPage }))
+);
+const AdminLessonBuilderPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.AdminLessonBuilderPage }))
+);
+const AdminLessonRubricsPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.AdminLessonRubricsPage }))
+);
+const StudentLessonsPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.StudentLessonsPage }))
+);
+const StudentLessonDetailPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.StudentLessonDetailPage }))
+);
+const StudentLessonPlayerPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.StudentLessonPlayerPage }))
+);
+const StudentLessonHistoryPage = lazy(() =>
+  import('@/features/lessons').then((m) => ({ default: m.StudentLessonHistoryPage }))
+);
+
 const PageLoader: React.FC = () => (
   <div className="min-h-[45vh] flex items-center justify-center text-xs font-semibold text-slate-500">
     Đang tải trang...
@@ -78,6 +100,22 @@ export const AppRouter: React.FC = () => {
                   </RequirePermission>
                 }
               />
+              <Route
+                path="lessons"
+                element={<StudentLessonsPage />}
+              />
+              <Route
+                path="lessons/:id"
+                element={<StudentLessonDetailPage />}
+              />
+              <Route
+                path="lesson-attempts/:attemptId"
+                element={<StudentLessonPlayerPage />}
+              />
+              <Route
+                path="lesson-history"
+                element={<StudentLessonHistoryPage />}
+              />
             </Route>
 
             {/* Protected Admin Portal */}
@@ -93,6 +131,9 @@ export const AppRouter: React.FC = () => {
                     'voices.manage',
                     'topics.manage',
                     'rubrics.manage',
+                    'lessons.manage',
+                    'lessons.read',
+                    'lessons.publish',
                   ]}
                 >
                   <AdminLayout />
@@ -100,6 +141,32 @@ export const AppRouter: React.FC = () => {
               }
             >
               <Route index element={<AdminDashboardPage />} />
+              <Route
+                path="lessons"
+                element={
+                  <RequirePermission
+                    anyPermissions={['lessons.manage', 'lessons.read', 'lessons.publish']}
+                  >
+                    <AdminLessonsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="lessons/:id"
+                element={
+                  <RequirePermission permission="lessons.manage">
+                    <AdminLessonBuilderPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="lesson-rubrics"
+                element={
+                  <RequirePermission anyPermissions={['rubrics.manage', 'lessons.manage']}>
+                    <AdminLessonRubricsPage />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="vocabularies"
                 element={
