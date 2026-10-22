@@ -22,12 +22,20 @@ public static class LessonAttemptEndpoints
         {
             try
             {
-                var attempt = await sender.Send(new StartLessonAttemptCommand(id), ct);
+                var attempt = await sender.Send(new StartLessonAttemptCommand(id, operationKey), ct);
                 return Results.Created($"/api/lesson-attempts/{attempt.AttemptId}", attempt);
             }
             catch (NotFoundException)
             {
                 return Results.NotFound();
+            }
+            catch (ForbiddenException)
+            {
+                return Results.Forbid();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
@@ -112,29 +120,41 @@ public static class LessonAttemptEndpoints
             }
         }).RequirePermission("lesson-exercises.attempt");
 
-        // Retry Answer Grading: POST /api/lesson-attempts/{id}/answers/{answerId}/retry-grading
-        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry-grading", async (
+        // Retry Answer Grading: POST /api/lesson-attempts/{id}/answers/{answerId}/retry-grading and /retry
+        async Task<IResult> RetryGradingHandler(
             Guid id,
             Guid answerId,
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
             [FromBody] RetryGradingRequest? bodyReq,
             ISender sender,
-            CancellationToken ct) =>
+            CancellationToken ct)
         {
             try
             {
                 int revision = bodyReq?.AttemptRevision ?? 1;
-                var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision), ct);
+                var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision, operationKey), ct);
                 return Results.Ok(result);
             }
             catch (NotFoundException)
             {
                 return Results.NotFound();
             }
+            catch (ForbiddenException)
+            {
+                return Results.Forbid();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
             catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        }).RequirePermission("lesson-exercises.attempt");
+        }
+
+        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry-grading", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
+        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
 
         // Complete Attempt: POST /api/lesson-attempts/{id}/complete
         group.MapPost("/{id:guid}/complete", async (
@@ -145,12 +165,20 @@ public static class LessonAttemptEndpoints
         {
             try
             {
-                var completed = await sender.Send(new CompleteLessonAttemptCommand(id), ct);
+                var completed = await sender.Send(new CompleteLessonAttemptCommand(id, operationKey), ct);
                 return Results.Ok(completed);
             }
             catch (NotFoundException)
             {
                 return Results.NotFound();
+            }
+            catch (ForbiddenException)
+            {
+                return Results.Forbid();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
             }
             catch (InvalidOperationException ex)
             {

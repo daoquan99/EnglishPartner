@@ -18,6 +18,7 @@ using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Domain.Vocabulary.Entities;
 using EnglishLiveTutor.Domain.Topics;
 using EnglishLiveTutor.Domain.Voices;
+using EnglishLiveTutor.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Infrastructure.Persistence;
@@ -88,6 +89,13 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     // Lesson Attempts & Submissions Aggregate
     public DbSet<LessonAttemptEntity> LessonAttempts => Set<LessonAttemptEntity>();
     public DbSet<ExerciseAnswerEntity> ExerciseAnswers => Set<ExerciseAnswerEntity>();
+
+    // Lesson Role-Play Sessions Aggregate
+    public DbSet<LessonRolePlaySessionEntity> LessonRolePlaySessions => Set<LessonRolePlaySessionEntity>();
+    public DbSet<LessonRolePlayTurnEntity> LessonRolePlayTurns => Set<LessonRolePlayTurnEntity>();
+
+    // Idempotency Records
+    public DbSet<IdempotencyRecordEntity> IdempotencyRecords => Set<IdempotencyRecordEntity>();
 
     /// <summary>
     /// Explicit access to soft-deleted Aggregate Roots when authorized administrative or audit operations require it.

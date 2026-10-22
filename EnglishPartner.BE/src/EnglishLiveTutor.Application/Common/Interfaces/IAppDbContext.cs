@@ -83,6 +83,10 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     DbSet<LessonAttemptEntity> LessonAttempts { get; }
     DbSet<ExerciseAnswerEntity> ExerciseAnswers { get; }
 
+    // Lesson Role-Play Sessions Aggregate
+    DbSet<LessonRolePlaySessionEntity> LessonRolePlaySessions { get; }
+    DbSet<LessonRolePlayTurnEntity> LessonRolePlayTurns { get; }
+
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 

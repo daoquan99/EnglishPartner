@@ -131,13 +131,19 @@ public class LessonCqrsIntegrationTests
         var sanitizer = new LessonSanitizer();
         var dictationScorer = new DictationScorer();
         var deterministicGrader = new DeterministicExerciseGrader(dictationScorer);
-        var aiGrader = new LessonAiGrader();
+        var aiGrader = new FakeLessonAiGrader();
+        var audioRepo = new FakeAudioRecordingRepository();
+        var mediaStorage = new FakeLessonMediaStorage();
+        var unitOfWork = new UnitOfWork(db);
+        var idempotency = new IdempotencyService(db);
         var resumeHandler = new AttemptQueryHandlers(db, user, sanitizer);
 
         var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
         var draftHandlers = new DraftCommandHandlers(db, user, clock, getByIdHandler);
         var exerciseHandlers = new ExerciseCommandHandlers(db, getByIdHandler);
-        var attemptHandlers = new AttemptCommandHandlers(db, user, clock, deterministicGrader, aiGrader, resumeHandler);
+        var startAttemptHandler = new StartLessonAttemptCommandHandler(db, user, unitOfWork, idempotency, resumeHandler);
+        var submitAnswerHandler = new SubmitExerciseAnswerCommandHandler(db, user, clock, deterministicGrader, aiGrader, audioRepo, mediaStorage, unitOfWork, idempotency);
+        var completeAttemptHandler = new CompleteLessonAttemptCommandHandler(db, user, clock, unitOfWork, idempotency, resumeHandler);
 
         // 1. Create and Publish Lesson
         var draft = await draftHandlers.HandleAsync(new CreateLessonDraftCommand(new CreateLessonDraftRequest(
@@ -172,7 +178,7 @@ public class LessonCqrsIntegrationTests
 
         // 2. Start Attempt
         user.UserId = "learner-student-99";
-        var attemptResume = await attemptHandlers.HandleAsync(new StartLessonAttemptCommand(draft.Id));
+        var attemptResume = await startAttemptHandler.HandleAsync(new StartLessonAttemptCommand(draft.Id));
 
         Assert.NotNull(attemptResume);
         Assert.Equal(1, attemptResume.AttemptRevision);
@@ -190,7 +196,7 @@ public class LessonCqrsIntegrationTests
             AttemptRevision: 1,
             AnswerPayload: JsonNode.Parse("{\"selectedOptionIds\":[\"opt-b\"]}")!);
 
-        var ans1Result = await attemptHandlers.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, ans1Req));
+        var ans1Result = await submitAnswerHandler.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, ans1Req));
 
         Assert.Equal(2, ans1Result.AttemptRevision); // Revision incremented!
         Assert.Equal("Completed", ans1Result.Status);
@@ -207,7 +213,7 @@ public class LessonCqrsIntegrationTests
             AnswerPayload: JsonNode.Parse("{\"transcribedText\":\"...\"}")!);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            attemptHandlers.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, staleSubmitReq)));
+            submitAnswerHandler.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, staleSubmitReq)));
 
         // 5. Submit Answer for Exercise 2 (Dictation) with current revision 2
         // Reference has 10 words. Learner has 4 word edits (from spec worked example: accuracy 60%, 3.00 points)
@@ -217,7 +223,7 @@ public class LessonCqrsIntegrationTests
             AttemptRevision: 2,
             AnswerPayload: JsonNode.Parse("{\"transcribedText\":\"Our chef prepare fresh hand made pasta with imported oil\"}")!);
 
-        var ans2Result = await attemptHandlers.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, ans2Req));
+        var ans2Result = await submitAnswerHandler.HandleAsync(new SubmitExerciseAnswerCommand(attemptResume.AttemptId, ans2Req));
 
         Assert.Equal(3, ans2Result.AttemptRevision);
         Assert.Equal("Completed", ans2Result.Status);
@@ -233,7 +239,7 @@ public class LessonCqrsIntegrationTests
         Assert.Equal(8.00m, resumed.Progress.CurrentSubtotalPoints);
 
         // 7. Complete Attempt: Final score calculation
-        var completed = await attemptHandlers.HandleAsync(new CompleteLessonAttemptCommand(attemptResume.AttemptId));
+        var completed = await completeAttemptHandler.HandleAsync(new CompleteLessonAttemptCommand(attemptResume.AttemptId));
         Assert.Equal("Completed", completed.Status);
         // Subtotal = 8.00 out of 10.00 -> 80.00%
         Assert.Equal(80.00m, completed.Progress.FinalScore100);
@@ -245,9 +251,8 @@ public class LessonCqrsIntegrationTests
         string dbName = Guid.NewGuid().ToString("N");
         var (db, clock, user) = CreateTestContext(dbName);
 
-        var sanitizer = new LessonSanitizer();
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
-        var importHandlers = new ImportCommandHandlers(db, getByIdHandler);
+        var validator = new EnglishLiveTutor.Application.Features.Lessons.Validation.LessonCandidateValidator(db);
+        var previewHandler = new PreviewLessonImportCommandHandler(validator);
 
         string validEnvelope = @"{
             ""schemaVersion"": ""lesson-exercises.v1"",
@@ -267,7 +272,7 @@ public class LessonCqrsIntegrationTests
             ]
         }";
 
-        var preview = await importHandlers.HandleAsync(new PreviewLessonImportCommand(validEnvelope));
+        var preview = await previewHandler.HandleAsync(new PreviewLessonImportCommand(validEnvelope));
 
         Assert.True(preview.IsValid);
         Assert.Empty(preview.Issues);
@@ -331,9 +336,9 @@ public class LessonCqrsIntegrationTests
     {
         string dbName = Guid.NewGuid().ToString("N");
         var (db, _, _) = CreateTestContext(dbName);
-        var sanitizer = new LessonSanitizer();
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
-        var importHandlers = new ImportCommandHandlers(db, getByIdHandler);
+        var templateProvider = new EnglishLiveTutor.Infrastructure.Lessons.PromptBuilder.LessonPromptTemplateProvider();
+        var promptBuilder = new EnglishLiveTutor.Infrastructure.Lessons.PromptBuilder.LessonPromptBuilder(templateProvider);
+        var promptHandler = new BuildLessonPromptCommandHandler(promptBuilder);
 
         var promptCmd = new BuildLessonPromptCommand(
             Topic: "Daily Routines",
@@ -343,7 +348,7 @@ public class LessonCqrsIntegrationTests
             TargetExerciseCount: 5,
             CustomInstructions: null);
 
-        LessonPromptResultDto result = await importHandlers.HandleAsync(promptCmd);
+        LessonPromptResultDto result = await promptHandler.HandleAsync(promptCmd);
         string userPrompt = result.UserPrompt;
 
         // Verify Shadowing is included

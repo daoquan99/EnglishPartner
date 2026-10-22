@@ -5,5 +5,5 @@ namespace EnglishLiveTutor.Application.Common.Interfaces;
 /// </summary>
 public interface IIdempotentCommand
 {
-    string IdempotencyKey { get; }
+    string? IdempotencyKey { get; }
 }

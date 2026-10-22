@@ -1,214 +1,254 @@
-using System.Collections.Concurrent;
-using System.Text.Json.Nodes;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Exceptions;
-using EnglishLiveTutor.Application.Common.Interfaces;
-using EnglishLiveTutor.Domain.Pronunciation;
+using EnglishLiveTutor.Application.Features.Lessons.Commands.MediaOperations;
+using EnglishLiveTutor.Application.Features.Lessons.Commands.RolePlayOperations;
+using EnglishLiveTutor.Application.Features.Lessons.Queries.MediaQueryOperations;
+using EnglishLiveTutor.Application.Features.Lessons.Queries.RolePlayQueries;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Api.Endpoints;
 
 public static class LessonMediaEndpoints
 {
-    // Thread-safe in-memory store for active role-play sessions
-    private static readonly ConcurrentDictionary<Guid, RolePlaySessionState> RolePlaySessions = new();
-
     public static IEndpointRouteBuilder MapLessonMediaEndpoints(this IEndpointRouteBuilder app)
     {
         // 1. Upload Media File
         app.MapPost("/api/lesson-media/upload", async (
-            IFormFile file,
-            IAppDbContext db,
-            ICurrentUser currentUser,
+            IFormFile? file,
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
+            ISender sender,
             CancellationToken ct) =>
         {
             if (file == null || file.Length == 0)
                 return Results.BadRequest(new { error = "No file uploaded or file is empty." });
 
-            var assetId = Guid.NewGuid();
-            string userId = currentUser.UserId ?? "anonymous";
-            string contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
-
-            var recording = new AudioRecordingEntity(
-                userId: userId,
-                storageKey: $"media/{assetId}_{file.FileName}",
-                contentType: contentType,
-                fileSizeBytes: file.Length,
-                durationMilliseconds: 0,
-                id: assetId);
-
-            db.AudioRecordings.Add(recording);
-            await db.SaveChangesAsync(ct);
-
-            return Results.Ok(new
+            try
             {
-                assetId = assetId.ToString(),
-                fileName = file.FileName,
-                contentType = contentType,
-                fileSizeBytes = file.Length,
-                url = $"/api/lesson-media/{assetId}"
-            });
+                await using var stream = file.OpenReadStream();
+                string contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+
+                var result = await sender.Send(new UploadLessonMediaCommand(
+                    Stream: stream,
+                    FileName: file.FileName,
+                    ContentType: contentType,
+                    FileSizeBytes: file.Length,
+                    OperationKey: operationKey), ct);
+
+                return Results.Ok(new
+                {
+                    assetId = result.AssetId,
+                    fileName = result.FileName,
+                    contentType = result.ContentType,
+                    fileSizeBytes = result.FileSizeBytes,
+                    url = result.Url
+                });
+            }
+            catch (ForbiddenException)
+            {
+                return Results.Forbid();
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequireAuthorization().DisableAntiforgery();
 
-        // 2. Stream Media or Get Presigned URL
+        // 2. Get Media Metadata
         app.MapGet("/api/lesson-media/{id:guid}", async (
             Guid id,
-            IAppDbContext db,
+            ISender sender,
             CancellationToken ct) =>
         {
-            var media = await db.AudioRecordings.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
-            if (media == null)
-                return Results.NotFound(new { error = "Media asset not found." });
-
-            return Results.Ok(new
+            try
             {
-                assetId = media.Id.ToString(),
-                contentType = media.ContentType,
-                fileSizeBytes = media.FileSizeBytes,
-                storageKey = media.StorageKey,
-                streamUrl = $"/api/lesson-media/{media.Id}/stream"
-            });
+                var media = await sender.Send(new GetLessonMediaQuery(id), ct);
+                return Results.Ok(new
+                {
+                    assetId = media.AssetId,
+                    contentType = media.ContentType,
+                    fileSizeBytes = media.FileSizeBytes,
+                    storageKey = media.StorageKey,
+                    streamUrl = media.StreamUrl
+                });
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound(new { error = "Media asset not found." });
+            }
+            catch (ForbiddenException)
+            {
+                return Results.NotFound(new { error = "Media asset not found." });
+            }
         }).RequireAuthorization();
 
-        // 3. Role-Play: Start Session
-        app.MapPost("/api/lesson-roleplay/sessions", (
-            RolePlayStartSessionRequest req,
-            ICurrentUser currentUser) =>
+        // 3. Stream Media Content
+        app.MapGet("/api/lesson-media/{id:guid}/stream", async (
+            Guid id,
+            ISender sender,
+            CancellationToken ct) =>
         {
-            var sessionId = Guid.NewGuid();
-            string role = string.IsNullOrWhiteSpace(req.AiRole) ? "AI Partner" : req.AiRole.Trim();
-            string initialMessage = string.IsNullOrWhiteSpace(req.InitialGreeting)
-                ? $"Hello! I am your {role}. How can I help you today?"
-                : req.InitialGreeting.Trim();
-
-            var session = new RolePlaySessionState(
-                SessionId: sessionId,
-                UserId: currentUser.UserId ?? "anonymous",
-                Scenario: req.Scenario,
-                AiRole: role,
-                MaxTurns: req.MaxTurns <= 0 ? 6 : req.MaxTurns,
-                CurrentTurnIndex: 0,
-                History: new List<RolePlayTurnEntry>
-                {
-                    new("assistant", initialMessage, DateTimeOffset.UtcNow)
-                });
-
-            RolePlaySessions[sessionId] = session;
-
-            return Results.Created($"/api/lesson-roleplay/sessions/{sessionId}", new
+            try
             {
-                sessionId = session.SessionId,
-                status = "Active",
-                currentTurnIndex = session.CurrentTurnIndex,
-                aiRole = session.AiRole,
-                initialMessage = initialMessage,
-                maxTurns = session.MaxTurns
-            });
+                var streamResult = await sender.Send(new GetLessonMediaStreamQuery(id), ct);
+                return Results.Stream(
+                    stream: streamResult.Stream,
+                    contentType: streamResult.ContentType,
+                    fileDownloadName: streamResult.FileName,
+                    enableRangeProcessing: true);
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound(new { error = "Media asset not found." });
+            }
+            catch (ForbiddenException)
+            {
+                return Results.NotFound(new { error = "Media asset not found." });
+            }
+        }).RequireAuthorization();
+
+        // 4. Role-Play: Start Session
+        app.MapPost("/api/lesson-roleplay/sessions", async (
+            RolePlayStartSessionRequest req,
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var session = await sender.Send(new StartRolePlaySessionCommand(
+                    Scenario: req.Scenario,
+                    AiRole: req.AiRole,
+                    InitialGreeting: req.InitialGreeting,
+                    MaxTurns: req.MaxTurns,
+                    OperationKey: operationKey), ct);
+
+                return Results.Created($"/api/lesson-roleplay/sessions/{session.SessionId}", new
+                {
+                    sessionId = session.SessionId,
+                    status = session.Status,
+                    currentTurnIndex = session.CurrentTurnIndex,
+                    aiRole = session.AiRole,
+                    initialMessage = session.InitialMessage,
+                    maxTurns = session.MaxTurns
+                });
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
-        // 4. Role-Play: Send Turn
-        app.MapPost("/api/lesson-roleplay/sessions/{sessionId:guid}/turns", (
+        // 5. Role-Play: Get Session Details (Resume after restart)
+        app.MapGet("/api/lesson-roleplay/sessions/{sessionId:guid}", async (
+            Guid sessionId,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var session = await sender.Send(new GetRolePlaySessionQuery(sessionId), ct);
+                return Results.Ok(new
+                {
+                    sessionId = session.SessionId,
+                    status = session.Status,
+                    currentTurnIndex = session.CurrentTurnIndex,
+                    aiRole = session.AiRole,
+                    scenario = session.Scenario,
+                    maxTurns = session.MaxTurns,
+                    transcript = session.Transcript.Select(t => new { role = t.Role, message = t.Message })
+                });
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound(new { error = "Role-play session not found." });
+            }
+        }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
+
+        // 6. Role-Play: Send Turn
+        app.MapPost("/api/lesson-roleplay/sessions/{sessionId:guid}/turns", async (
             Guid sessionId,
             [FromHeader(Name = "X-Operation-Key")] string? operationKey,
             RolePlayTurnRequest req,
-            ICurrentUser currentUser) =>
+            ISender sender,
+            CancellationToken ct) =>
         {
-            if (!RolePlaySessions.TryGetValue(sessionId, out var session))
-                return Results.NotFound(new { error = "Role-play session not found." });
-
-            if (req.ClientTurnIndex != session.CurrentTurnIndex + 1)
+            try
             {
-                return Results.Conflict(new
+                var result = await sender.Send(new SendRolePlayTurnCommand(
+                    SessionId: sessionId,
+                    ClientTurnIndex: req.ClientTurnIndex,
+                    UserMessage: req.UserMessage,
+                    UserAudioAssetId: req.UserAudioAssetId,
+                    OperationKey: operationKey), ct);
+
+                return Results.Ok(new
                 {
-                    error = $"TURN_INDEX_CONFLICT: Expected turnIndex {session.CurrentTurnIndex + 1}, received {req.ClientTurnIndex}."
+                    sessionId = result.SessionId,
+                    turnIndex = result.TurnIndex,
+                    userTurn = new { message = result.UserTurn.Message },
+                    aiTurn = new { message = result.AiTurn.Message },
+                    isCompleted = result.IsCompleted,
+                    remainingTurns = result.RemainingTurns
                 });
             }
-
-            if (session.CurrentTurnIndex >= session.MaxTurns)
+            catch (NotFoundException)
             {
-                return Results.BadRequest(new { error = "MaxTurnsReached: This conversation session has completed its allotted turns." });
+                return Results.NotFound(new { error = "Role-play session not found." });
             }
-
-            session.History.Add(new("user", req.UserMessage, DateTimeOffset.UtcNow));
-            session.CurrentTurnIndex++;
-
-            string aiReply = GenerateAiRolePlayReply(session.AiRole, session.Scenario, req.UserMessage, session.CurrentTurnIndex, session.MaxTurns);
-            session.History.Add(new("assistant", aiReply, DateTimeOffset.UtcNow));
-
-            bool isLastTurn = session.CurrentTurnIndex >= session.MaxTurns;
-
-            return Results.Ok(new
+            catch (ConflictException ex)
             {
-                sessionId = session.SessionId,
-                turnIndex = session.CurrentTurnIndex,
-                userTurn = new { message = req.UserMessage },
-                aiTurn = new { message = aiReply },
-                isCompleted = isLastTurn,
-                remainingTurns = Math.Max(0, session.MaxTurns - session.CurrentTurnIndex)
-            });
+                return Results.Conflict(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
-        // 5. Role-Play: End Session
-        app.MapPost("/api/lesson-roleplay/sessions/{sessionId:guid}/end", (
+        // 7. Role-Play: End Session
+        app.MapPost("/api/lesson-roleplay/sessions/{sessionId:guid}/end", async (
             Guid sessionId,
-            ICurrentUser currentUser) =>
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
+            ISender sender,
+            CancellationToken ct) =>
         {
-            if (!RolePlaySessions.TryRemove(sessionId, out var session))
-                return Results.NotFound(new { error = "Role-play session not found." });
-
-            return Results.Ok(new
+            try
             {
-                sessionId = session.SessionId,
-                status = "SessionEnded",
-                totalTurnsCompleted = session.CurrentTurnIndex,
-                transcript = session.History.Select(h => new { role = h.Role, message = h.Content }),
-                message = "Session ended successfully. Transcript saved."
-            });
+                var result = await sender.Send(new EndRolePlaySessionCommand(sessionId, operationKey), ct);
+                return Results.Ok(new
+                {
+                    sessionId = result.SessionId,
+                    status = result.Status,
+                    totalTurnsCompleted = result.TotalTurnsCompleted,
+                    transcript = result.Transcript.Select(h => new { role = h.Role, message = h.Message }),
+                    message = result.Message
+                });
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound(new { error = "Role-play session not found." });
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
         return app;
     }
-
-    private static string GenerateAiRolePlayReply(string aiRole, string scenario, string userMsg, int turn, int maxTurns)
-    {
-        string u = userMsg.ToLowerInvariant();
-        if (u.Contains("menu") || u.Contains("special"))
-            return "Certainly! Today our chef recommends the homemade spinach ravioli with fresh truffle oil, and pan-seared sea bass. Would you like a beverage to start?";
-        if (u.Contains("water") || u.Contains("wine") || u.Contains("drink"))
-            return "Excellent choice. I will bring that right away. Are you ready to order your main course, or would you prefer a few more minutes?";
-        if (u.Contains("bill") || u.Contains("check"))
-            return "Here is your bill. We accept credit cards or mobile payment. Thank you so much for dining with us this evening!";
-
-        if (turn >= maxTurns)
-            return $"Thank you for discussing this with me! That concludes our conversation for today. You did a great job communicating your requests clearly.";
-
-        return $"Understood. As your {aiRole}, I hear your request clearly. Let's proceed with that. What else can I assist you with?";
-    }
-
-    private sealed class RolePlaySessionState
-    {
-        public Guid SessionId { get; }
-        public string UserId { get; }
-        public string Scenario { get; }
-        public string AiRole { get; }
-        public int MaxTurns { get; }
-        public int CurrentTurnIndex { get; set; }
-        public List<RolePlayTurnEntry> History { get; }
-
-        public RolePlaySessionState(Guid SessionId, string UserId, string Scenario, string AiRole, int MaxTurns, int CurrentTurnIndex, List<RolePlayTurnEntry> History)
-        {
-            this.SessionId = SessionId;
-            this.UserId = UserId;
-            this.Scenario = Scenario;
-            this.AiRole = AiRole;
-            this.MaxTurns = MaxTurns;
-            this.CurrentTurnIndex = CurrentTurnIndex;
-            this.History = History;
-        }
-    }
-
-    private sealed record RolePlayTurnEntry(string Role, string Content, DateTimeOffset Timestamp);
 }
 
 public sealed record RolePlayStartSessionRequest(

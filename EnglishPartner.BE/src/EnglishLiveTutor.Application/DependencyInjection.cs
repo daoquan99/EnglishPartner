@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Behaviors;
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Lessons.Validation;
 using EnglishLiveTutor.Application.Features.Pronunciation;
 using EnglishLiveTutor.Application.Features.Vocabulary;
 using FluentValidation;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         // Non-CQRS domain/application services
         services.AddTransient<VocabularyGenerationWriter>();
         services.AddScoped<IPronunciationTargetResolver, PronunciationTargetResolver>();
+        services.AddScoped<ILessonCandidateValidator, LessonCandidateValidator>();
 
         // Register custom CQRS handler interfaces (IQueryHandler, ICommandHandler) for direct injection
         var handlerTypes = assembly.GetTypes()

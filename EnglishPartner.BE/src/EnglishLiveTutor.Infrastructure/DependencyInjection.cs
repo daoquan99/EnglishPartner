@@ -9,6 +9,9 @@ using EnglishLiveTutor.Domain.Pronunciation.Repositories;
 using EnglishLiveTutor.Domain.Vocabulary.Repositories;
 using EnglishLiveTutor.Domain.Topics.Repositories;
 using EnglishLiveTutor.Domain.Voices.Repositories;
+using EnglishLiveTutor.Domain.Lessons.Repositories;
+using EnglishLiveTutor.Infrastructure.Lessons.PromptBuilder;
+using EnglishLiveTutor.Infrastructure.Storage;
 using EnglishLiveTutor.Application.Features.Conversations.Ports;
 using EnglishLiveTutor.Infrastructure.Ai;
 using EnglishLiveTutor.Infrastructure.Identity;
@@ -73,6 +76,16 @@ public static class DependencyInjection
         services.AddScoped<IScoringRubricRepository, ScoringRubricRepository>();
         services.AddScoped<IPronunciationAssessmentRepository, PronunciationAssessmentRepository>();
         services.AddScoped<IGeneratedPronunciationAudioRepository, GeneratedPronunciationAudioRepository>();
+        services.AddScoped<ILessonRolePlayRepository, LessonRolePlayRepository>();
+        services.AddScoped<IAudioRecordingRepository, AudioRecordingRepository>();
+        services.AddScoped<IIdempotencyService, IdempotencyService>();
+
+        services.AddOptions<LessonMediaStorageOptions>()
+            .Bind(configuration.GetSection(LessonMediaStorageOptions.SectionName));
+        services.AddSingleton<ILessonMediaStorage, FileLessonMediaStorage>();
+
+        services.AddSingleton<ILessonPromptTemplateProvider, LessonPromptTemplateProvider>();
+        services.AddSingleton<ILessonPromptBuilder, LessonPromptBuilder>();
 
         // AI & Realtime Services
         services.AddSingleton<ICefrPromptBuilder, CefrPromptBuilder>();
@@ -102,7 +115,28 @@ public static class DependencyInjection
         services.AddSingleton<IDictationScorer, Lessons.DictationScorer>();
         services.AddSingleton<IDeterministicExerciseGrader, Lessons.DeterministicExerciseGrader>();
         services.AddSingleton<ILessonSanitizer, Lessons.LessonSanitizer>();
-        services.AddScoped<ILessonAiGrader, Lessons.LessonAiGrader>();
+        services.AddOptions<LessonGenerationOptions>()
+            .Bind(configuration.GetSection(LessonGenerationOptions.SectionName));
+        services.AddOptions<LessonAssessmentOptions>()
+            .Bind(configuration.GetSection(LessonAssessmentOptions.SectionName));
+        services.AddOptions<LessonRolePlayOptions>()
+            .Bind(configuration.GetSection(LessonRolePlayOptions.SectionName));
+
+        services.AddHttpClient<ILessonAiGenerator, GeminiLessonAiGenerator>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<LessonGenerationOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
+        services.AddHttpClient<IRolePlayReplyProvider, GeminiRolePlayReplyProvider>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<LessonRolePlayOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
+        services.AddHttpClient<ILessonAiGrader, Lessons.LessonAiGrader>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<LessonAssessmentOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
 
         return services;
     }

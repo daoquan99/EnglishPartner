@@ -1327,6 +1327,61 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.ToTable("Exercises", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.Entities.LessonRolePlayTurnEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AudioAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("SequenceIndex")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TurnIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId", "SequenceIndex")
+                        .IsUnique();
+
+                    b.HasIndex("SessionId", "TurnIndex", "Role")
+                        .IsUnique();
+
+                    b.ToTable("LessonRolePlayTurns", (string)null);
+                });
+
             modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.LessonEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1432,6 +1487,99 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.HasIndex("Id", "Version");
 
                     b.ToTable("Lessons", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.LessonRolePlaySessionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AiRole")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset?>("ClaimedUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<int>("CurrentTurnIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<DateTimeOffset?>("EndedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("InitialGreeting")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<int>("MaxTurns")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Scenario")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("LessonRolePlaySessions", (string)null);
                 });
 
             modelBuilder.Entity("EnglishLiveTutor.Domain.Prompts.CefrLevelPromptEntity", b =>
@@ -2953,6 +3101,77 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.ToTable("TeacherVoices", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishLiveTutor.Infrastructure.Persistence.Entities.IdempotencyRecordEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LocationHeader")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("OperationKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("OperationType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ResourceScope")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ResponsePayloadJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ResponseStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("UserId", "OperationType", "ResourceScope", "OperationKey")
+                        .IsUnique()
+                        .HasDatabaseName("IX_IdempotencyRecords_Scope_Key");
+
+                    b.ToTable("IdempotencyRecords", (string)null);
+                });
+
             modelBuilder.Entity("EnglishLiveTutor.Domain.Conversations.Entities.ChatMessageEntity", b =>
                 {
                     b.HasOne("EnglishLiveTutor.Domain.Conversations.ConversationEntity", null)
@@ -3014,6 +3233,14 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.HasOne("EnglishLiveTutor.Domain.Lessons.LessonEntity", null)
                         .WithMany("Exercises")
                         .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.Entities.LessonRolePlayTurnEntity", b =>
+                {
+                    b.HasOne("EnglishLiveTutor.Domain.Lessons.LessonRolePlaySessionEntity", null)
+                        .WithMany("Turns")
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
@@ -3125,6 +3352,11 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
             modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.LessonEntity", b =>
                 {
                     b.Navigation("Exercises");
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Lessons.LessonRolePlaySessionEntity", b =>
+                {
+                    b.Navigation("Turns");
                 });
 
             modelBuilder.Entity("EnglishLiveTutor.Domain.Pronunciation.PronunciationAssessmentEntity", b =>

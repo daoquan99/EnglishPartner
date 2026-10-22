@@ -1,416 +1,21 @@
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using EnglishLiveTutor.Application.Common.Exceptions;
-using EnglishLiveTutor.Application.Common.Interfaces;
-using EnglishLiveTutor.Application.Common.Models;
-using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
-using EnglishLiveTutor.Domain.Lessons;
 using EnglishLiveTutor.Domain.Lessons.Enums;
-using Microsoft.EntityFrameworkCore;
 
-namespace EnglishLiveTutor.Application.Features.Lessons.Commands.ImportOperations;
+namespace EnglishLiveTutor.Infrastructure.Lessons.PromptBuilder;
 
-public sealed record BuildLessonPromptCommand(
-    string Topic,
-    string CefrLevel,
-    string? LessonTitle = null,
-    List<string>? PreferredExerciseTypes = null,
-    int TargetExerciseCount = 5,
-    string? CustomInstructions = null
-) : ICommand<LessonPromptResultDto>;
-
-public sealed record GenerateLessonExercisesCommand(
-    string? ApiKey,
-    string? ModelCode,
-    Guid? TargetLessonId,
-    string Topic,
-    string CefrLevel,
-    string? LessonTitle = null,
-    List<string>? PreferredExerciseTypes = null,
-    int TargetExerciseCount = 5,
-    string? CustomInstructions = null,
-    string CommitMode = "PreviewOnly"
-) : ICommand<LessonCandidateValidationResultDto>;
-
-public sealed record PreviewLessonImportCommand(
-    string RawJson
-) : ICommand<LessonCandidateValidationResultDto>;
-
-public sealed record CommitLessonImportCommand(
-    CommitLessonImportRequest Request,
-    string? OperationKey = null
-) : ICommand<LessonDetailAuthorDto>;
-
-public sealed class ImportCommandHandlers :
-    ICommandHandler<BuildLessonPromptCommand, LessonPromptResultDto>,
-    ICommandHandler<PreviewLessonImportCommand, LessonCandidateValidationResultDto>,
-    ICommandHandler<CommitLessonImportCommand, LessonDetailAuthorDto>,
-    ICommandHandler<GenerateLessonExercisesCommand, LessonCandidateValidationResultDto>
+public interface ILessonPromptTemplateProvider
 {
-    private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    string TemplateVersion { get; }
+    string BuildExerciseTypeRules(IReadOnlyList<string> types, int targetCount);
+    string BuildExerciseTypeSpecifications(IReadOnlyList<string> types);
+    string BuildConcreteExerciseExamples(IReadOnlyList<string> types, string topic, string cefrLevel);
+}
 
-    private readonly IAppDbContext _db;
-    private readonly IQueryHandler<GetLessonByIdQuery, object?> _getLessonByIdHandler;
+public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
+{
+    public string TemplateVersion => "1.0";
 
-    public ImportCommandHandlers(
-        IAppDbContext db,
-        IQueryHandler<GetLessonByIdQuery, object?> getLessonByIdHandler)
-    {
-        _db = db;
-        _getLessonByIdHandler = getLessonByIdHandler;
-    }
-
-    public Task<LessonPromptResultDto> HandleAsync(BuildLessonPromptCommand command, CancellationToken ct = default)
-    {
-        string title = !string.IsNullOrWhiteSpace(command.LessonTitle) ? command.LessonTitle : $"English Lesson: {command.Topic}";
-        var preferredTypes = (command.PreferredExerciseTypes != null && command.PreferredExerciseTypes.Count > 0)
-            ? command.PreferredExerciseTypes
-            : new List<string> { "Flashcards", "MultipleChoice", "FillInTheBlanks", "SentenceUnscramble", "Translation" };
-
-        string exerciseTypeSpecifications = BuildExerciseTypeSpecifications(preferredTypes);
-        string exerciseExamplesJson = BuildConcreteExerciseExamples(preferredTypes, command.Topic, command.CefrLevel);
-        string exerciseRules = BuildExerciseTypeRules(preferredTypes, command.TargetExerciseCount);
-
-        string systemPrompt = @"You are an expert ESL Curriculum Designer. Your task is to generate complete, high-quality English lessons matching schema 'lesson-exercises.v1'.
-Always return valid JSON adhering strictly to the Lesson Exercises JSON Schema with exact PascalCase ExerciseType names and compliant content/grading payloads.";
-
-        string userPrompt = $@"Generate an English lesson with interactive exercises:
-- Title: {title}
-- Topic: {command.Topic}
-- CEFR Level: {command.CefrLevel}
-- Target Exercise Count: {command.TargetExerciseCount}
-- Preferred Exercise Types: {string.Join(", ", preferredTypes)}
-{(string.IsNullOrWhiteSpace(command.CustomInstructions) ? "" : $"- Teacher Custom Instructions: {command.CustomInstructions}")}
-
-CRITICAL RULES FOR EXERCISES:
-{exerciseRules}
-
-DETAILED SPECIFICATIONS FOR REQUESTED TYPES:
-{exerciseTypeSpecifications}
-
-ENVELOPE JSON STRUCTURE & EXAMPLES:
-{{
-  ""$schema"": ""https://raw.githubusercontent.com/.../lesson-exercises-v1.schema.json"",
-  ""schemaVersion"": ""lesson-exercises.v1"",
-  ""lesson"": {{
-    ""title"": ""{title}"",
-    ""cefrLevel"": ""{command.CefrLevel}"",
-    ""topic"": ""{command.Topic}"",
-    ""learningObjectives"": [
-      ""Understand core vocabulary and phrases for {command.Topic}"",
-      ""Construct natural English sentences appropriate for {command.CefrLevel} level""
-    ],
-    ""targetVocabulary"": [""daily routine"", ""wake up"", ""commute"", ""work remotely"", ""attend meetings"", ""schedule"", ""work-life balance""],
-    ""targetGrammar"": [""Present Simple"", ""Adverbs of Frequency"", ""Time Expressions""],
-    ""content"": ""This lesson focuses on practical language for {command.Topic} at CEFR {command.CefrLevel} level."",
-    ""estimatedMinutes"": 30
-  }},
-  ""exercises"": [
-{exerciseExamplesJson}
-  ]
-}}";
-
-        string promptText = $@"{systemPrompt}
-
-{userPrompt}";
-
-        return Task.FromResult(new LessonPromptResultDto(
-            SystemPrompt: systemPrompt,
-            UserPrompt: userPrompt,
-            PromptText: promptText,
-            SchemaVersion: "lesson-exercises.v1"
-        ));
-    }
-
-    public async Task<LessonCandidateValidationResultDto> HandleAsync(GenerateLessonExercisesCommand command, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(command.ApiKey))
-        {
-            throw new InvalidOperationException("Vui lòng cung cấp Google Gemini API Key để sinh bài tập AI.");
-        }
-
-        string topic = command.Topic;
-        string cefr = command.CefrLevel;
-        string title = !string.IsNullOrWhiteSpace(command.LessonTitle) ? command.LessonTitle : $"Lesson: {topic}";
-
-        if (command.TargetLessonId.HasValue && command.TargetLessonId.Value != Guid.Empty)
-        {
-            var targetLesson = await _db.Lessons.AsNoTracking().FirstOrDefaultAsync(l => l.Id == command.TargetLessonId.Value, ct);
-            if (targetLesson != null)
-            {
-                topic = targetLesson.Topic;
-                cefr = targetLesson.CefrLevel.ToString();
-                title = targetLesson.Title;
-            }
-        }
-
-        string requestedModel = string.IsNullOrWhiteSpace(command.ModelCode) ? "gemini-3.8-flash" : command.ModelCode.Trim();
-        var modelEntity = await _db.AiModelCatalog.AsNoTracking().FirstOrDefaultAsync(m => m.ModelCode == requestedModel, ct);
-        string effectiveModel = modelEntity != null ? modelEntity.GetEffectiveModelCode() : requestedModel;
-
-        var chosenTypes = (command.PreferredExerciseTypes != null && command.PreferredExerciseTypes.Count > 0)
-            ? command.PreferredExerciseTypes
-            : new List<string> { "Flashcards", "MultipleChoice", "FillInTheBlanks", "SentenceUnscramble", "Translation" };
-
-        string exerciseSpecs = BuildExerciseTypeSpecifications(chosenTypes);
-        string exerciseExamples = BuildConcreteExerciseExamples(chosenTypes, topic, cefr);
-        string exerciseRules = BuildExerciseTypeRules(chosenTypes, command.TargetExerciseCount);
-
-        string prompt = $@"You are an expert ESL Curriculum Designer. Your task is to generate complete, high-quality English exercises matching schema 'lesson-exercises.v1'.
-Always return a SINGLE, valid JSON object adhering strictly to the Lesson Exercises JSON Schema with exact PascalCase ExerciseType names and compliant content/grading payloads.
-NO markdown code block fences (no ```json), NO introductory or concluding text.
-
-Lesson Context:
-- Title: {title}
-- CEFR Level: {cefr}
-- Topic: {topic}
-- Target Exercise Count: {command.TargetExerciseCount}
-- Allowed/Preferred Exercise Types: {string.Join(", ", chosenTypes)}
-{(string.IsNullOrWhiteSpace(command.CustomInstructions) ? "" : $"- Additional Teacher Instructions: {command.CustomInstructions}")}
-
-CRITICAL RULES FOR EXERCISES:
-{exerciseRules}
-
-EXERCISE SCHEMA SPECIFICATIONS FOR ALLOWED TYPES:
-{exerciseSpecs}
-
-OUTPUT JSON STRUCTURE:
-{{
-  ""schemaVersion"": ""lesson-exercises.v1"",
-  ""lesson"": {{
-    ""title"": ""{title}"",
-    ""cefrLevel"": ""{cefr}"",
-    ""topic"": ""{topic}"",
-    ""estimatedMinutes"": 30,
-    ""learningObjectives"": [""Understand core vocabulary for {topic}"", ""Practice communicative sentences""],
-    ""targetVocabulary"": [""daily routine"", ""wake up"", ""commute"", ""work remotely"", ""attend meetings"", ""schedule"", ""work-life balance""],
-    ""targetGrammar"": [""Present Simple"", ""Adverbs of Frequency"", ""Time Expressions""],
-    ""content"": ""Overview context for {topic}...""
-  }},
-  ""exercises"": [
-{exerciseExamples}
-  ]
-}}";
-
-        var httpClient = _httpClient;
-
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{effectiveModel}:generateContent?key={Uri.EscapeDataString(command.ApiKey.Trim())}";
-        var payload = new
-        {
-            contents = new[]
-            {
-                new { parts = new[] { new { text = prompt } } }
-            },
-            generationConfig = new
-            {
-                temperature = 0.3,
-                responseMimeType = "application/json"
-            }
-        };
-
-        using var resp = await httpClient.PostAsJsonAsync(url, payload, ct);
-        string rawBody = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException($"Google AI Studio trả về mã lỗi {(int)resp.StatusCode}: {rawBody}");
-        }
-
-        var root = JsonNode.Parse(rawBody);
-        string? jsonText = root?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-        if (string.IsNullOrWhiteSpace(jsonText))
-        {
-            throw new InvalidOperationException("AI không trả về nội dung JSON bài tập hợp lệ.");
-        }
-
-        // Validate generated JSON candidate
-        var validationResult = await HandleAsync(new PreviewLessonImportCommand(jsonText), ct);
-
-        // If commit mode is Append or Replace and candidate is valid and target lesson ID is provided, commit it!
-        if (command.CommitMode is "Append" or "Replace" && command.TargetLessonId.HasValue && validationResult.IsValid && validationResult.Candidate != null)
-        {
-            var commitReq = new CommitLessonImportRequest(
-                TargetLessonId: command.TargetLessonId.Value,
-                TargetRevision: null,
-                CommitMode: command.CommitMode,
-                Candidate: validationResult.Candidate
-            );
-            await HandleAsync(new CommitLessonImportCommand(commitReq), ct);
-        }
-
-        return validationResult;
-    }
-
-    public Task<LessonCandidateValidationResultDto> HandleAsync(PreviewLessonImportCommand command, CancellationToken ct = default)
-    {
-        var issues = new List<ValidationIssueDto>();
-        JsonNode? rootNode = null;
-
-        try
-        {
-            rootNode = JsonNode.Parse(command.RawJson);
-        }
-        catch (Exception ex)
-        {
-            issues.Add(new ValidationIssueDto("$", "Error", $"Malformed JSON syntax: {ex.Message}"));
-            return Task.FromResult(new LessonCandidateValidationResultDto(false, issues, null));
-        }
-
-        if (rootNode is not JsonObject rootObj)
-        {
-            issues.Add(new ValidationIssueDto("$", "Error", "Root element must be a JSON object."));
-            return Task.FromResult(new LessonCandidateValidationResultDto(false, issues, null));
-        }
-
-        var lessonNode = rootObj["lesson"];
-        if (lessonNode == null)
-        {
-            issues.Add(new ValidationIssueDto("$.lesson", "Error", "Field 'lesson' metadata is required."));
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(lessonNode["title"]?.ToString()))
-                issues.Add(new ValidationIssueDto("$.lesson.title", "Error", "Lesson title is required."));
-            if (string.IsNullOrWhiteSpace(lessonNode["cefrLevel"]?.ToString()))
-                issues.Add(new ValidationIssueDto("$.lesson.cefrLevel", "Error", "CEFR level is required."));
-            if (string.IsNullOrWhiteSpace(lessonNode["topic"]?.ToString()))
-                issues.Add(new ValidationIssueDto("$.lesson.topic", "Error", "Lesson topic is required."));
-        }
-
-        var exercisesNode = rootObj["exercises"];
-        if (exercisesNode is not JsonArray exercisesArray || exercisesArray.Count == 0)
-        {
-            issues.Add(new ValidationIssueDto("$.exercises", "Error", "At least one exercise is required."));
-        }
-        else
-        {
-            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < exercisesArray.Count; i++)
-            {
-                var ex = exercisesArray[i];
-                string path = $"$.exercises[{i}]";
-                string key = ex?["key"]?.ToString() ?? string.Empty;
-                string typeStr = ex?["type"]?.ToString() ?? string.Empty;
-
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    issues.Add(new ValidationIssueDto($"{path}.key", "Error", "Exercise key is required."));
-                }
-                else if (!keys.Add(key))
-                {
-                    issues.Add(new ValidationIssueDto($"{path}.key", "Error", $"Duplicate exercise key '{key}'."));
-                }
-
-                if (!Enum.TryParse<ExerciseType>(typeStr, ignoreCase: true, out _))
-                {
-                    issues.Add(new ValidationIssueDto($"{path}.type", "Error", $"Invalid or unrecognized ExerciseType '{typeStr}'."));
-                }
-
-                if (ex?["content"] == null)
-                {
-                    issues.Add(new ValidationIssueDto($"{path}.content", "Error", "Exercise content is required."));
-                }
-            }
-        }
-
-        bool isValid = issues.All(i => i.Severity != "Error");
-        return Task.FromResult(new LessonCandidateValidationResultDto(isValid, issues, rootNode));
-    }
-
-    public async Task<LessonDetailAuthorDto> HandleAsync(CommitLessonImportCommand command, CancellationToken ct = default)
-    {
-        var req = command.Request;
-        var candidateObj = req.Candidate.AsObject();
-
-        var lessonNode = candidateObj["lesson"]
-            ?? throw new ArgumentException("Candidate payload missing 'lesson' object.");
-        var exercisesArray = candidateObj["exercises"]?.AsArray()
-            ?? throw new ArgumentException("Candidate payload missing 'exercises' array.");
-
-        LessonEntity lesson;
-        if (req.TargetLessonId.HasValue && req.TargetLessonId.Value != Guid.Empty)
-        {
-            lesson = await _db.Lessons
-                .Include(l => l.Exercises)
-                .FirstOrDefaultAsync(l => l.Id == req.TargetLessonId.Value, ct)
-                ?? throw new NotFoundException($"Target lesson with ID '{req.TargetLessonId.Value}' not found.");
-
-            if (req.TargetRevision.HasValue && lesson.Version != req.TargetRevision.Value)
-            {
-                throw new ConflictException($"CONCURRENCY_CONFLICT: Target lesson version has changed (current: {lesson.Version}, targetRevision: {req.TargetRevision.Value}).");
-            }
-
-            if (string.Equals(req.CommitMode, "Replace", StringComparison.OrdinalIgnoreCase))
-            {
-                var existingExIds = lesson.Exercises.Select(e => e.Id).ToList();
-                foreach (var id in existingExIds)
-                {
-                    lesson.RemoveExercise(id);
-                }
-            }
-        }
-        else
-        {
-            string title = lessonNode["title"]?.ToString() ?? "Imported Lesson";
-            string cefr = lessonNode["cefrLevel"]?.ToString() ?? "B1";
-            string topic = lessonNode["topic"]?.ToString() ?? "General";
-            string? content = lessonNode["content"]?.ToString();
-            int estimatedMinutes = lessonNode["estimatedMinutes"]?.GetValue<int>() ?? 30;
-
-            string objectivesJson = lessonNode["learningObjectives"]?.ToJsonString() ?? "[]";
-            string vocabJson = lessonNode["targetVocabulary"]?.ToJsonString() ?? "[]";
-            string grammarJson = lessonNode["targetGrammar"]?.ToJsonString() ?? "[]";
-
-            lesson = LessonEntity.Create(
-                title: title,
-                cefrLevel: cefr,
-                topic: topic,
-                content: content,
-                estimatedMinutes: estimatedMinutes,
-                learningObjectivesJson: objectivesJson,
-                targetVocabularyJson: vocabJson,
-                targetGrammarJson: grammarJson);
-
-            _db.Lessons.Add(lesson);
-        }
-
-        foreach (var ex in exercisesArray)
-        {
-            string key = ex?["key"]?.ToString() ?? Guid.NewGuid().ToString("N")[..8];
-            string typeStr = ex?["type"]?.ToString() ?? "Flashcards";
-            string title = ex?["title"]?.ToString() ?? key;
-            string instructions = ex?["instructions"]?.ToString() ?? string.Empty;
-            decimal maxPoints = ex?["maxPoints"]?.GetValue<decimal>() ?? 1.0m;
-            string gradingModeStr = ex?["gradingMode"]?.ToString() ?? "Deterministic";
-
-            Enum.TryParse<ExerciseType>(typeStr, ignoreCase: true, out var exerciseType);
-            Enum.TryParse<GradingMode>(gradingModeStr, ignoreCase: true, out var gradingMode);
-
-            string contentJson = ex?["content"]?.ToJsonString() ?? "{}";
-            string? gradingJson = ex?["grading"]?.ToJsonString();
-            string? skillTagsJson = ex?["skillTags"]?.ToJsonString();
-
-            lesson.AddExercise(
-                key: key,
-                type: exerciseType,
-                title: title,
-                instructions: instructions,
-                maxPoints: maxPoints,
-                gradingMode: gradingMode,
-                contentJson: contentJson,
-                gradingDefinitionJson: gradingJson,
-                skillTagsJson: skillTagsJson);
-        }
-
-        await _db.SaveChangesAsync(ct);
-
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
-    }
-
-    private static string BuildExerciseTypeRules(IReadOnlyList<string> types, int targetCount)
+    public string BuildExerciseTypeRules(IReadOnlyList<string> types, int targetCount)
     {
         var sb = new StringBuilder();
         var uniqueTypes = types.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -493,7 +98,7 @@ OUTPUT JSON STRUCTURE:
         return sb.ToString().TrimEnd();
     }
 
-    private static string BuildExerciseTypeSpecifications(IReadOnlyList<string> types)
+    public string BuildExerciseTypeSpecifications(IReadOnlyList<string> types)
     {
         var sb = new StringBuilder();
         var uniqueTypes = types.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -616,15 +221,17 @@ OUTPUT JSON STRUCTURE:
 - maxPoints: 10
 - gradingMode: ""AiRubric""
 - content: {
-    ""direction"": ""ViToEn"", // or ""EnToVi""
+    ""direction"": ""ViToEn"",
     ""sourceText"": ""Câu tiếng Việt cần dịch..."",
-    ""context"": ""Ngữ cảnh hội thoại hoặc chủ đề""
+    ""context"": ""Context description""
   }
 - grading: {
     ""rubricCode"": ""LESSON_TRANSLATION"",
     ""rubricVersion"": 1,
-    ""referenceTranslations"": [""Natural English sentence 1"", ""Alternative English sentence 2""],
-    ""requiredKeyIdeas"": [""Key concept 1"", ""Key concept 2""]
+    ""referenceTranslations"": [
+      ""Natural English translation option 1"",
+      ""Natural English translation option 2""
+    ]
   }");
                     break;
 
@@ -634,15 +241,17 @@ OUTPUT JSON STRUCTURE:
 - maxPoints: 10
 - gradingMode: ""Deterministic""
 - content: {
-    ""context"": ""Context paragraph..."",
+    ""context"": ""Reading context paragraph..."",
     ""statements"": [
-      { ""id"": ""s-1"", ""text"": ""Statement 1"" },
-      { ""id"": ""s-2"", ""text"": ""Statement 2"" }
+      { ""id"": ""s-1"", ""text"": ""Statement one."" },
+      { ""id"": ""s-2"", ""text"": ""Statement two."" }
     ]
   }
 - grading: {
-    ""statementAnswers"": { ""s-1"": true, ""s-2"": false },
-    ""explanations"": { ""s-1"": ""Reason 1..."", ""s-2"": ""Reason 2..."" }
+    ""statementAnswers"": {
+      ""s-1"": true,
+      ""s-2"": false
+    }
   }");
                     break;
 
@@ -652,14 +261,15 @@ OUTPUT JSON STRUCTURE:
 - maxPoints: 10
 - gradingMode: ""Deterministic""
 - content: {
-    ""incorrectSentence"": ""Sentence with a grammatical error."",
-    ""instructions"": ""Find and correct the error.""
+    ""incorrectSentence"": ""Sentence containing a specific mistake."",
+    ""instructions"": ""Identify and correct the grammar error.""
   }
 - grading: {
-    ""referenceCorrections"": [""Corrected sentence."", ""Alternative correct sentence.""],
-    ""targetErrors"": [""Description of the error""],
-    ""rubricCode"": ""LESSON_ERROR_CORRECTION"",
-    ""rubricVersion"": 1
+    ""referenceCorrections"": [
+      ""Corrected sentence option 1."",
+      ""Corrected sentence option 2.""
+    ],
+    ""targetErrors"": [""Description of target error""]
   }");
                     break;
 
@@ -669,12 +279,12 @@ OUTPUT JSON STRUCTURE:
 - maxPoints: 10
 - gradingMode: ""Deterministic""
 - content: {
-    ""hint"": ""Clue or definition of the target word"",
+    ""hint"": ""Definition or clue for the word"",
     ""letterCount"": 8
   }
 - grading: {
     ""targetWord"": ""targetword"",
-    ""acceptedVariants"": [""variant""],
+    ""acceptedVariants"": [],
     ""caseSensitive"": false
   }");
                     break;
@@ -685,15 +295,14 @@ OUTPUT JSON STRUCTURE:
 - maxPoints: 10
 - gradingMode: ""AiRubric""
 - content: {
-    ""topic"": ""Speaking topic title"",
-    ""instructions"": ""Speak for at least 30 seconds..."",
+    ""topic"": ""Speaking prompt topic"",
+    ""instructions"": ""Speak for 30-60 seconds on the topic."",
     ""targetDurationSeconds"": 30,
     ""suggestedPrompts"": [""Guiding question 1"", ""Guiding question 2""]
   }
 - grading: {
     ""rubricCode"": ""LESSON_SPEAKING"",
-    ""rubricVersion"": 1,
-    ""taskInstructions"": ""Teacher assessment instructions...""
+    ""rubricVersion"": 1
   }");
                     break;
 
@@ -816,7 +425,7 @@ OUTPUT JSON STRUCTURE:
         return sb.ToString().TrimEnd();
     }
 
-    private static string BuildConcreteExerciseExamples(IReadOnlyList<string> types, string topic, string cefrLevel)
+    public string BuildConcreteExerciseExamples(IReadOnlyList<string> types, string topic, string cefrLevel)
     {
         var sb = new StringBuilder();
         var uniqueTypes = types.Distinct(StringComparer.OrdinalIgnoreCase).ToList();

@@ -341,14 +341,28 @@ public static class LessonEndpoints
         }).RequirePermission("lessons.generate");
 
         group.MapPost("/generation/generate", async (
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
             GenerateLessonExercisesCommand command,
             ISender sender,
             CancellationToken ct) =>
         {
             try
             {
+                if (!string.IsNullOrWhiteSpace(operationKey) && string.IsNullOrWhiteSpace(command.OperationKey))
+                {
+                    command = command with { OperationKey = operationKey };
+                }
+
                 var result = await sender.Send(command, ct);
                 return Results.Ok(result);
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
             }
             catch (Exception ex)
             {

@@ -121,8 +121,16 @@ public class LessonPlayerRegressionTests
         db.Lessons.Add(lesson); db.LessonAttempts.Add(attempt); await db.SaveChangesAsync();
         var user = new User("learner");
         var resume = new AttemptQueryHandlers(db, user, new LessonSanitizer());
-        var handler = new AttemptCommandHandlers(db, user, TimeProvider.System,
-            new DeterministicExerciseGrader(new DictationScorer()), new LessonAiGrader(), resume);
+        var unitOfWork = new UnitOfWork(db);
+        var idempotency = new IdempotencyService(db);
+        var handler = new SubmitExerciseAnswerCommandHandler(
+            db, user, TimeProvider.System,
+            new DeterministicExerciseGrader(new DictationScorer()),
+            new FakeLessonAiGrader(),
+            new FakeAudioRecordingRepository(),
+            new FakeLessonMediaStorage(),
+            unitOfWork,
+            idempotency);
         var result = await handler.HandleAsync(new SubmitExerciseAnswerCommand(attempt.Id,
             new SubmitExerciseAnswerRequest(exercise.Id, null, 1,
                 JsonNode.Parse("{\"subQuestionAnswers\":[{\"questionId\":\"q-1\",\"selectedOptionIds\":[\"o-2\"]}]}")!)));
