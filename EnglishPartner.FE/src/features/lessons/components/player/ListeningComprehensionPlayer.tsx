@@ -7,6 +7,7 @@ interface Props {
   onSubmit: (payload: Record<string, unknown>) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  initialAnswers?: Record<string, unknown>;
 }
 
 export function ListeningComprehensionPlayer({ content, ...props }: Props) {

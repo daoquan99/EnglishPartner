@@ -3,6 +3,7 @@ using EnglishLiveTutor.Application.Common.Exceptions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.LessonAttempts.Enums;
+using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
@@ -43,6 +44,12 @@ public sealed class AttemptQueryHandlers :
         if (attempt == null)
             return null;
 
+        string? currentUserId = _currentUser.UserId;
+        if (string.IsNullOrWhiteSpace(currentUserId) || !string.Equals(attempt.UserId, currentUserId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ForbiddenException("You are not authorized to view this lesson attempt.");
+        }
+
         var lesson = await _db.Lessons
             .AsNoTracking()
             .Include(l => l.Exercises)
@@ -54,6 +61,35 @@ public sealed class AttemptQueryHandlers :
             .Select(e =>
             {
                 string safeContent = _sanitizer.SanitizeContentForLearner(e.Type, e.ContentJson);
+                var contentNode = ParseJson(safeContent);
+
+                if (e.Type == ExerciseType.MultipleChoice && contentNode is JsonObject mcObj)
+                {
+                    if (mcObj["selectionMode"] == null && !string.IsNullOrWhiteSpace(e.GradingDefinitionJson))
+                    {
+                        try
+                        {
+                            var g = JsonNode.Parse(e.GradingDefinitionJson);
+                            var count = g?["correctOptionIds"]?.AsArray()?.Count ?? 0;
+                            mcObj["selectionMode"] = count > 1 ? "Multiple" : "Single";
+                        }
+                        catch { }
+                    }
+                }
+                else if (e.Type == ExerciseType.Flashcards && contentNode is JsonObject fcObj && fcObj["cards"] is JsonArray cardsArr)
+                {
+                    foreach (var c in cardsArr)
+                    {
+                        if (c is JsonObject cObj)
+                        {
+                            if (cObj["meaningVi"] == null && cObj["meaning"] != null)
+                                cObj["meaningVi"] = cObj["meaning"]!.DeepClone();
+                            if (cObj["exampleEn"] == null && cObj["example"] != null)
+                                cObj["exampleEn"] = cObj["example"]!.DeepClone();
+                        }
+                    }
+                }
+
                 return new ExerciseLearnerDto(
                     Id: e.Id,
                     Key: e.Key,
@@ -63,7 +99,7 @@ public sealed class AttemptQueryHandlers :
                     Order: e.Order,
                     MaxPoints: e.MaxPoints,
                     GradingMode: e.GradingMode.ToString(),
-                    Content: ParseJson(safeContent));
+                    Content: contentNode);
             }).ToList();
 
         var submittedAnswersMap = new Dictionary<string, SubmittedAnswerSummaryDto>();
@@ -73,13 +109,68 @@ public sealed class AttemptQueryHandlers :
                 ? $"{ans.ExerciseId}_{ans.SubQuestionId.Value}"
                 : ans.ExerciseId.ToString();
 
-            submittedAnswersMap[mapKey] = new SubmittedAnswerSummaryDto(
+            JsonNode? answerPayload = null;
+            if (!string.IsNullOrWhiteSpace(ans.AnswerPayloadJson))
+            {
+                try { answerPayload = JsonNode.Parse(ans.AnswerPayloadJson); } catch { }
+            }
+
+            string? feedback = ans.GradingResultJson;
+            string? errorMessage = null;
+            DictationAiReviewDto? aiReview = null;
+            List<CriterionScoreBreakdownDto>? criteriaBreakdown = null;
+
+            if (ans.Status is SubmissionGradingStatus.Failed or SubmissionGradingStatus.NotAssessable)
+            {
+                errorMessage = ans.GradingResultJson;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ans.GradingResultJson))
+            {
+                string trimmed = ans.GradingResultJson.Trim();
+                if (trimmed.StartsWith("["))
+                {
+                    try
+                    {
+                        criteriaBreakdown = System.Text.Json.JsonSerializer.Deserialize<List<CriterionScoreBreakdownDto>>(trimmed);
+                        feedback = null; // Do not expose raw serialized criteria JSON array as plain text feedback
+                    }
+                    catch { }
+                }
+                else if (trimmed.StartsWith("{"))
+                {
+                    try
+                    {
+                        var resNode = JsonNode.Parse(trimmed);
+                        if (resNode?["aiReview"] != null)
+                        {
+                            aiReview = System.Text.Json.JsonSerializer.Deserialize<DictationAiReviewDto>(resNode["aiReview"]!.ToJsonString());
+                            feedback = resNode["explanation"]?.ToString();
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            var summary = new SubmittedAnswerSummaryDto(
                 AnswerId: ans.Id,
                 Status: ans.Status.ToString(),
                 Score100: ans.Score100,
                 PointsEarned: ans.PointsEarned,
                 MaxPoints: ans.MaxPoints,
-                Feedback: ans.GradingResultJson);
+                Feedback: feedback,
+                AnswerPayload: answerPayload,
+                ErrorMessage: errorMessage,
+                AiReview: aiReview,
+                CriteriaBreakdown: criteriaBreakdown,
+                ExerciseId: ans.ExerciseId,
+                SubQuestionId: ans.SubQuestionId);
+
+            submittedAnswersMap[mapKey] = summary;
+            if (ans.SubQuestionId.HasValue && !submittedAnswersMap.ContainsKey(ans.ExerciseId.ToString()))
+            {
+                submittedAnswersMap[ans.ExerciseId.ToString()] = summary;
+            }
         }
 
         int totalExercises = lesson.Exercises.Count;

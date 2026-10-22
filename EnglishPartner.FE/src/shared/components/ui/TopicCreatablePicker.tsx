@@ -93,7 +93,11 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
         )}
       </div>
 
-      {helperText && <p className="text-[11px] text-slate-500">{helperText}</p>}
+      {helperText && (
+        <p className="text-[11px] text-slate-500 whitespace-nowrap truncate">
+          {helperText}
+        </p>
+      )}
 
       {/* Category Filter Pills */}
       {categories.length > 2 && (

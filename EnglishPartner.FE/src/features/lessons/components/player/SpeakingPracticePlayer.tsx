@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Volume2, Check, Sparkles } from 'lucide-react';
+import { Mic, Square, Volume2, Check, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { LessonAudioButton } from './LessonAudioButton';
 import { toast } from '@/shared/lib/toast';
+import { lessonApi } from '../../api/lessonApi';
 
 interface SpeakingPracticePlayerProps {
   content: {
@@ -17,6 +18,8 @@ interface SpeakingPracticePlayerProps {
   onSubmit: (payload: { audioAssetId?: string; spokenText?: string }) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  initialSpokenNotes?: string;
+  initialAudioAssetId?: string;
 }
 
 export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
@@ -24,11 +27,31 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
   onSubmit,
   isSubmitting = false,
   isSubmitted = false,
+  initialSpokenNotes = '',
+  initialAudioAssetId,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(
+    initialAudioAssetId ? `/api/lesson-media/${initialAudioAssetId}/stream` : null
+  );
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(initialAudioAssetId ?? null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [spokenNotes, setSpokenNotes] = useState('');
+  const [spokenNotes, setSpokenNotes] = useState(initialSpokenNotes);
+
+  useEffect(() => {
+    if (initialSpokenNotes) {
+      setSpokenNotes(initialSpokenNotes);
+    }
+  }, [initialSpokenNotes]);
+
+  useEffect(() => {
+    if (initialAudioAssetId) {
+      setUploadedAssetId(initialAudioAssetId);
+      setRecordedAudioUrl(`/api/lesson-media/${initialAudioAssetId}/stream`);
+    }
+  }, [initialAudioAssetId]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -57,21 +80,37 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
     window.dispatchEvent(new Event('lesson-recording-start'));
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!activeRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
+      if (!activeRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       audioChunksRef.current = [];
-      const mr = new MediaRecorder(stream);
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+
+      const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
 
       mr.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
       mr.onstop = () => {
-        if (!activeRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (!activeRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        const effectiveType = mr.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: effectiveType });
         if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
         const url = URL.createObjectURL(audioBlob);
         recordedUrlRef.current = url;
+        setRecordedBlob(audioBlob);
+        setUploadedAssetId(null);
         setRecordedAudioUrl(url);
         stream.getTracks().forEach((track) => track.stop());
       };
@@ -105,6 +144,33 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
       setIsPlayingAudio(true);
     }
   };
+
+  const handleSubmit = async () => {
+    let assetId = uploadedAssetId;
+
+    if (!assetId && recordedBlob) {
+      setIsUploading(true);
+      try {
+        const ext = recordedBlob.type.includes('mp4') ? 'mp4' : recordedBlob.type.includes('ogg') ? 'ogg' : 'webm';
+        const up = await lessonApi.uploadLessonMedia(recordedBlob, `speaking-${Date.now()}.${ext}`);
+        assetId = up.assetId;
+        setUploadedAssetId(assetId);
+      } catch (err: any) {
+        setIsUploading(false);
+        toast.error(err?.response?.data?.error || err?.response?.data?.detail || 'Không tải lên được bản ghi âm. Vui lòng thử lại.');
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    onSubmit({
+      audioAssetId: assetId ?? undefined,
+      spokenText: spokenNotes.trim() || undefined,
+    });
+  };
+
+  const busy = isSubmitting || isUploading;
 
   return (
     <div className="space-y-6 max-w-xl mx-auto">
@@ -144,7 +210,7 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
               variant="primary"
               size="lg"
               onClick={() => void startRecording()}
-              disabled={isSubmitted}
+              disabled={isSubmitted || busy}
               className="rounded-full gap-2 px-6 bg-rose-600 hover:bg-rose-500 text-white"
             >
               <Mic className="w-5 h-5" /> Bắt đầu ghi âm bài nói
@@ -163,14 +229,12 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
 
           {recordedAudioUrl && !isRecording && (
             <>
-              {recordedAudioUrl !== 'simulated-speaking-asset' && (
-                <audio
-                  ref={audioRef}
-                  src={recordedAudioUrl}
-                  onEnded={() => setIsPlayingAudio(false)}
-                  className="hidden"
-                />
-              )}
+              <audio
+                ref={audioRef}
+                src={recordedAudioUrl}
+                onEnded={() => setIsPlayingAudio(false)}
+                className="hidden"
+              />
               <Button
                 type="button"
                 variant="outline"
@@ -201,7 +265,7 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
             placeholder="Ghi chú thêm nội dung bài nói nếu cần..."
             value={spokenNotes}
             onChange={(e) => setSpokenNotes(e.target.value)}
-            disabled={isSubmitted}
+            disabled={isSubmitted || busy}
             className="w-full text-xs rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
@@ -213,17 +277,12 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() =>
-              onSubmit({
-                audioAssetId: recordedAudioUrl ? 'speaking-submission-asset-01' : undefined,
-                spokenText: spokenNotes.trim() || undefined,
-              })
-            }
-            disabled={(!recordedAudioUrl && !spokenNotes.trim()) || isRecording || isSubmitting}
+            onClick={handleSubmit}
+            disabled={(!recordedBlob && !uploadedAssetId && !spokenNotes.trim()) || isRecording || busy}
             className="w-full gap-2 py-3 rounded-2xl"
           >
-            <Check className="w-4 h-4" />
-            {isSubmitting ? 'AI đang chấm rubric kỹ năng nói...' : 'Xác nhận nộp bài nói'}
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {isUploading ? 'Đang tải lên bản thu âm...' : isSubmitting ? 'AI đang chấm rubric kỹ năng nói...' : 'Xác nhận nộp bài nói'}
           </Button>
         </div>
       )}

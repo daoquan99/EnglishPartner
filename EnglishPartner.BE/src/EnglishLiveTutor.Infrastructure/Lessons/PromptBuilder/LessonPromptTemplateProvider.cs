@@ -41,7 +41,7 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
                     ruleNum++;
                     break;
                 case "flashcards":
-                    sb.AppendLine($"{ruleNum}. For Flashcards: 'content.cards' MUST be an array of items with 'id', 'term', 'ipa', 'meaning', and 'example'. 'maxPoints' MUST be 0 and 'gradingMode' MUST be 'SelfAssessment'.");
+                    sb.AppendLine($"{ruleNum}. For Flashcards: 'content.cards' MUST be an array of items with 'id', 'term', 'ipa', 'meaningVi', 'exampleEn', and 'exampleVi'. 'maxPoints' MUST be 0 and 'gradingMode' MUST be 'SelfAssessment'.");
                     ruleNum++;
                     break;
                 case "matching":
@@ -61,7 +61,7 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
                     ruleNum++;
                     break;
                 case "spellingpractice":
-                    sb.AppendLine($"{ruleNum}. For SpellingPractice: 'content.hint', 'content.letterCount', 'grading.targetWord', and optional 'grading.acceptedVariants'.");
+                    sb.AppendLine($"{ruleNum}. For SpellingPractice: 'content.prompt' (in Vietnamese), 'content.definition' (in Vietnamese), 'content.exampleSentence' with blank '________', 'content.hint' (in Vietnamese), 'grading.targetWord', and 'grading.acceptedSpellings'.");
                     ruleNum++;
                     break;
                 case "speakingpractice":
@@ -85,7 +85,7 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
                     ruleNum++;
                     break;
                 case "conversationroleplay":
-                    sb.AppendLine($"{ruleNum}. For ConversationRolePlay: 'content.scenario', 'content.aiRole', 'content.learnerRole', 'content.initialGreeting', 'content.minTurns', 'content.maxTurns', 'grading.rubricCode' ('LESSON_ROLEPLAY').");
+                    sb.AppendLine($"{ruleNum}. For ConversationRolePlay: 'content.scenario', 'content.aiRole', 'content.learnerRole', 'content.initialGreeting', 'content.minTurns', 'content.maxTurns', 'grading.rubricCode' ('LESSON_CONVERSATION_TEXT'), 'grading.rubricVersion' (1).");
                     ruleNum++;
                     break;
                 case "writingpractice":
@@ -182,8 +182,9 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
         ""id"": ""c-1"",
         ""term"": ""English word"",
         ""ipa"": ""/phonetics/"",
-        ""meaning"": ""Vietnamese definition"",
-        ""example"": ""Example sentence."",
+        ""meaningVi"": ""Nghĩa tiếng Việt"",
+        ""exampleEn"": ""Example sentence in English."",
+        ""exampleVi"": ""Câu ví dụ dịch sang tiếng Việt."",
         ""audioAssetId"": null
       }
     ]
@@ -279,12 +280,15 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
 - maxPoints: 10
 - gradingMode: ""Deterministic""
 - content: {
-    ""hint"": ""Definition or clue for the word"",
+    ""prompt"": ""Đọc gợi ý và viết từ tiếng Anh phù hợp."",
+    ""definition"": ""Bản kế hoạch các hoạt động và thời gian chúng sẽ diễn ra."",
+    ""exampleSentence"": ""I check my work ________ every morning at 8:30 AM."",
+    ""hint"": ""Bắt đầu bằng chữ 's' và có 8 chữ cái (s _ _ _ _ _ _ e)."",
     ""letterCount"": 8
   }
 - grading: {
-    ""targetWord"": ""targetword"",
-    ""acceptedVariants"": [],
+    ""targetWord"": ""schedule"",
+    ""acceptedSpellings"": [""schedule""],
     ""caseSensitive"": false
   }");
                     break;
@@ -526,16 +530,18 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
             ""id"": ""c-1"",
             ""term"": ""commute"",
             ""ipa"": ""/kəˈmjuːt/"",
-            ""meaning"": ""quãng đường đi lại hàng ngày"",
-            ""example"": ""Working from home eliminates daily commute time."",
+            ""meaningVi"": ""quãng đường đi lại hàng ngày"",
+            ""exampleEn"": ""Working from home eliminates daily commute time."",
+            ""exampleVi"": ""Làm việc tại nhà giúp giảm thiểu thời gian đi lại mỗi ngày."",
             ""audioAssetId"": null
           }},
           {{
             ""id"": ""c-2"",
             ""term"": ""work-life balance"",
             ""ipa"": ""/ˌwɜːk.laɪf ˈbæl.əns/"",
-            ""meaning"": ""cân bằng công việc và đời sống"",
-            ""example"": ""Maintaining a consistent routine improves work-life balance."",
+            ""meaningVi"": ""cân bằng công việc và đời sống"",
+            ""exampleEn"": ""Maintaining a consistent routine improves work-life balance."",
+            ""exampleVi"": ""Duy trì thói quen đều đặn giúp cải thiện cân bằng giữa công việc và đời sống."",
             ""audioAssetId"": null
           }}
         ]
@@ -651,18 +657,21 @@ public sealed class LessonPromptTemplateProvider : ILessonPromptTemplateProvider
                 "spellingpractice" => $@"    {{
       ""key"": ""ex_{order:D2}_spelling"",
       ""type"": ""SpellingPractice"",
-      ""title"": ""Spelling Practice: {topic}"",
-      ""instructions"": ""Spell the English word correctly based on the clue."",
+      ""title"": ""Spelling: {topic}"",
+      ""instructions"": ""Đọc gợi ý và viết từ tiếng Anh phù hợp."",
       ""order"": {order},
       ""maxPoints"": 10,
       ""gradingMode"": ""Deterministic"",
       ""content"": {{
-        ""hint"": ""A plan of activities or tasks and the times when they will happen"",
+        ""prompt"": ""Đọc gợi ý và viết từ tiếng Anh phù hợp."",
+        ""definition"": ""Bản kế hoạch các hoạt động và thời gian chúng sẽ diễn ra."",
+        ""exampleSentence"": ""I check my work ________ every morning at 8:30 AM."",
+        ""hint"": ""Bắt đầu bằng chữ 's' và có 8 chữ cái (s _ _ _ _ _ _ e)."",
         ""letterCount"": 8
       }},
       ""grading"": {{
         ""targetWord"": ""schedule"",
-        ""acceptedVariants"": [""calendar""],
+        ""acceptedSpellings"": [""schedule""],
         ""caseSensitive"": false
       }}
     }}",

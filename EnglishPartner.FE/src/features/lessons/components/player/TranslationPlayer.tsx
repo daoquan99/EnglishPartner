@@ -25,6 +25,12 @@ export const TranslationPlayer: React.FC<TranslationPlayerProps> = ({
   const [translated, setTranslated] = useState(initialTranslatedText);
   const isEnToVi = content.direction === 'EnToVi' || !content.direction;
 
+  React.useEffect(() => {
+    if (initialTranslatedText) {
+      setTranslated(initialTranslatedText);
+    }
+  }, [initialTranslatedText]);
+
   return (
     <div className="space-y-6 max-w-xl mx-auto">
       {/* Direction & Source Box */}

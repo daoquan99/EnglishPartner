@@ -150,12 +150,72 @@ describe('Lesson API Client & Candidate Operations', () => {
 
     (httpClient.post as any).mockResolvedValueOnce({ data: mockRetried });
 
-    const res = await lessonApi.retryGrading('att-1', 'ans-failed');
+    const res = await lessonApi.retryGrading('att-1', 'ans-failed', {
+      attemptRevision: 2,
+      aiConfig: { apiKey: 'test-key', assessmentModelCode: 'gemini-3.8-flash' },
+    });
 
     expect(httpClient.post).toHaveBeenCalledWith(
       '/api/lesson-attempts/att-1/answers/ans-failed/retry',
-      {}
+      {
+        attemptRevision: 2,
+        aiConfig: { apiKey: 'test-key', assessmentModelCode: 'gemini-3.8-flash' },
+      }
     );
     expect(res.status).toBe('Completed');
+  });
+
+  it('requestDictationAiReview calls ai-review endpoint with aiConfig', async () => {
+    const mockReview = {
+      reviewId: 'rev-1',
+      answerId: 'ans-1',
+      status: 'Completed',
+      feedback: 'Rất tốt',
+      missingWords: ['the'],
+    };
+
+    (httpClient.post as any).mockResolvedValueOnce({ data: mockReview });
+
+    const res = await lessonApi.requestDictationAiReview(
+      'att-1',
+      'ans-1',
+      { aiConfig: { apiKey: 'key-1' } },
+      'op-key-123'
+    );
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/lesson-attempts/att-1/answers/ans-1/ai-review',
+      { aiConfig: { apiKey: 'key-1' } },
+      { headers: { 'X-Operation-Key': 'op-key-123' } }
+    );
+    expect(res.status).toBe('Completed');
+    expect(res.missingWords).toContain('the');
+  });
+
+  it('uploadLessonMedia posts FormData to /api/lesson-media/upload', async () => {
+    const mockUpload = {
+      assetId: '00000000-0000-0000-0000-000000000001',
+      fileName: 'audio.webm',
+      contentType: 'audio/webm',
+      fileSizeBytes: 1024,
+      url: '/media/audio.webm',
+    };
+
+    (httpClient.post as any).mockResolvedValueOnce({ data: mockUpload });
+
+    const blob = new Blob(['dummy audio bytes'], { type: 'audio/webm' });
+    const res = await lessonApi.uploadLessonMedia(blob, 'test.webm', 'op-upload-1');
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/lesson-media/upload',
+      expect.any(FormData),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'multipart/form-data',
+          'X-Operation-Key': 'op-upload-1',
+        }),
+      })
+    );
+    expect(res.assetId).toBe('00000000-0000-0000-0000-000000000001');
   });
 });

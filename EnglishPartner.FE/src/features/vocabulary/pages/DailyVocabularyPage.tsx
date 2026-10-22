@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import {
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import { DailyLearningSettingsDialog } from '../components/DailyLearningSettingsDialog';
 import { PronunciationHistoryDialog } from '../components/PronunciationHistoryDialog';
+import { AiSpeechSettingsDialog } from '@/features/speech';
 import {
   useActiveScoringRubricQuery,
   usePronunciationModelsQuery,
@@ -77,6 +79,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export const DailyVocabularyPage: React.FC = () => {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { apiKey, requestFocusLeftMenuApiKey } = useTutorSessionStore();
 
@@ -119,13 +122,15 @@ export const DailyVocabularyPage: React.FC = () => {
   const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
-  // Teacher AI Pronunciation Synthesizer State (Gemini 3.8 Live / Extended Thinking + 30 Voices + US/UK Accent)
-  const [ttsModelCode, setTtsModelCode] = useState<
-    'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking'
-  >('gemini-3.8-live');
-  const [ttsVoiceName, setTtsVoiceName] = useState<TeacherVoiceName>('Aoede');
-  const [ttsAccent, setTtsAccent] = useState<'US' | 'UK'>('US');
-  const [ttsSpeed, setTtsSpeed] = useState<number>(1.0);
+  // Teacher AI Pronunciation Synthesizer State (Shared useTutorSessionStore)
+  const ttsModelCode = useTutorSessionStore((s) => s.ttsModelCode);
+  const setTtsModelCode = useTutorSessionStore((s) => s.setTtsModelCode);
+  const ttsVoiceName = useTutorSessionStore((s) => s.voiceName);
+  const setTtsVoiceName = useTutorSessionStore((s) => s.setVoiceName);
+  const ttsAccent = useTutorSessionStore((s) => s.ttsAccent);
+  const setTtsAccent = useTutorSessionStore((s) => s.setTtsAccent);
+  const ttsSpeed = useTutorSessionStore((s) => s.speechSpeed);
+  const setTtsSpeed = useTutorSessionStore((s) => s.setSpeechSpeed);
   const [lastSynthesizedAudio, setLastSynthesizedAudio] =
     useState<SynthesizePronunciationAudioResponseDto | null>(null);
   const [showSystemPromptUsed, setShowSystemPromptUsed] = useState(false);
@@ -721,6 +726,16 @@ export const DailyVocabularyPage: React.FC = () => {
           >
             <img src="/assets/icons/navigation/nav-settings.svg" alt="" className="w-4 h-4 object-contain" />
             {t('vocab.configTts')}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/student/vocabulary-games/falling-words?source=DailyVocabulary')}
+            title="Chơi Từ vựng rơi với danh sách từ hôm nay"
+          >
+            <span className="text-sm">🎮</span>
+            Chơi Từ vựng rơi
           </Button>
 
           <Button
@@ -1521,140 +1536,14 @@ export const DailyVocabularyPage: React.FC = () => {
       </div>
       )}
 
-      {/* MODAL 1: Cấu hình Phát Âm Mẫu AI (Opened via Settings button on toolbar) */}
-      <Dialog
+      {/* MODAL 1: Cấu hình Phát Âm Mẫu AI (Shared AiSpeechSettingsDialog) */}
+      <AiSpeechSettingsDialog
         isOpen={isTtsSettingsModalOpen}
         onClose={() => setIsTtsSettingsModalOpen(false)}
-        maxWidth="2xl"
-        icon={
-          <img
-            src="/assets/icons/navigation/nav-settings.svg"
-            alt=""
-            className="w-5 h-5 object-contain"
-          />
-        }
-        title={t('vocab.ttsModalTitle')}
-        description={t('vocab.ttsModalDesc')}
-        footer={
-          <div className="flex items-center justify-end gap-2 w-full">
-            <Button size="sm" onClick={() => setIsTtsSettingsModalOpen(false)}>
-              {t('vocab.saveAndClose')}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1.5">
-                {t('vocab.liveTtsModelLabel')}
-              </label>
-              <select
-                value={ttsModelCode}
-                onChange={(e) =>
-                  setTtsModelCode(
-                    e.target.value as 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking'
-                  )
-                }
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
-              >
-                <option value="gemini-3.8-live">{t('vocab.liveSpeedInstant')}</option>
-                <option value="gemini-3.8-live-extended-thinking">
-                  {t('vocab.liveExtendedThinking')}
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1.5">
-                {t('vocab.teacherVoiceCount', { count: allVoices.length })}
-              </label>
-              <select
-                value={ttsVoiceName}
-                onChange={(e) => setTtsVoiceName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
-              >
-                {allVoices.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label} — {v.style} ({v.persona})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1.5">
-                {t('vocab.defaultAccentLabel')}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['US', 'UK'] as const).map((acc) => (
-                  <button
-                    key={acc}
-                    type="button"
-                    onClick={() => setTtsAccent(acc)}
-                    className={cn(
-                      'py-2.5 rounded-xl font-extrabold border transition-all cursor-pointer',
-                      ttsAccent === acc
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    )}
-                  >
-                    {acc === 'US' ? '🇺🇸 US (American)' : '🇬🇧 UK (British)'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1.5">
-                {t('vocab.sampleSpeedLabel')}
-              </label>
-              <select
-                value={ttsSpeed}
-                onChange={(e) => setTtsSpeed(parseFloat(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800"
-              >
-                {speechSpeeds.map((sp) => (
-                  <option key={sp.code || sp.value} value={sp.value}>
-                    {sp.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {lastSynthesizedAudio && (
-            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Badge variant="emerald">{lastSynthesizedAudio.modelCodeUsed}</Badge>
-                  <Badge variant="violet">Voice: {lastSynthesizedAudio.voiceName}</Badge>
-                  <Badge variant="sky">Accent: {lastSynthesizedAudio.accent}</Badge>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSystemPromptUsed((s) => !s)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                >
-                  <Code2 className="w-3.5 h-3.5" />
-                  {showSystemPromptUsed ? t('vocab.hideSystemPrompt') : t('vocab.viewSystemPrompt')}
-                </button>
-              </div>
-              <audio
-                ref={audioPlayerRef}
-                controls
-                src={`data:${lastSynthesizedAudio.mimeType};base64,${lastSynthesizedAudio.audioBase64}`}
-                className="w-full h-9"
-              />
-              {showSystemPromptUsed && (
-                <pre className="p-3 rounded-xl bg-slate-900 text-emerald-300 text-[11px] font-mono whitespace-pre-wrap">
-                  {lastSynthesizedAudio.systemPromptUsed}
-                </pre>
-              )}
-            </div>
-          )}
-        </div>
-      </Dialog>
+        lastSynthesizedAudio={lastSynthesizedAudio}
+        showSystemPromptUsed={showSystemPromptUsed}
+        onToggleSystemPromptUsed={() => setShowSystemPromptUsed((s) => !s)}
+      />
 
       {/* MODAL 2: Tạo Từ Vựng Thông Minh bằng AI (Opened via "Tạo từ vựng bằng AI" button on toolbar) */}
       <Dialog

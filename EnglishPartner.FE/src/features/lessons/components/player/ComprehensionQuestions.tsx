@@ -7,11 +7,18 @@ interface Props {
   onSubmit: (payload: Record<string, unknown>) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  initialAnswers?: Record<string, unknown>;
 }
 
-export function ComprehensionQuestions({ questions, onSubmit, isSubmitting, isSubmitted }: Props) {
+export function ComprehensionQuestions({ questions, onSubmit, isSubmitting, isSubmitted, initialAnswers }: Props) {
   const items = normalizeQuestions(questions);
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>(initialAnswers ?? {});
+
+  React.useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      setAnswers((prev) => ({ ...prev, ...initialAnswers }));
+    }
+  }, [initialAnswers]);
   const disabled = Boolean(isSubmitted || isSubmitting);
   const allAnswered = items.length > 0 && items.every((q) => {
     const value = answers[q.id];

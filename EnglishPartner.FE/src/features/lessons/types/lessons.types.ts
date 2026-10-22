@@ -377,6 +377,35 @@ export interface AttemptProgressDto {
   finalScore100?: number | null;
 }
 
+export interface LessonAiExecutionConfigDto {
+  apiKey?: string | null;
+  assessmentModelCode?: string | null;
+}
+
+export interface DictationWordSubstitutionDto {
+  expected: string;
+  actual: string;
+}
+
+export interface DictationAiReviewDto {
+  reviewId: string;
+  answerId: string;
+  status: 'Completed' | 'Failed' | string;
+  feedback?: string | null;
+  missingWords?: string[] | null;
+  extraWords?: string[] | null;
+  wordSubstitutions?: DictationWordSubstitutionDto[] | null;
+  explanationsVi?: string | null;
+  actionableImprovements?: string[] | null;
+  errorMessage?: string | null;
+  reviewedAtUtc?: string | null;
+}
+
+export interface RequestDictationAiReviewRequest {
+  aiConfig?: LessonAiExecutionConfigDto | null;
+  expectedSubmissionHash?: string | null;
+}
+
 export interface ExerciseAnswerResultDto {
   answerId: string;
   attemptId: string;
@@ -396,6 +425,9 @@ export interface ExerciseAnswerResultDto {
   suggestedAnswer?: string | null;
   feedback?: string | null;
   attemptProgress: AttemptProgressDto;
+  errorMessage?: string | null;
+  answerPayload?: Record<string, unknown> | null;
+  aiReview?: DictationAiReviewDto | null;
 }
 
 export interface SubmittedAnswerSummaryDto {
@@ -405,6 +437,12 @@ export interface SubmittedAnswerSummaryDto {
   pointsEarned?: number | null;
   maxPoints: number;
   feedback?: string | null;
+  errorMessage?: string | null;
+  answerPayload?: Record<string, unknown> | null;
+  aiReview?: DictationAiReviewDto | null;
+  criteriaBreakdown?: CriterionScoreBreakdownDto[] | null;
+  exerciseId?: string | null;
+  subQuestionId?: string | null;
 }
 
 export interface LessonAttemptResumeDto {

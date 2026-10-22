@@ -426,7 +426,33 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
               </div>
             ) : (
               <>
-                {/* Row 1: CEFR Level & Target Count (when creating lesson from scratch) */}
+                {/* Tiêu đề bài học (1 line) */}
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Tiêu đề bài học
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ví dụ: Dining Out & Ordering Food"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* Chủ đề (Topic) (1 line) */}
+                <div>
+                  <TopicCreatablePicker
+                    label="Chủ đề (Topic)"
+                    value={topic}
+                    onChange={setTopic}
+                    topics={topics}
+                    placeholder="Chọn chủ đề gợi ý hoặc gõ chủ đề mới..."
+                    helperText="Gợi ý từ danh mục chủ đề của hệ thống hoặc nhập tự do."
+                  />
+                </div>
+
+                {/* Trình độ CEFR & Số lượng bài tập */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1">
@@ -460,33 +486,6 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
                       <option value={10}>10 bài tập (Luyện tập mở rộng)</option>
                       <option value={16}>16 bài tập (Toàn diện tất cả các dạng)</option>
                     </select>
-                  </div>
-                </div>
-
-                {/* Row 2: Title & Topic (when creating lesson from scratch) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1">
-                      Tiêu đề bài học
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ví dụ: Dining Out & Ordering Food"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <TopicCreatablePicker
-                      label="Chủ đề (Topic)"
-                      value={topic}
-                      onChange={setTopic}
-                      topics={topics}
-                      placeholder="Chọn chủ đề gợi ý hoặc gõ chủ đề mới..."
-                      helperText="Gợi ý từ danh mục chủ đề của hệ thống hoặc nhập tự do."
-                    />
                   </div>
                 </div>
               </>

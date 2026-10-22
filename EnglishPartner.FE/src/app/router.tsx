@@ -64,6 +64,15 @@ const StudentLessonPlayerPage = lazy(() =>
 const StudentLessonHistoryPage = lazy(() =>
   import('@/features/lessons').then((m) => ({ default: m.StudentLessonHistoryPage }))
 );
+const FallingWordsSetupPage = lazy(() =>
+  import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsSetupPage }))
+);
+const FallingWordsPlayPage = lazy(() =>
+  import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsPlayPage }))
+);
+const FallingWordsHistoryPage = lazy(() =>
+  import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsHistoryPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[45vh] flex items-center justify-center text-xs font-semibold text-slate-500">
@@ -97,6 +106,30 @@ export const AppRouter: React.FC = () => {
                 element={
                   <RequirePermission permission="vocabularies.read">
                     <DailyVocabularyPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="vocabulary-games/falling-words"
+                element={
+                  <RequirePermission permission="vocabularies.read">
+                    <FallingWordsSetupPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="vocabulary-games/falling-words/sessions/:id"
+                element={
+                  <RequirePermission permission="vocabularies.read">
+                    <FallingWordsPlayPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="vocabulary-games/falling-words/history"
+                element={
+                  <RequirePermission permission="vocabularies.read">
+                    <FallingWordsHistoryPage />
                   </RequirePermission>
                 }
               />

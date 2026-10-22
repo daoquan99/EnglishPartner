@@ -30,6 +30,12 @@ export const SentenceUnscramblePlayer: React.FC<SentenceUnscramblePlayerProps> =
   // Available token IDs initially: all tokens not in initialOrderedTokenIds
   const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>(initialOrderedTokenIds);
 
+  React.useEffect(() => {
+    if (initialOrderedTokenIds && initialOrderedTokenIds.length > 0) {
+      setSelectedTokenIds(initialOrderedTokenIds);
+    }
+  }, [initialOrderedTokenIds]);
+
   const availableTokenIds = allTokens
     .map((t) => t.id)
     .filter((id) => !selectedTokenIds.includes(id));

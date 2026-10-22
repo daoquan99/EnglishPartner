@@ -217,12 +217,18 @@ public sealed class LessonCandidateValidator : ILessonCandidateValidator
                                 issues.Add(new ValidationIssueDto($"{path}.grading.correctOptionIds", "Error", $"correctOptionId '{idStr}' does not match any option in content.options."));
                             }
                         }
+
+                        string selMode = content["selectionMode"]?.ToString() ?? string.Empty;
+                        if (string.Equals(selMode, "Single", StringComparison.OrdinalIgnoreCase) && correctIds.Count > 1)
+                        {
+                            issues.Add(new ValidationIssueDto($"{path}.content.selectionMode", "Error", $"MultipleChoice selectionMode is 'Single' but {correctIds.Count} correctOptionIds were specified."));
+                        }
                     }
                 }
                 break;
 
             case ExerciseType.FillInTheBlanks:
-                string textWithBlanks = content["textWithBlanks"]?.ToString() ?? string.Empty;
+                string textWithBlanks = content["textWithBlanks"]?.ToString() ?? content["text"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(textWithBlanks))
                     issues.Add(new ValidationIssueDto($"{path}.content.textWithBlanks", "Error", "textWithBlanks is required for FillInTheBlanks."));
                 if (content["blanks"] is not JsonArray blanks || blanks.Count == 0)
@@ -262,10 +268,73 @@ public sealed class LessonCandidateValidator : ILessonCandidateValidator
                     issues.Add(new ValidationIssueDto($"{path}.content.leftItems", "Error", "Matching requires leftItems array."));
                 if (content["rightItems"] is not JsonArray rightItems || rightItems.Count == 0)
                     issues.Add(new ValidationIssueDto($"{path}.content.rightItems", "Error", "Matching requires rightItems array."));
+
+                if (grading != null)
+                {
+                    var pairsArr = grading["correctPairs"] as JsonArray ?? grading["pairs"] as JsonArray;
+                    if (pairsArr == null || pairsArr.Count == 0)
+                    {
+                        issues.Add(new ValidationIssueDto($"{path}.grading.correctPairs", "Error", "Matching requires correctPairs array with at least one pair."));
+                    }
+                    else
+                    {
+                        var leftIds = content["leftItems"] is JsonArray lArr
+                            ? lArr.Select(x => x?["id"]?.ToString() ?? "").Where(s => !string.IsNullOrEmpty(s)).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var rightIds = content["rightItems"] is JsonArray rArr
+                            ? rArr.Select(x => x?["id"]?.ToString() ?? "").Where(s => !string.IsNullOrEmpty(s)).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var p in pairsArr)
+                        {
+                            string lId = p?["leftId"]?.ToString() ?? "";
+                            string rId = p?["rightId"]?.ToString() ?? "";
+                            if (leftIds.Count > 0 && !leftIds.Contains(lId))
+                                issues.Add(new ValidationIssueDto($"{path}.grading.correctPairs", "Error", $"leftId '{lId}' does not match any item in content.leftItems."));
+                            if (rightIds.Count > 0 && !rightIds.Contains(rId))
+                                issues.Add(new ValidationIssueDto($"{path}.grading.correctPairs", "Error", $"rightId '{rId}' does not match any item in content.rightItems."));
+                        }
+                    }
+                }
+                break;
+
+            case ExerciseType.SpellingPractice:
+                string tWord = grading?["targetWord"]?.ToString() ?? grading?["correctAnswer"]?.ToString() ?? "";
+                var accSpellings = grading?["acceptedSpellings"] as JsonArray ?? grading?["acceptedAnswers"] as JsonArray ?? grading?["acceptedVariants"] as JsonArray;
+                if (string.IsNullOrWhiteSpace(tWord) && (accSpellings == null || accSpellings.Count == 0))
+                {
+                    issues.Add(new ValidationIssueDto($"{path}.grading.targetWord", "Error", "SpellingPractice requires targetWord or acceptedSpellings."));
+                }
+                break;
+
+            case ExerciseType.TrueFalse:
+                if (content["statements"] is not JsonArray stmts || stmts.Count == 0)
+                {
+                    issues.Add(new ValidationIssueDto($"{path}.content.statements", "Error", "TrueFalse requires statements array."));
+                }
+                else if (grading != null)
+                {
+                    var stmtAnswers = grading["statementAnswers"] as JsonObject ?? grading["answers"] as JsonObject;
+                    if (stmtAnswers == null || stmtAnswers.Count == 0)
+                    {
+                        issues.Add(new ValidationIssueDto($"{path}.grading.statementAnswers", "Error", "TrueFalse requires statementAnswers mapping."));
+                    }
+                    else
+                    {
+                        foreach (var s in stmts)
+                        {
+                            string sId = s?["id"]?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(sId) && !stmtAnswers.ContainsKey(sId))
+                            {
+                                issues.Add(new ValidationIssueDto($"{path}.grading.statementAnswers", "Error", $"Statement '{sId}' is missing an answer in statementAnswers."));
+                            }
+                        }
+                    }
+                }
                 break;
 
             case ExerciseType.Dictation:
-                string refTranscript = grading?["referenceTranscript"]?.ToString() ?? string.Empty;
+                string refTranscript = grading?["referenceTranscript"]?.ToString() ?? grading?["transcript"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(refTranscript))
                     issues.Add(new ValidationIssueDto($"{path}.grading.referenceTranscript", "Error", "Dictation requires referenceTranscript in grading definition."));
                 break;
@@ -279,6 +348,11 @@ public sealed class LessonCandidateValidator : ILessonCandidateValidator
                 string? rubricCode = grading?["rubricCode"]?.ToString();
                 if (!string.IsNullOrWhiteSpace(rubricCode))
                 {
+                    if (rubricCode is "LESSON_ROLEPLAY" or "LESSON_CONVERSATION")
+                    {
+                        rubricCode = "LESSON_CONVERSATION_TEXT";
+                    }
+
                     if (!rubricCodesToVerify.TryGetValue(rubricCode, out var paths))
                     {
                         paths = new List<string>();

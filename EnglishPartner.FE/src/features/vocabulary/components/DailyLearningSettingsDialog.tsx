@@ -71,7 +71,7 @@ export const DailyLearningSettingsDialog: React.FC<DailyLearningSettingsDialogPr
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="md"
-      icon={<Settings className="w-5 h-5 text-emerald-600" />}
+      icon={<Settings className="w-5 h-5 text-white" />}
       title="Mục tiêu học từ vựng mỗi ngày"
       description="Tùy chỉnh số lượng từ vựng học lần đầu mỗi ngày và trình độ CEFR để bổ sung từ vựng mới."
     >

@@ -79,6 +79,9 @@ public static class DependencyInjection
         services.AddScoped<ILessonRolePlayRepository, LessonRolePlayRepository>();
         services.AddScoped<IAudioRecordingRepository, AudioRecordingRepository>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
+        services.AddScoped<EnglishLiveTutor.Domain.VocabularyGames.Repositories.IFallingWordGameRepository, EnglishLiveTutor.Infrastructure.Repositories.FallingWordGameRepository>();
+        services.AddScoped<EnglishLiveTutor.Application.Features.VocabularyGames.Ports.IFallingWordPoolReader, EnglishLiveTutor.Infrastructure.VocabularyGames.Queries.FallingWordPoolReader>();
+        services.AddHostedService<EnglishLiveTutor.Infrastructure.VocabularyGames.FallingWordRoundExpirationWorker>();
 
         services.AddOptions<LessonMediaStorageOptions>()
             .Bind(configuration.GetSection(LessonMediaStorageOptions.SectionName));
@@ -133,6 +136,11 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
         });
         services.AddHttpClient<ILessonAiGrader, Lessons.LessonAiGrader>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<LessonAssessmentOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
+        services.AddHttpClient<IDictationAiReviewer, Lessons.DictationAiReviewer>((sp, client) =>
         {
             var options = sp.GetRequiredService<IOptions<LessonAssessmentOptions>>().Value;
             client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);

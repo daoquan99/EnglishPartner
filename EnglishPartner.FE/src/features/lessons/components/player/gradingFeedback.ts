@@ -29,9 +29,15 @@ export function getSpellingCorrection(result: GradingResult): string | null {
 }
 
 export function attachPersistedFeedback(result: ExerciseAnswerResultDto, attempt?: LessonAttemptResumeDto): ExerciseAnswerResultDto {
-  if (!attempt || attempt.attemptId !== result.attemptId || attempt.attemptRevision !== result.attemptRevision) return result;
+  if (!attempt || attempt.attemptId !== result.attemptId || attempt.attemptRevision < result.attemptRevision) return result;
   const key = result.subQuestionId ? `${result.exerciseId}_${result.subQuestionId}` : result.exerciseId;
-  const saved = attempt.submittedAnswers[key];
-  if (saved?.answerId !== result.answerId || saved.status !== result.status) return result;
-  return { ...result, feedback: result.feedback ?? saved.feedback };
+  const saved = attempt.submittedAnswers[key] ?? attempt.submittedAnswers[result.exerciseId];
+  if (!saved || (saved.answerId && saved.answerId !== result.answerId)) return result;
+  return {
+    ...result,
+    answerPayload: (result.answerPayload ?? saved.answerPayload) as Record<string, unknown> | null,
+    feedback: result.feedback ?? saved.feedback,
+    criteriaBreakdown: result.criteriaBreakdown ?? saved.criteriaBreakdown,
+    aiReview: result.aiReview ?? saved.aiReview,
+  };
 }

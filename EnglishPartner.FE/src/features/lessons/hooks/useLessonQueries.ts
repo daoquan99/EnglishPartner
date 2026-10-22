@@ -277,6 +277,7 @@ export function useSubmitExerciseAnswerMutation() {
         subQuestionId?: string | null;
         attemptRevision: number;
         answerPayload: Record<string, unknown>;
+        aiConfig?: import('../types/lessons.types').LessonAiExecutionConfigDto | null;
       };
     }) => lessonApi.submitExerciseAnswer(attemptId, data),
     onSuccess: (_, vars) => {
@@ -288,8 +289,38 @@ export function useSubmitExerciseAnswerMutation() {
 export function useRetryGradingMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ attemptId, answerId }: { attemptId: string; answerId: string }) =>
-      lessonApi.retryGrading(attemptId, answerId),
+    mutationFn: ({
+      attemptId,
+      answerId,
+      payload,
+    }: {
+      attemptId: string;
+      answerId: string;
+      payload?: {
+        attemptRevision: number;
+        aiConfig?: import('../types/lessons.types').LessonAiExecutionConfigDto | null;
+      };
+    }) => lessonApi.retryGrading(attemptId, answerId, payload),
+    onSuccess: (_, vars) => {
+      void queryClient.invalidateQueries({ queryKey: LESSON_QUERY_KEYS.attempt(vars.attemptId) });
+    },
+  });
+}
+
+export function useRequestDictationAiReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      attemptId,
+      answerId,
+      payload,
+      operationKey,
+    }: {
+      attemptId: string;
+      answerId: string;
+      payload?: import('../types/lessons.types').RequestDictationAiReviewRequest;
+      operationKey?: string;
+    }) => lessonApi.requestDictationAiReview(attemptId, answerId, payload, operationKey),
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: LESSON_QUERY_KEYS.attempt(vars.attemptId) });
     },

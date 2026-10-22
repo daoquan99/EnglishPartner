@@ -87,6 +87,10 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     DbSet<LessonRolePlaySessionEntity> LessonRolePlaySessions { get; }
     DbSet<LessonRolePlayTurnEntity> LessonRolePlayTurns { get; }
 
+    // Vocabulary Games Aggregate
+    DbSet<EnglishLiveTutor.Domain.VocabularyGames.FallingWordGameSessionEntity> FallingWordGameSessions { get; }
+    DbSet<EnglishLiveTutor.Domain.VocabularyGames.Entities.FallingWordGameRoundEntity> FallingWordGameRounds { get; }
+
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 

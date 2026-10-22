@@ -6,7 +6,6 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Common.Utilities;
 using EnglishLiveTutor.Domain.LessonAttempts.Enums;
-using EnglishLiveTutor.Domain.Lessons.Entities;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +15,8 @@ public sealed record RetryAnswerGradingCommand(
     Guid AttemptId,
     Guid AnswerId,
     int AttemptRevision,
-    string? OperationKey = null
+    string? OperationKey = null,
+    LessonAiExecutionConfigDto? AiConfig = null
 ) : ICommand<ExerciseAnswerResultDto>, IIdempotentCommand
 {
     public string? IdempotencyKey => OperationKey;
@@ -143,7 +143,15 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
         }
         else if (exercise.GradingMode == GradingMode.AiRubric)
         {
-            rubricCode = "LESSON_WRITING";
+            rubricCode = exercise.Type switch
+            {
+                ExerciseType.Translation => "LESSON_TRANSLATION",
+                ExerciseType.SpeakingPractice => "LESSON_SPEAKING",
+                ExerciseType.Shadowing => "LESSON_SHADOWING",
+                ExerciseType.ConversationRolePlay => "LESSON_CONVERSATION_TEXT",
+                ExerciseType.WritingPractice => "LESSON_WRITING",
+                _ => "LESSON_WRITING"
+            };
             rubricVersion = 1;
 
             if (!string.IsNullOrWhiteSpace(exercise.GradingDefinitionJson))
@@ -157,6 +165,11 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
                 catch { }
             }
 
+            if (rubricCode is "LESSON_ROLEPLAY" or "LESSON_CONVERSATION")
+            {
+                rubricCode = "LESSON_CONVERSATION_TEXT";
+            }
+
             var rubric = await _db.ScoringRubrics
                 .Include(r => r.Criteria)
                 .FirstOrDefaultAsync(r => r.Code == rubricCode && r.Version == rubricVersion, ct);
@@ -165,6 +178,8 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
             {
                 try
                 {
+                    string? taskContextJson = BuildTaskContextJson(exercise);
+
                     var aiResult = await _aiGrader.GradeSubmissionAsync(
                         exercise.Type,
                         exercise.Instructions,
@@ -172,6 +187,8 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
                         rubric,
                         answer.AnswerPayloadJson,
                         exercise.MaxPoints,
+                        taskContextJson,
+                        command.AiConfig,
                         ct);
 
                     if (aiResult.IsAssessable)
@@ -239,6 +256,16 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
 
             var progress = AttemptProgressCalculator.CalculateProgress(attempt, lesson.Exercises);
 
+            string? errorMessage = answer.Status is SubmissionGradingStatus.Failed or SubmissionGradingStatus.NotAssessable
+                ? answer.GradingResultJson
+                : null;
+
+            JsonNode? answerPayload = null;
+            if (!string.IsNullOrWhiteSpace(answer.AnswerPayloadJson))
+            {
+                try { answerPayload = JsonNode.Parse(answer.AnswerPayloadJson); } catch { }
+            }
+
             var resultDto = new ExerciseAnswerResultDto(
                 AnswerId: answer.Id,
                 AttemptId: attempt.Id,
@@ -256,7 +283,9 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
                 Strengths: strengths,
                 Improvements: improvements,
                 SuggestedAnswer: suggestedAnswer,
-                AttemptProgress: progress);
+                AttemptProgress: progress,
+                ErrorMessage: errorMessage,
+                AnswerPayload: answerPayload);
 
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {
@@ -279,6 +308,50 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
                 await _idempotency.FailOperationAsync(userId, "LessonAttempt.RetryGrading", command.AttemptId.ToString(), command.OperationKey, CancellationToken.None);
             }
             throw;
+        }
+    }
+
+    private static string? BuildTaskContextJson(EnglishLiveTutor.Domain.Lessons.Entities.ExerciseEntity exercise)
+    {
+        var contextObj = new JsonObject();
+        try
+        {
+            var contentNode = JsonNode.Parse(exercise.ContentJson);
+            var gradingNode = JsonNode.Parse(exercise.GradingDefinitionJson ?? "{}");
+
+            if (exercise.Type == ExerciseType.Translation)
+            {
+                if (contentNode?["sourceText"] != null) contextObj["sourceText"] = contentNode["sourceText"]!.DeepClone();
+                if (contentNode?["direction"] != null) contextObj["direction"] = contentNode["direction"]!.DeepClone();
+                if (contentNode?["context"] != null) contextObj["context"] = contentNode["context"]!.DeepClone();
+                if (gradingNode?["referenceTranslations"] != null) contextObj["referenceTranslations"] = gradingNode["referenceTranslations"]!.DeepClone();
+                if (gradingNode?["requiredKeyIdeas"] != null) contextObj["requiredKeyIdeas"] = gradingNode["requiredKeyIdeas"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.Shadowing)
+            {
+                if (contentNode?["referenceText"] != null) contextObj["referenceText"] = contentNode["referenceText"]!.DeepClone();
+                else if (contentNode?["transcript"] != null) contextObj["referenceText"] = contentNode["transcript"]!.DeepClone();
+                if (contentNode?["speechRateWpm"] != null) contextObj["speechRateWpm"] = contentNode["speechRateWpm"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.WritingPractice)
+            {
+                if (contentNode?["prompt"] != null) contextObj["prompt"] = contentNode["prompt"]!.DeepClone();
+                if (contentNode?["minWords"] != null) contextObj["minWords"] = contentNode["minWords"]!.DeepClone();
+                if (contentNode?["maxWords"] != null) contextObj["maxWords"] = contentNode["maxWords"]!.DeepClone();
+                if (gradingNode?["guidelines"] != null) contextObj["guidelines"] = gradingNode["guidelines"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.SpeakingPractice)
+            {
+                if (contentNode?["topic"] != null) contextObj["topic"] = contentNode["topic"]!.DeepClone();
+                if (contentNode?["instructions"] != null) contextObj["instructions"] = contentNode["instructions"]!.DeepClone();
+                if (contentNode?["targetDurationSeconds"] != null) contextObj["targetDurationSeconds"] = contentNode["targetDurationSeconds"]!.DeepClone();
+                if (contentNode?["suggestedPrompts"] != null) contextObj["suggestedPrompts"] = contentNode["suggestedPrompts"]!.DeepClone();
+            }
+            return contextObj.Count > 0 ? contextObj.ToJsonString() : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

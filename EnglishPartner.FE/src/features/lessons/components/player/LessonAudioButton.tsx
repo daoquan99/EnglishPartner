@@ -11,6 +11,8 @@ export function LessonAudioButton({ label = 'Nghe đọc mẫu', cardId, disable
   const apiKey = useTutorSessionStore((s) => s.apiKey);
   const voiceName = useTutorSessionStore((s) => s.voiceName);
   const speechSpeed = useTutorSessionStore((s) => s.speechSpeed);
+  const accent = useTutorSessionStore((s) => s.ttsAccent);
+  const modelCode = useTutorSessionStore((s) => s.ttsModelCode);
   const focusKey = useTutorSessionStore((s) => s.requestFocusLeftMenuApiKey);
   const [busy, setBusy] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -34,7 +36,7 @@ export function LessonAudioButton({ label = 'Nghe đọc mẫu', cardId, disable
       audio.current?.pause();
       window.removeEventListener('lesson-recording-start', stop);
     };
-  }, [target?.attemptId, target?.exerciseId, cardId, voiceName, speechSpeed]);
+  }, [target?.attemptId, target?.exerciseId, cardId, voiceName, speechSpeed, accent, modelCode]);
 
   const play = async () => {
     if (!target || busy) return;
@@ -46,7 +48,7 @@ export function LessonAudioButton({ label = 'Nghe đọc mẫu', cardId, disable
     setBusy(true); setError(null);
     try {
       const result = await lessonApi.synthesizeExerciseAudio(target.attemptId, target.exerciseId,
-        { apiKey, voiceName, speechSpeed, cardId }, controller.signal);
+        { apiKey, voiceName, speechSpeed, accent, modelCode, cardId }, controller.signal);
       if (token !== session.current) return;
       audio.current?.pause();
       const player = new Audio(`data:${result.mimeType};base64,${result.audioBase64}`);

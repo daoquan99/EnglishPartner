@@ -25,6 +25,12 @@ export const WritingPracticePlayer: React.FC<WritingPracticePlayerProps> = ({
 }) => {
   const [text, setText] = useState(initialWrittenText);
 
+  React.useEffect(() => {
+    if (initialWrittenText) {
+      setText(initialWrittenText);
+    }
+  }, [initialWrittenText]);
+
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const minWords = content.minWords ?? 30;
   const maxWords = content.maxWords ?? 150;

@@ -29,6 +29,12 @@ export const TrueFalsePlayer: React.FC<TrueFalsePlayerProps> = ({
   const statements = content?.statements ?? [];
   const [answers, setAnswers] = useState<Record<string, boolean>>(initialAnswers);
 
+  React.useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      setAnswers((prev) => ({ ...prev, ...initialAnswers }));
+    }
+  }, [initialAnswers]);
+
   const handleSelect = (id: string, value: boolean) => {
     if (isSubmitted) return;
     setAnswers((prev) => ({ ...prev, [id]: value }));

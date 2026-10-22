@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Mic,
@@ -32,6 +32,28 @@ const ADMIN_ANY_PERMISSIONS = [
 ];
 
 /**
+ * Determines whether a given pathname belongs to the Student Lesson group:
+ * - /student/lessons
+ * - /student/lessons/:id
+ * - /student/lesson-attempts/:attemptId
+ * - /student/lesson-history
+ * Supports trailing slashes and handles boundary matching so sibling/unrelated paths are not matched.
+ */
+export const isStudentLessonGroupRoute = (pathname: string): boolean => {
+  return /^\/student\/(lessons|lesson-attempts|lesson-history)(\/.*)?$/.test(pathname);
+};
+
+/**
+ * Determines whether a given pathname belongs to the Falling Words Vocabulary Game group:
+ * - /student/vocabulary-games/falling-words
+ * - /student/vocabulary-games/falling-words/sessions/:id
+ * - /student/vocabulary-games/falling-words/history
+ */
+export const isStudentFallingWordsGroupRoute = (pathname: string): boolean => {
+  return /^\/student\/vocabulary-games\/falling-words(\/.*)?$/.test(pathname);
+};
+
+/**
  * Student Portal App Shell:
  * - Outer container: `h-screen w-full overflow-hidden flex` (prevents body scroll)
  * - Left Menu (`aside`): `h-screen shrink-0 overflow-y-auto` fixed on the left, collapsible to icon-only (`w-20`)
@@ -41,9 +63,13 @@ const ADMIN_ANY_PERMISSIONS = [
 export const StudentLayout: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useCurrentUser();
   const logoutMutation = useLogoutMutation();
   const leftMenuApiKeyRef = useRef<HTMLInputElement | null>(null);
+
+  const isLessonGroupActive = isStudentLessonGroupRoute(location.pathname);
+  const isFallingWordsActive = isStudentFallingWordsGroupRoute(location.pathname);
 
   const {
     apiKey,
@@ -195,20 +221,46 @@ export const StudentLayout: React.FC = () => {
               )}
             </NavLink>
 
-            <NavLink
+            <Link
+              to="/student/vocabulary-games/falling-words"
+              title="Từ vựng rơi"
+              aria-current={isFallingWordsActive ? 'page' : undefined}
+              className={cn(
+                'flex items-center rounded-2xl transition-all',
+                isStudentSidebarCollapsed
+                  ? 'justify-center w-12 h-12 mx-auto'
+                  : 'gap-3 px-3.5 py-3',
+                isFallingWordsActive
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )}
+            >
+              <span className="w-5 h-5 flex items-center justify-center text-base shrink-0 select-none">
+                🎮
+              </span>
+              {!isStudentSidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">Từ vựng rơi</div>
+                  <div className="text-[10px] opacity-80 truncate">
+                    Game gõ từ rơi theo thời gian
+                  </div>
+                </div>
+              )}
+            </Link>
+
+            <Link
               to="/student/lessons"
               title={t('nav.lessons') || 'Bài học & Luyện tập'}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center rounded-2xl transition-all',
-                  isStudentSidebarCollapsed
-                    ? 'justify-center w-12 h-12 mx-auto'
-                    : 'gap-3 px-3.5 py-3',
-                  isActive
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                )
-              }
+              aria-current={isLessonGroupActive ? 'page' : undefined}
+              className={cn(
+                'flex items-center rounded-2xl transition-all',
+                isStudentSidebarCollapsed
+                  ? 'justify-center w-12 h-12 mx-auto'
+                  : 'gap-3 px-3.5 py-3',
+                isLessonGroupActive
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )}
             >
               <img
                 src="/assets/icons/navigation/nav-reviews.svg"
@@ -223,7 +275,7 @@ export const StudentLayout: React.FC = () => {
                   </div>
                 </div>
               )}
-            </NavLink>
+            </Link>
           </nav>
 
           {/* Single Google AI Studio API Key Setup inside Left Menu */}

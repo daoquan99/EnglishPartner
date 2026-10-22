@@ -6,11 +6,22 @@ public sealed record StartLessonAttemptRequest(
     Guid LessonId
 );
 
+public sealed record LessonAiExecutionConfigDto(
+    string? ApiKey = null,
+    string? AssessmentModelCode = null
+);
+
 public sealed record SubmitExerciseAnswerRequest(
     Guid ExerciseId,
     Guid? SubQuestionId,
     int AttemptRevision,
-    JsonNode AnswerPayload
+    JsonNode AnswerPayload,
+    LessonAiExecutionConfigDto? AiConfig = null
+);
+
+public sealed record RetryGradingRequest(
+    int AttemptRevision,
+    LessonAiExecutionConfigDto? AiConfig = null
 );
 
 public sealed record CriterionScoreBreakdownDto(
@@ -32,6 +43,30 @@ public sealed record AttemptProgressDto(
     decimal? FinalScore100
 );
 
+public sealed record DictationWordSubstitutionDto(
+    string Expected,
+    string Actual
+);
+
+public sealed record DictationAiReviewDto(
+    Guid ReviewId,
+    Guid AnswerId,
+    string Status,
+    string? Feedback,
+    List<string>? MissingWords,
+    List<string>? ExtraWords,
+    List<DictationWordSubstitutionDto>? WordSubstitutions,
+    string? ExplanationsVi,
+    List<string>? ActionableImprovements,
+    string? ErrorMessage = null,
+    DateTimeOffset? ReviewedAtUtc = null
+);
+
+public sealed record RequestDictationAiReviewRequest(
+    LessonAiExecutionConfigDto? AiConfig = null,
+    string? ExpectedSubmissionHash = null
+);
+
 public sealed record ExerciseAnswerResultDto(
     Guid AnswerId,
     Guid AttemptId,
@@ -49,7 +84,10 @@ public sealed record ExerciseAnswerResultDto(
     List<string>? Strengths,
     List<string>? Improvements,
     string? SuggestedAnswer,
-    AttemptProgressDto AttemptProgress
+    AttemptProgressDto AttemptProgress,
+    string? ErrorMessage = null,
+    JsonNode? AnswerPayload = null,
+    DictationAiReviewDto? AiReview = null
 );
 
 public sealed record SubmittedAnswerSummaryDto(
@@ -58,7 +96,13 @@ public sealed record SubmittedAnswerSummaryDto(
     decimal? Score100,
     decimal? PointsEarned,
     decimal MaxPoints,
-    string? Feedback
+    string? Feedback,
+    JsonNode? AnswerPayload = null,
+    string? ErrorMessage = null,
+    DictationAiReviewDto? AiReview = null,
+    List<CriterionScoreBreakdownDto>? CriteriaBreakdown = null,
+    Guid? ExerciseId = null,
+    Guid? SubQuestionId = null
 );
 
 public sealed record LessonAttemptResumeDto(

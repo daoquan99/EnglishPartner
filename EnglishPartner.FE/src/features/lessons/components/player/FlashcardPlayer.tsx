@@ -22,6 +22,7 @@ interface FlashcardPlayerProps {
   onSubmit: (payload: { ratings: Record<string, number> }) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  initialRatings?: Record<string, number>;
 }
 
 export const FlashcardPlayer: React.FC<FlashcardPlayerProps> = ({
@@ -29,11 +30,18 @@ export const FlashcardPlayer: React.FC<FlashcardPlayerProps> = ({
   onSubmit,
   isSubmitting = false,
   isSubmitted = false,
+  initialRatings,
 }) => {
   const cards = content?.cards ?? [];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [ratings, setRatings] = useState<Record<string, number>>(initialRatings ?? {});
+
+  React.useEffect(() => {
+    if (initialRatings && Object.keys(initialRatings).length > 0) {
+      setRatings(initialRatings);
+    }
+  }, [initialRatings]);
 
   if (cards.length === 0) {
     return <div className="text-slate-500 text-sm italic">Không có thẻ flashcard nào trong bài.</div>;

@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Pronunciation.Entities;
@@ -39,13 +40,19 @@ public sealed class LessonAiGrader : ILessonAiGrader
         ScoringRubricEntity rubric,
         string learnerSubmissionPayloadJson,
         decimal maxPoints,
+        string? taskContextJson = null,
+        LessonAiExecutionConfigDto? aiConfig = null,
         CancellationToken ct = default)
     {
-        string? apiKey = GeminiApiKeyResolver.ResolveKey(null, _options.Value.ApiKey);
+        string? apiKey = GeminiApiKeyResolver.ResolveKey(aiConfig?.ApiKey, _options.Value.ApiKey);
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             throw new InvalidOperationException("Google Gemini API Key is not configured for lesson evaluation.");
         }
+
+        string modelCode = !string.IsNullOrWhiteSpace(aiConfig?.AssessmentModelCode)
+            ? aiConfig.AssessmentModelCode!
+            : _options.Value.ModelCode;
 
         // 1. Extract submission text or audio asset
         var (text, audioGuid) = ExtractSubmissionData(learnerSubmissionPayloadJson);
@@ -94,10 +101,15 @@ public sealed class LessonAiGrader : ILessonAiGrader
         string criteriaDescriptions = string.Join("\n", enabledCriteria.Select(c =>
             $"- Code: '{c.Code}', Name: '{c.Name}', Weight: {c.Weight}%: {c.Description}. Level 0..4 scale."));
 
+        string taskContextSection = !string.IsNullOrWhiteSpace(taskContextJson)
+            ? $"\nTask Context and Authoritative References:\n{taskContextJson}\n"
+            : "";
+
         string systemInstruction = $@"You are an authoritative, certified ESL examiner evaluating a learner's exercise submission.
 Task Type: {exerciseType}
 Task Instructions: {taskInstructions}
 Target CEFR Level: {cefrLevel}
+{taskContextSection}
 Rubric ({rubric.Code} v{rubric.Version}):
 {criteriaDescriptions}
 
@@ -151,7 +163,7 @@ Rules:
             }
         };
 
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{_options.Value.ModelCode}:generateContent";
+        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent";
 
         var (success, statusCode, rawBody) = await GeminiHttpHelper.PostJsonWithRetryAsync(
             _http,
@@ -205,11 +217,17 @@ Rules:
                 if (item is JsonObject cObj)
                 {
                     string code = cObj["code"]?.ToString() ?? string.Empty;
-                    int raw = cObj["rawScore"]?.GetValue<int>() ?? 0;
-                    string feedback = cObj["feedback"]?.ToString() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(code))
+                    if (cObj.TryGetPropertyValue("rawScore", out var rNode) && rNode is JsonValue rVal && rVal.TryGetValue<int>(out var rawInt))
                     {
-                        rawScoresMap[code] = (Math.Clamp(raw, 0, 4), feedback);
+                        if (rawInt < 0 || rawInt > 4)
+                        {
+                            throw new InvalidOperationException($"AI criterion score for '{code}' must be between 0 and 4, got {rawInt}.");
+                        }
+                        string feedback = cObj["feedback"]?.ToString() ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(code))
+                        {
+                            rawScoresMap[code] = (rawInt, feedback);
+                        }
                     }
                 }
             }
@@ -220,17 +238,15 @@ Rules:
 
         foreach (var c in enabledCriteria)
         {
-            int raw = 2; // Default to 2 if missing from model response
-            string feedback = $"Đạt yêu cầu đối với tiêu chí {c.Name}.";
-
-            if (rawScoresMap.TryGetValue(c.Code, out var evaluated))
+            if (!rawScoresMap.TryGetValue(c.Code, out var evaluated))
             {
-                raw = evaluated.RawScore;
-                if (!string.IsNullOrWhiteSpace(evaluated.Feedback))
-                {
-                    feedback = evaluated.Feedback;
-                }
+                throw new InvalidOperationException($"AI response is missing evaluation for criterion '{c.Code}' ({c.Name}).");
             }
+
+            int raw = evaluated.RawScore;
+            string feedback = !string.IsNullOrWhiteSpace(evaluated.Feedback)
+                ? evaluated.Feedback
+                : $"Đạt {raw}/4 cho tiêu chí {c.Name}.";
 
             string descriptor = GetDescriptorForLevel(c, raw);
             decimal component = (raw / 4.0m) * c.Weight;
@@ -282,6 +298,8 @@ Rules:
                 return (node["writtenText"]!.ToString(), audioGuid);
             if (node["translatedText"] != null)
                 return (node["translatedText"]!.ToString(), audioGuid);
+            if (node["spokenText"] != null)
+                return (node["spokenText"]!.ToString(), audioGuid);
             if (node["correctedSentence"] != null)
                 return (node["correctedSentence"]!.ToString(), audioGuid);
             if (node["transcribedText"] != null)

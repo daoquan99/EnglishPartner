@@ -89,6 +89,7 @@ app.MapLessonEndpoints();
 app.MapLessonAttemptEndpoints();
 app.MapLessonRubricEndpoints();
 app.MapLessonMediaEndpoints();
+app.MapVocabularyGamesEndpoints();
 
 // Map Realtime SignalR Hubs
 app.MapHub<TutorConversationHub>("/hubs/tutor").RequireAuthorization();

@@ -212,11 +212,20 @@ export const lessonApi = {
   synthesizeExerciseAudio: async (
     attemptId: string,
     exerciseId: string,
-    payload: { apiKey?: string; voiceName?: string; speechSpeed?: number; cardId?: string },
+    payload: {
+      apiKey?: string;
+      voiceName?: string;
+      speechSpeed?: number;
+      accent?: string;
+      modelCode?: string;
+      cardId?: string;
+    },
     signal?: AbortSignal
   ): Promise<{ audioBase64: string; mimeType: string; sampleRate: number; durationMs: number }> => {
     const { data } = await httpClient.post(
-      `/api/lesson-attempts/${attemptId}/exercises/${exerciseId}/synthesize`, payload, { signal, timeout: 180_000 }
+      `/api/lesson-attempts/${attemptId}/exercises/${exerciseId}/synthesize`,
+      payload,
+      { signal, timeout: 180_000 }
     );
     return data;
   },
@@ -238,6 +247,7 @@ export const lessonApi = {
       subQuestionId?: string | null;
       attemptRevision: number;
       answerPayload: Record<string, unknown>;
+      aiConfig?: import('../types/lessons.types').LessonAiExecutionConfigDto | null;
     }
   ): Promise<ExerciseAnswerResultDto> => {
     const { data } = await httpClient.post<ExerciseAnswerResultDto>(
@@ -249,12 +259,57 @@ export const lessonApi = {
 
   retryGrading: async (
     attemptId: string,
-    answerId: string
+    answerId: string,
+    payload?: {
+      attemptRevision: number;
+      aiConfig?: import('../types/lessons.types').LessonAiExecutionConfigDto | null;
+    }
   ): Promise<ExerciseAnswerResultDto> => {
     const { data } = await httpClient.post<ExerciseAnswerResultDto>(
       `/api/lesson-attempts/${attemptId}/answers/${answerId}/retry`,
-      {}
+      payload ?? { attemptRevision: 1 }
     );
+    return data;
+  },
+
+  requestDictationAiReview: async (
+    attemptId: string,
+    answerId: string,
+    payload?: import('../types/lessons.types').RequestDictationAiReviewRequest,
+    operationKey?: string
+  ): Promise<import('../types/lessons.types').DictationAiReviewDto> => {
+    const headers = operationKey ? { 'X-Operation-Key': operationKey } : undefined;
+    const { data } = await httpClient.post<import('../types/lessons.types').DictationAiReviewDto>(
+      `/api/lesson-attempts/${attemptId}/answers/${answerId}/ai-review`,
+      payload ?? {},
+      { headers }
+    );
+    return data;
+  },
+
+  uploadLessonMedia: async (
+    file: Blob | File,
+    fileName?: string,
+    operationKey?: string
+  ): Promise<{ assetId: string; fileName: string; contentType: string; fileSizeBytes: number; url: string }> => {
+    const formData = new FormData();
+    const actualFileName =
+      fileName ||
+      (file instanceof File
+        ? file.name
+        : `recording-${Date.now()}.${file.type.includes('ogg') ? 'ogg' : file.type.includes('mp4') ? 'mp4' : 'webm'}`);
+    formData.append('file', file, actualFileName);
+    const headers: Record<string, string> = {
+      'Content-Type': 'multipart/form-data',
+    };
+    if (operationKey) headers['X-Operation-Key'] = operationKey;
+    const { data } = await httpClient.post<{
+      assetId: string;
+      fileName: string;
+      contentType: string;
+      fileSizeBytes: number;
+      url: string;
+    }>('/api/lesson-media/upload', formData, { headers });
     return data;
   },
 

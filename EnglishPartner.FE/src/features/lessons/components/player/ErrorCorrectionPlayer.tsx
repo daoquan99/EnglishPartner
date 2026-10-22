@@ -24,6 +24,12 @@ export const ErrorCorrectionPlayer: React.FC<ErrorCorrectionPlayerProps> = ({
   const sentence = content.incorrectSentence ?? content.sentenceWithErrors ?? '';
   const [corrected, setCorrected] = useState(initialCorrectedSentence);
 
+  React.useEffect(() => {
+    if (initialCorrectedSentence) {
+      setCorrected(initialCorrectedSentence);
+    }
+  }, [initialCorrectedSentence]);
+
   return (
     <div className="space-y-6 max-w-xl mx-auto">
       {/* Incorrect Sentence Display */}

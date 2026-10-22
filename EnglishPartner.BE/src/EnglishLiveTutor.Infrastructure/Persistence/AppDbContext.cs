@@ -16,6 +16,8 @@ using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Pronunciation.Entities;
 using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Domain.Vocabulary.Entities;
+using EnglishLiveTutor.Domain.VocabularyGames;
+using EnglishLiveTutor.Domain.VocabularyGames.Entities;
 using EnglishLiveTutor.Domain.Topics;
 using EnglishLiveTutor.Domain.Voices;
 using EnglishLiveTutor.Infrastructure.Persistence.Entities;
@@ -93,6 +95,10 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     // Lesson Role-Play Sessions Aggregate
     public DbSet<LessonRolePlaySessionEntity> LessonRolePlaySessions => Set<LessonRolePlaySessionEntity>();
     public DbSet<LessonRolePlayTurnEntity> LessonRolePlayTurns => Set<LessonRolePlayTurnEntity>();
+
+    // Vocabulary Games Aggregate
+    public DbSet<FallingWordGameSessionEntity> FallingWordGameSessions => Set<FallingWordGameSessionEntity>();
+    public DbSet<FallingWordGameRoundEntity> FallingWordGameRounds => Set<FallingWordGameRoundEntity>();
 
     // Idempotency Records
     public DbSet<IdempotencyRecordEntity> IdempotencyRecords => Set<IdempotencyRecordEntity>();

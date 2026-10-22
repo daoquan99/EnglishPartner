@@ -31,6 +31,8 @@ public class FakeLessonAiGrader : ILessonAiGrader
         ScoringRubricEntity rubric,
         string learnerSubmissionPayloadJson,
         decimal maxPoints,
+        string? taskContextJson = null,
+        LessonAiExecutionConfigDto? aiConfig = null,
         CancellationToken ct = default)
     {
         CallCount++;

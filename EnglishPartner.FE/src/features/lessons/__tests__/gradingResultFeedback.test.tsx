@@ -94,4 +94,106 @@ describe('Immediate submission results retain persisted spelling feedback', () =
     expect(attachPersistedFeedback(result, { ...attempt, attemptId: 'another-attempt' })).toBe(result);
     expect(attachPersistedFeedback(result, { ...attempt, submittedAnswers: { 'exercise-1': summary({ answerId: 'another-answer' }) } })).toBe(result);
   });
+
+  it('renders rubric criteria breakdown without displaying raw JSON feedback', () => {
+    const rawJson = JSON.stringify([
+      {
+        CriterionCode: 'MEANING_FIDELITY',
+        Name: 'Đúng nghĩa gốc',
+        Weight: 50.0,
+        RawScore: 3,
+        Descriptor: 'Truyền tải đầy đủ ý nghĩa',
+        Feedback: 'Truyền tải khá tốt ý nghĩa câu nguồn.',
+      },
+      {
+        CriterionCode: 'COMPLETENESS',
+        Name: 'Đầy đủ thông tin',
+        Weight: 20.0,
+        RawScore: 3,
+        Descriptor: 'Dịch đầy đủ thành phần',
+        Feedback: 'Đã dịch đầy đủ các hành động chính.',
+      },
+    ]);
+
+    const html = renderToStaticMarkup(
+      <GradingResultFeedback
+        result={summary({ score100: 75, pointsEarned: 7.5, maxPoints: 10, feedback: rawJson })}
+        exerciseType={ExerciseType.Translation}
+        gradingMode="AiRubric"
+      />
+    );
+
+    expect(html).toContain('Chi tiết đánh giá theo tiêu chí Rubric');
+    expect(html).toContain('Đúng nghĩa gốc');
+    expect(html).toContain('Đầy đủ thông tin');
+    expect(html).toContain('Truyền tải khá tốt ý nghĩa câu nguồn.');
+    expect(html).not.toContain('[{"CriterionCode"');
+  });
+
+  describe('Redo mode and "Làm lại" actions', () => {
+    it('shows "Làm lại" button for completed correct, incorrect, and partial exercises when attempt is InProgress', () => {
+      const correctHtml = renderToStaticMarkup(
+        <GradingResultFeedback
+          result={summary({ score100: 100, pointsEarned: 10, maxPoints: 10 })}
+          exerciseType={ExerciseType.MultipleChoice}
+          gradingMode="Deterministic"
+          isAttemptInProgress={true}
+          onStartRedo={() => {}}
+        />
+      );
+      expect(correctHtml).toContain('Làm lại');
+
+      const incorrectHtml = renderToStaticMarkup(
+        <GradingResultFeedback
+          result={summary({ score100: 0, pointsEarned: 0, maxPoints: 10 })}
+          exerciseType={ExerciseType.MultipleChoice}
+          gradingMode="Deterministic"
+          isAttemptInProgress={true}
+          onStartRedo={() => {}}
+        />
+      );
+      expect(incorrectHtml).toContain('Làm lại');
+
+      const partialHtml = renderToStaticMarkup(
+        <GradingResultFeedback
+          result={summary({ score100: 50, pointsEarned: 5, maxPoints: 10 })}
+          exerciseType={ExerciseType.FillInTheBlanks}
+          gradingMode="Deterministic"
+          isAttemptInProgress={true}
+          onStartRedo={() => {}}
+        />
+      );
+      expect(partialHtml).toContain('Làm lại');
+    });
+
+    it('does NOT show in-place "Làm lại" button when parent attempt is no longer InProgress', () => {
+      const finishedHtml = renderToStaticMarkup(
+        <GradingResultFeedback
+          result={summary({ score100: 100, pointsEarned: 10, maxPoints: 10 })}
+          exerciseType={ExerciseType.MultipleChoice}
+          gradingMode="Deterministic"
+          isAttemptInProgress={false}
+          onStartRedo={() => {}}
+        />
+      );
+      expect(finishedHtml).not.toContain('Làm lại');
+    });
+
+    it('renders previous submission under "Lần đã nộp trước" and shows cancel button when in redo mode', () => {
+      const redoHtml = renderToStaticMarkup(
+        <GradingResultFeedback
+          result={summary({ score100: 100, pointsEarned: 10, maxPoints: 10, feedback: 'Đáp án chuẩn!' })}
+          exerciseType={ExerciseType.MultipleChoice}
+          gradingMode="Deterministic"
+          isRedoMode={true}
+          onCancelRedo={() => {}}
+        />
+      );
+
+      expect(redoHtml).toContain('Đang ở chế độ làm lại');
+      expect(redoHtml).toContain('Lần đã nộp trước: Chính xác');
+      expect(redoHtml).toContain('Hủy làm lại (giữ bài cũ)');
+      expect(redoHtml).toContain('Đáp án chuẩn!');
+    });
+  });
 });

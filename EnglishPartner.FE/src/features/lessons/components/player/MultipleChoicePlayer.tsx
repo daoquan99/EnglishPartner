@@ -33,6 +33,12 @@ export const MultipleChoicePlayer: React.FC<MultipleChoicePlayerProps> = ({
   const isSingle = content.singleSelect !== false && content.selectionMode !== 'Multiple';
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
 
+  React.useEffect(() => {
+    if (initialSelectedIds && initialSelectedIds.length > 0) {
+      setSelectedIds(initialSelectedIds);
+    }
+  }, [initialSelectedIds]);
+
   const toggleOption = (id: string) => {
     if (isSubmitted) return;
     if (isSingle) {

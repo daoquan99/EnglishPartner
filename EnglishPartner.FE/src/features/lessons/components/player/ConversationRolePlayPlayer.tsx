@@ -20,6 +20,7 @@ interface ConversationRolePlayPlayerProps {
   onSubmit: (payload: { turns: ChatMessage[]; endSession: boolean }) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  initialTurns?: ChatMessage[];
 }
 
 export const ConversationRolePlayPlayer: React.FC<ConversationRolePlayPlayerProps> = ({
@@ -27,14 +28,23 @@ export const ConversationRolePlayPlayer: React.FC<ConversationRolePlayPlayerProp
   onSubmit,
   isSubmitting = false,
   isSubmitted = false,
+  initialTurns,
 }) => {
-  const initialTurns: ChatMessage[] = content.initialAiMessage
+  const defaultTurns: ChatMessage[] = content.initialAiMessage
     ? [{ role: 'ai', text: content.initialAiMessage }]
     : [];
 
-  const [messages, setMessages] = useState<ChatMessage[]>(initialTurns);
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    initialTurns && initialTurns.length > 0 ? initialTurns : defaultTurns
+  );
   const [inputText, setInputText] = useState('');
   const maxTurns = content.maxTurns ?? 6;
+
+  React.useEffect(() => {
+    if (initialTurns && initialTurns.length > 0) {
+      setMessages(initialTurns);
+    }
+  }, [initialTurns]);
 
   const handleSendTurn = () => {
     if (!inputText.trim() || isSubmitted) return;

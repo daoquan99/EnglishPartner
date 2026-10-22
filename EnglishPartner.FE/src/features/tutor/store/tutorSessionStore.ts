@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import type { CefrLevel, ConversationModeCode, TeacherVoiceName } from '@/shared/api/openapi.types';
 
 const API_KEY_STORAGE_KEY = 'lingomint_api_key';
+const TTS_MODEL_STORAGE_KEY = 'lingomint_tts_model';
+const TTS_ACCENT_STORAGE_KEY = 'lingomint_tts_accent';
+const ASSESSMENT_MODEL_STORAGE_KEY = 'lingomint_assessment_model';
 
 function loadInitialApiKey(): string {
   try {
@@ -9,6 +12,35 @@ function loadInitialApiKey(): string {
   } catch {
     return '';
   }
+}
+
+function loadInitialTtsModel(): 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking' {
+  try {
+    const val = localStorage.getItem(TTS_MODEL_STORAGE_KEY);
+    if (val === 'gemini-3.8-live-extended-thinking' || val === 'gemini-3.8-live') return val;
+  } catch {
+    // ignore
+  }
+  return 'gemini-3.8-live';
+}
+
+function loadInitialTtsAccent(): 'US' | 'UK' {
+  try {
+    const val = localStorage.getItem(TTS_ACCENT_STORAGE_KEY);
+    if (val === 'UK' || val === 'US') return val;
+  } catch {
+    // ignore
+  }
+  return 'US';
+}
+
+function loadInitialAssessmentModel(): string {
+  try {
+    return localStorage.getItem(ASSESSMENT_MODEL_STORAGE_KEY) || 'gemini-3.8-flash';
+  } catch {
+    // ignore
+  }
+  return 'gemini-3.8-flash';
 }
 
 /**
@@ -35,6 +67,9 @@ interface TutorSessionUiState {
   isHistoryDrawerOpen: boolean;
   isCorrectionDrawerOpen: boolean;
   showOnlyFeaturedVoices: boolean;
+  ttsModelCode: 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking';
+  ttsAccent: 'US' | 'UK';
+  assessmentModelCode: string;
 
   setApiKey: (key: string) => void;
   toggleShowApiKey: () => void;
@@ -55,6 +90,9 @@ interface TutorSessionUiState {
   setHistoryDrawerOpen: (open: boolean) => void;
   setCorrectionDrawerOpen: (open: boolean) => void;
   setShowOnlyFeaturedVoices: (onlyFeatured: boolean) => void;
+  setTtsModelCode: (model: 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking') => void;
+  setTtsAccent: (accent: 'US' | 'UK') => void;
+  setAssessmentModelCode: (model: string) => void;
   applyConversationSettings: (settings: {
     id: string;
     cefrLevel: CefrLevel;
@@ -85,6 +123,9 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
   isHistoryDrawerOpen: false,
   isCorrectionDrawerOpen: false,
   showOnlyFeaturedVoices: true,
+  ttsModelCode: loadInitialTtsModel(),
+  ttsAccent: loadInitialTtsAccent(),
+  assessmentModelCode: loadInitialAssessmentModel(),
 
   setApiKey: (apiKey) => {
     try {
@@ -118,6 +159,30 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
   setHistoryDrawerOpen: (isHistoryDrawerOpen) => set({ isHistoryDrawerOpen }),
   setCorrectionDrawerOpen: (isCorrectionDrawerOpen) => set({ isCorrectionDrawerOpen }),
   setShowOnlyFeaturedVoices: (showOnlyFeaturedVoices) => set({ showOnlyFeaturedVoices }),
+  setTtsModelCode: (ttsModelCode) => {
+    try {
+      localStorage.setItem(TTS_MODEL_STORAGE_KEY, ttsModelCode);
+    } catch {
+      // ignore
+    }
+    set({ ttsModelCode });
+  },
+  setTtsAccent: (ttsAccent) => {
+    try {
+      localStorage.setItem(TTS_ACCENT_STORAGE_KEY, ttsAccent);
+    } catch {
+      // ignore
+    }
+    set({ ttsAccent });
+  },
+  setAssessmentModelCode: (assessmentModelCode) => {
+    try {
+      localStorage.setItem(ASSESSMENT_MODEL_STORAGE_KEY, assessmentModelCode);
+    } catch {
+      // ignore
+    }
+    set({ assessmentModelCode });
+  },
   applyConversationSettings: (s) =>
     set({
       activeConversationId: s.id,

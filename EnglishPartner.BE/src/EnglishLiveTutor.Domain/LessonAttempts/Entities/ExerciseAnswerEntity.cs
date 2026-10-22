@@ -101,6 +101,11 @@ public sealed class ExerciseAnswerEntity : Entity<Guid>
         GradedAtUtc = gradedAtUtc;
     }
 
+    public void AttachAiReview(string updatedGradingResultJson)
+    {
+        GradingResultJson = updatedGradingResultJson?.Trim();
+    }
+
     public void MarkNotAssessable(string? gradingResultJson, DateTimeOffset evaluatedAtUtc)
     {
         Status = SubmissionGradingStatus.NotAssessable;

@@ -32,6 +32,12 @@ export const FillInTheBlanksPlayer: React.FC<FillInTheBlanksPlayerProps> = ({
   const text = normalizeBlankText(content ?? {});
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
 
+  React.useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      setAnswers((prev) => ({ ...prev, ...initialAnswers }));
+    }
+  }, [initialAnswers]);
+
   const handleInputChange = (blankId: string, val: string) => {
     if (isSubmitted) return;
     setAnswers((prev) => ({ ...prev, [blankId]: val }));

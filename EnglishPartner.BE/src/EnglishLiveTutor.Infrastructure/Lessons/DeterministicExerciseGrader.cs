@@ -60,6 +60,11 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
             .Where(x => !string.IsNullOrEmpty(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        if (correctOptionIds.Count == 0)
+        {
+            throw new InvalidOperationException("Câu hỏi trắc nghiệm chưa có đáp án đúng.");
+        }
+
         var selectedOptionIds = answerNode?["selectedOptionIds"]?.AsArray()
             .Select(x => x?.ToString() ?? string.Empty)
             .Where(x => !string.IsNullOrEmpty(x))
@@ -67,7 +72,7 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
 
         string? explanation = gradingNode?["explanation"]?.ToString();
 
-        bool isMatch = correctOptionIds.SetEquals(selectedOptionIds);
+        bool isMatch = selectedOptionIds.Count > 0 && correctOptionIds.SetEquals(selectedOptionIds);
         decimal score100 = isMatch ? 100m : 0m;
         decimal pointsEarned = isMatch ? maxPoints : 0m;
 
@@ -84,43 +89,77 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        var blanksArray = gradingNode?["blanks"]?.AsArray();
+        bool rootCaseSensitive = gradingNode?["caseSensitive"]?.GetValue<bool>() ?? false;
+        bool rootIgnorePunctuation = gradingNode?["ignorePunctuation"]?.GetValue<bool>() ?? true;
+
+        var blanksList = new List<(string Id, List<string> AcceptedAnswers, bool CaseSensitive, bool IgnorePunctuation)>();
+
         if (gradingNode?["blankAnswers"] is JsonObject blankAnswers)
         {
-            blanksArray = new JsonArray(blankAnswers.Select(pair => (JsonNode)new JsonObject
+            foreach (var (bId, bDef) in blankAnswers)
             {
-                ["id"] = pair.Key,
-                ["correctAnswers"] = pair.Value?["acceptedAnswers"]?.DeepClone(),
-                ["caseSensitive"] = pair.Value?["caseSensitive"]?.DeepClone()
-            }).ToArray());
+                var accepted = bDef?["acceptedAnswers"]?.AsArray()
+                    .Select(x => x?.ToString() ?? string.Empty)
+                    .Where(x => !string.IsNullOrEmpty(x))
+                    .ToList() ?? new List<string>();
+                bool cs = bDef?["caseSensitive"]?.GetValue<bool>() ?? rootCaseSensitive;
+                bool ip = bDef?["ignorePunctuation"]?.GetValue<bool>() ?? rootIgnorePunctuation;
+                blanksList.Add((bId, accepted, cs, ip));
+            }
         }
-        var userAnswers = answerNode?["answers"]?.AsObject();
+        else if (gradingNode?["correctAnswers"] is JsonArray correctAnswersArray)
+        {
+            foreach (var item in correctAnswersArray)
+            {
+                string bId = item?["blankId"]?.ToString() ?? item?["id"]?.ToString() ?? string.Empty;
+                var accepted = item?["acceptedAnswers"]?.AsArray()
+                    .Select(x => x?.ToString() ?? string.Empty)
+                    .Where(x => !string.IsNullOrEmpty(x))
+                    .ToList() ?? new List<string>();
+                bool cs = item?["caseSensitive"]?.GetValue<bool>() ?? rootCaseSensitive;
+                bool ip = item?["ignorePunctuation"]?.GetValue<bool>() ?? rootIgnorePunctuation;
+                if (!string.IsNullOrEmpty(bId))
+                {
+                    blanksList.Add((bId, accepted, cs, ip));
+                }
+            }
+        }
+        else if (gradingNode?["blanks"] is JsonArray blanksArray)
+        {
+            foreach (var item in blanksArray)
+            {
+                string bId = item?["id"]?.ToString() ?? item?["blankId"]?.ToString() ?? string.Empty;
+                var accepted = (item?["correctAnswers"]?.AsArray() ?? item?["acceptedAnswers"]?.AsArray())?
+                    .Select(x => x?.ToString() ?? string.Empty)
+                    .Where(x => !string.IsNullOrEmpty(x))
+                    .ToList() ?? new List<string>();
+                bool cs = item?["caseSensitive"]?.GetValue<bool>() ?? rootCaseSensitive;
+                bool ip = item?["ignorePunctuation"]?.GetValue<bool>() ?? rootIgnorePunctuation;
+                if (!string.IsNullOrEmpty(bId))
+                {
+                    blanksList.Add((bId, accepted, cs, ip));
+                }
+            }
+        }
 
-        if (blanksArray == null || blanksArray.Count == 0)
+        if (blanksList.Count == 0)
         {
             throw new InvalidOperationException("Bài điền từ chưa có đáp án chấm điểm.");
         }
 
-        int totalBlanks = blanksArray.Count;
+        var userAnswers = answerNode?["answers"]?.AsObject();
+        int totalBlanks = blanksList.Count;
         int correctCount = 0;
 
-        foreach (var blank in blanksArray)
+        foreach (var (blankId, acceptedAnswers, caseSensitive, ignorePunctuation) in blanksList)
         {
-            string blankId = blank?["id"]?.ToString() ?? string.Empty;
-            bool caseSensitive = blank?["caseSensitive"]?.GetValue<bool>() ?? false;
-            bool ignorePunctuation = blank?["ignorePunctuation"]?.GetValue<bool>() ?? true;
-
-            var correctAnswers = blank?["correctAnswers"]?.AsArray()
-                .Select(x => x?.ToString() ?? string.Empty)
-                .ToList() ?? new List<string>();
-
             string? userVal = null;
             if (userAnswers != null && userAnswers.TryGetPropertyValue(blankId, out var valNode))
             {
                 userVal = valNode?.ToString();
             }
 
-            if (userVal != null && IsBlankMatch(userVal, correctAnswers, caseSensitive, ignorePunctuation))
+            if (userVal != null && IsBlankMatch(userVal, acceptedAnswers, caseSensitive, ignorePunctuation))
             {
                 correctCount++;
             }
@@ -143,11 +182,10 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        var correctPairs = gradingNode?["pairs"]?.AsArray();
-        var userPairs = answerNode?["pairs"]?.AsArray();
+        var correctPairs = gradingNode?["correctPairs"]?.AsArray() ?? gradingNode?["pairs"]?.AsArray();
 
         if (correctPairs == null || correctPairs.Count == 0)
-            return new DeterministicGradeResult(true, 100m, maxPoints, maxPoints, null);
+            throw new InvalidOperationException("Bài nối từ chưa có đáp án chấm điểm.");
 
         var correctMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var cp in correctPairs)
@@ -158,25 +196,37 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
                 correctMap[left] = right;
         }
 
-        int totalPairs = correctMap.Count;
-        int correctMatches = 0;
+        if (correctMap.Count == 0)
+            throw new InvalidOperationException("Bài nối từ chưa có đáp án chấm điểm.");
 
+        var userPairs = answerNode?["pairs"]?.AsArray();
+        var userMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (userPairs != null)
         {
             foreach (var up in userPairs)
             {
                 string left = up?["leftId"]?.ToString() ?? string.Empty;
                 string right = up?["rightId"]?.ToString() ?? string.Empty;
-
-                if (correctMap.TryGetValue(left, out var expectedRight) &&
-                    string.Equals(expectedRight, right, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(left) && !string.IsNullOrEmpty(right))
                 {
-                    correctMatches++;
+                    userMap[left] = right; // Enforces unique leftId submitted
                 }
             }
         }
 
-        decimal accuracy = totalPairs > 0 ? (decimal)correctMatches / totalPairs : 1m;
+        int totalPairs = correctMap.Count;
+        int correctMatches = 0;
+
+        foreach (var (left, expectedRight) in correctMap)
+        {
+            if (userMap.TryGetValue(left, out var actualRight) &&
+                string.Equals(expectedRight, actualRight, StringComparison.OrdinalIgnoreCase))
+            {
+                correctMatches++;
+            }
+        }
+
+        decimal accuracy = (decimal)correctMatches / totalPairs;
         decimal score100 = Math.Round(accuracy * 100m, 2, MidpointRounding.AwayFromZero);
         decimal pointsEarned = Math.Round((score100 / 100m) * maxPoints, 2, MidpointRounding.AwayFromZero);
 
@@ -193,18 +243,34 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        string targetWord = gradingNode?["targetWord"]?.ToString() ?? string.Empty;
-        var acceptedSpellings = gradingNode?["acceptedSpellings"]?.AsArray()
+        string targetWord = gradingNode?["targetWord"]?.ToString() ?? gradingNode?["correctAnswer"]?.ToString() ?? string.Empty;
+        var acceptedSpellings = (gradingNode?["acceptedSpellings"]?.AsArray()
+            ?? gradingNode?["acceptedAnswers"]?.AsArray()
+            ?? gradingNode?["acceptedVariants"]?.AsArray())?
             .Select(x => x?.ToString() ?? string.Empty)
+            .Where(x => !string.IsNullOrEmpty(x))
             .ToList() ?? new List<string>();
 
         if (!string.IsNullOrEmpty(targetWord) && !acceptedSpellings.Contains(targetWord, StringComparer.OrdinalIgnoreCase))
             acceptedSpellings.Add(targetWord);
 
-        string userWord = answerNode?["spelledWord"]?.ToString() ?? string.Empty;
-        string normUser = userWord.Trim().ToLowerInvariant();
+        if (acceptedSpellings.Count == 0)
+            throw new InvalidOperationException("Bài luyện chính tả chưa có từ mẫu.");
 
-        bool isCorrect = acceptedSpellings.Any(s => string.Equals(s.Trim().ToLowerInvariant(), normUser, StringComparison.Ordinal));
+        bool caseSensitive = gradingNode?["caseSensitive"]?.GetValue<bool>() ?? false;
+        string userWord = (answerNode?["spelledWord"]?.ToString() ?? string.Empty).Trim();
+
+        bool isCorrect;
+        if (caseSensitive)
+        {
+            isCorrect = acceptedSpellings.Any(s => string.Equals(s.Trim(), userWord, StringComparison.Ordinal));
+        }
+        else
+        {
+            string normUser = userWord.ToLowerInvariant();
+            isCorrect = acceptedSpellings.Any(s => string.Equals(s.Trim().ToLowerInvariant(), normUser, StringComparison.Ordinal));
+        }
+
         decimal score100 = isCorrect ? 100m : 0m;
         decimal pointsEarned = isCorrect ? maxPoints : 0m;
 
@@ -222,24 +288,24 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         decimal maxPoints)
     {
         var validSequences = gradingNode?["validSequences"]?.AsArray();
+        if (validSequences == null || validSequences.Count == 0)
+            throw new InvalidOperationException("Bài sắp xếp câu chưa có thứ tự mẫu.");
+
         var userSequence = answerNode?["orderedTokenIds"]?.AsArray()
             .Select(x => x?.ToString() ?? string.Empty)
             .ToList() ?? new List<string>();
 
         bool isMatch = false;
-        if (validSequences != null)
+        foreach (var seq in validSequences)
         {
-            foreach (var seq in validSequences)
-            {
-                var expected = seq?.AsArray()
-                    .Select(x => x?.ToString() ?? string.Empty)
-                    .ToList();
+            var expected = seq?.AsArray()
+                .Select(x => x?.ToString() ?? string.Empty)
+                .ToList();
 
-                if (expected != null && expected.SequenceEqual(userSequence, StringComparer.OrdinalIgnoreCase))
-                {
-                    isMatch = true;
-                    break;
-                }
+            if (expected != null && expected.SequenceEqual(userSequence, StringComparer.OrdinalIgnoreCase))
+            {
+                isMatch = true;
+                break;
             }
         }
 
@@ -259,9 +325,14 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        var acceptedCorrections = gradingNode?["acceptedCorrections"]?.AsArray()
+        var acceptedCorrections = (gradingNode?["referenceCorrections"]?.AsArray()
+            ?? gradingNode?["acceptedCorrections"]?.AsArray())?
             .Select(x => x?.ToString() ?? string.Empty)
-            .ToList() ?? new List<string>();
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToList();
+
+        if (acceptedCorrections == null || acceptedCorrections.Count == 0)
+            throw new InvalidOperationException("Bài sửa lỗi chưa có câu sửa mẫu.");
 
         string userCorrection = answerNode?["correctedSentence"]?.ToString() ?? string.Empty;
         string normUser = NormalizeSentence(userCorrection);
@@ -283,27 +354,29 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        var correctAnswers = gradingNode?["answers"]?.AsObject();
-        var userAnswers = answerNode?["answers"]?.AsObject();
+        var correctAnswers = gradingNode?["statementAnswers"]?.AsObject() ?? gradingNode?["answers"]?.AsObject();
 
         if (correctAnswers == null || correctAnswers.Count == 0)
-            return new DeterministicGradeResult(true, 100m, maxPoints, maxPoints, null);
+            throw new InvalidOperationException("Bài đúng/sai chưa có đáp án chấm điểm.");
 
+        var userAnswers = answerNode?["answers"]?.AsObject();
         int total = correctAnswers.Count;
         int correctCount = 0;
 
         foreach (var (stmtId, valNode) in correctAnswers)
         {
-            bool expected = valNode?.GetValue<bool>() ?? false;
-            if (userAnswers != null && userAnswers.TryGetPropertyValue(stmtId, out var userValNode))
+            if (valNode is not JsonValue jVal || !jVal.TryGetValue<bool>(out var expected))
+                continue;
+
+            if (userAnswers != null && userAnswers.TryGetPropertyValue(stmtId, out var userValNode) &&
+                userValNode is JsonValue uVal && uVal.TryGetValue<bool>(out var actual))
             {
-                bool actual = userValNode?.GetValue<bool>() ?? false;
                 if (expected == actual)
                     correctCount++;
             }
         }
 
-        decimal accuracy = total > 0 ? (decimal)correctCount / total : 1m;
+        decimal accuracy = total > 0 ? (decimal)correctCount / total : 0m;
         decimal score100 = Math.Round(accuracy * 100m, 2, MidpointRounding.AwayFromZero);
         decimal pointsEarned = Math.Round((score100 / 100m) * maxPoints, 2, MidpointRounding.AwayFromZero);
 
@@ -320,7 +393,7 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         JsonNode? gradingNode,
         decimal maxPoints)
     {
-        string refTranscript = gradingNode?["transcript"]?.ToString() ?? gradingNode?["referenceTranscript"]?.ToString() ?? string.Empty;
+        string refTranscript = gradingNode?["referenceTranscript"]?.ToString() ?? gradingNode?["transcript"]?.ToString() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(refTranscript))
             throw new InvalidOperationException("Bài chép chính tả chưa có transcript mẫu.");
         string learnerTranscript = answerNode?["transcribedText"]?.ToString() ?? string.Empty;

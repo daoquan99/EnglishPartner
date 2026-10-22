@@ -42,6 +42,12 @@ export const MatchingPlayer: React.FC<MatchingPlayerProps> = ({
   const [selectedLeftId, setSelectedLeftId] = useState<string | null>(null);
   const [selectedRightId, setSelectedRightId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (initialPairs && initialPairs.length > 0) {
+      setPairs(initialPairs);
+    }
+  }, [initialPairs]);
+
   const isLeftMatched = (id: string) => pairs.some((p) => p.leftId === id);
   const isRightMatched = (id: string) => pairs.some((p) => p.rightId === id);
 

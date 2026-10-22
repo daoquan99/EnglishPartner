@@ -63,7 +63,6 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
             throw new ForbiddenException("Authentication required to submit exercise answer.");
         }
 
-        // 1. Check idempotency BEFORE checking revision
         string fingerprint = IdempotencyFingerprint.Compute(
             command.Request,
             ("AttemptId", command.AttemptId),
@@ -104,7 +103,6 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
 
         var req = command.Request;
 
-        // Fetch lesson exercise to get grading configuration
         var lesson = await _db.Lessons
             .Include(l => l.Exercises)
             .FirstOrDefaultAsync(l => l.Id == attempt.LessonId, ct)
@@ -115,24 +113,30 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
 
         string answerPayloadJson = req.AnswerPayload?.ToJsonString() ?? "{}";
 
-        // Validate audio asset if present
+        // Validate audio asset if present or required
         if (req.AnswerPayload != null && req.AnswerPayload["audioAssetId"] != null)
         {
             string audioIdStr = req.AnswerPayload["audioAssetId"]!.ToString();
-            if (Guid.TryParse(audioIdStr, out var audioId))
+            if (!Guid.TryParse(audioIdStr, out var audioId))
             {
-                var audioRec = await _audioRepo.GetByIdAsync(audioId, ct);
-                if (audioRec == null || audioRec.IsDeleted || !string.Equals(audioRec.UserId, userId, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new ArgumentException("Audio asset does not exist or does not belong to the current user.");
-                }
-
-                bool bytesExist = await _mediaStorage.ExistsAsync(audioRec.StorageKey, ct);
-                if (!bytesExist)
-                {
-                    throw new InvalidOperationException("Audio recording has no stored audio data.");
-                }
+                throw new ArgumentException("Audio asset ID must be a valid GUID.");
             }
+
+            var audioRec = await _audioRepo.GetByIdAsync(audioId, ct);
+            if (audioRec == null || audioRec.IsDeleted || !string.Equals(audioRec.UserId, userId, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Audio asset does not exist or does not belong to the current user.");
+            }
+
+            bool bytesExist = await _mediaStorage.ExistsAsync(audioRec.StorageKey, ct);
+            if (!bytesExist)
+            {
+                throw new InvalidOperationException("Audio recording has no stored audio data.");
+            }
+        }
+        else if (exercise.Type == ExerciseType.Shadowing)
+        {
+            throw new ArgumentException("Shadowing exercise requires a valid recorded audio submission.");
         }
 
         // Record submission (increments AttemptRevision)
@@ -156,7 +160,7 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
 
         var now = _timeProvider.GetUtcNow();
 
-        if (exercise.GradingMode is GradingMode.SelfAssessment or GradingMode.Deterministic or GradingMode.Composite)
+        if (exercise.GradingMode is GradingMode.SelfAssessment or GradingMode.Deterministic)
         {
             var result = _deterministicGrader.Grade(
                 exercise.Type,
@@ -176,9 +180,133 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
                 gradingResultJson: result.Explanation,
                 gradedAtUtc: now);
         }
+        else if (exercise.GradingMode == GradingMode.Composite)
+        {
+            var contentObj = JsonNode.Parse(exercise.ContentJson);
+            var subQArray = contentObj?["subQuestions"]?.AsArray();
+            bool hasShortAnswer = subQArray?.Any(q => string.Equals(q?["questionKind"]?.ToString(), "ShortAnswer", StringComparison.OrdinalIgnoreCase)) ?? false;
+
+            if (!hasShortAnswer)
+            {
+                var result = _deterministicGrader.Grade(
+                    exercise.Type,
+                    exercise.ContentJson,
+                    exercise.GradingDefinitionJson,
+                    answerPayloadJson,
+                    exercise.MaxPoints);
+
+                score100 = result.Score100;
+                pointsEarned = result.PointsEarned;
+
+                attempt.ApplyGradingResult(
+                    answer.Id,
+                    SubmissionGradingStatus.Completed,
+                    score100: score100,
+                    pointsEarned: pointsEarned,
+                    gradingResultJson: result.Explanation,
+                    gradedAtUtc: now);
+            }
+            else
+            {
+                // Composite with ShortAnswer: closed questions graded deterministically, ShortAnswer through AI
+                try
+                {
+                    decimal totalEarned = 0m;
+                    decimal totalMax = 0m;
+                    var submittedArray = JsonNode.Parse(answerPayloadJson)?["subQuestionAnswers"]?.AsArray();
+
+                    var shortAnswerRubric = await _db.ScoringRubrics
+                        .Include(r => r.Criteria)
+                        .FirstOrDefaultAsync(r => r.Code == "LESSON_SHORT_ANSWER" && r.Version == 1, ct);
+
+                    if (shortAnswerRubric == null)
+                    {
+                        throw new InvalidOperationException("Scoring rubric 'LESSON_SHORT_ANSWER' v1 not found.");
+                    }
+
+                    foreach (var q in subQArray!)
+                    {
+                        string qId = q?["id"]?.ToString() ?? "";
+                        string qKind = q?["questionKind"]?.ToString() ?? "ShortAnswer";
+                        decimal qMax = q?["maxPoints"]?.GetValue<decimal>() ?? 5m;
+                        totalMax += qMax;
+
+                        var subSubmission = submittedArray?.FirstOrDefault(s => s?["questionId"]?.ToString() == qId);
+
+                        if (qKind == "ShortAnswer")
+                        {
+                            string learnerText = subSubmission?["textAnswer"]?.ToString() ?? "";
+                            string qText = q?["questionText"]?.ToString() ?? "";
+                            string refText = q?["grading"]?["referenceAnswer"]?.ToString() ?? q?["grading"]?["referenceAnswers"]?.ToString() ?? "";
+
+                            string taskCtx = JsonSerializer.Serialize(new { questionText = qText, referenceAnswer = refText });
+
+                            var aiRes = await _aiGrader.GradeSubmissionAsync(
+                                exercise.Type,
+                                qText,
+                                lesson.CefrLevel,
+                                shortAnswerRubric,
+                                JsonSerializer.Serialize(new { writtenText = learnerText }),
+                                qMax,
+                                taskCtx,
+                                req.AiConfig,
+                                ct);
+
+                            if (aiRes.IsAssessable)
+                            {
+                                totalEarned += aiRes.PointsEarned;
+                            }
+                        }
+                        else
+                        {
+                            // Closed question
+                            var singleQContent = new JsonObject
+                            {
+                                ["subQuestions"] = new JsonArray { q!.DeepClone() }
+                            };
+                            var singleQAnswer = new JsonObject
+                            {
+                                ["subQuestionAnswers"] = new JsonArray { subSubmission?.DeepClone() ?? new JsonObject() }
+                            };
+                            var subRes = _deterministicGrader.Grade(exercise.Type, singleQContent.ToJsonString(), "{}", singleQAnswer.ToJsonString(), qMax);
+                            totalEarned += subRes.PointsEarned;
+                        }
+                    }
+
+                    score100 = totalMax > 0 ? Math.Round((totalEarned / totalMax) * 100m, 2, MidpointRounding.AwayFromZero) : 100m;
+                    pointsEarned = Math.Round((score100.Value / 100m) * exercise.MaxPoints, 2, MidpointRounding.AwayFromZero);
+
+                    attempt.ApplyGradingResult(
+                        answer.Id,
+                        SubmissionGradingStatus.Completed,
+                        score100: score100,
+                        pointsEarned: pointsEarned,
+                        gradingResultJson: $"Đạt {totalEarned}/{totalMax} điểm câu hỏi composite.",
+                        gradedAtUtc: now);
+                }
+                catch (Exception ex)
+                {
+                    attempt.ApplyGradingResult(
+                        answer.Id,
+                        SubmissionGradingStatus.Failed,
+                        score100: null,
+                        pointsEarned: null,
+                        gradingResultJson: $"AI grading error: {ex.Message}",
+                        gradedAtUtc: now);
+                }
+            }
+        }
         else if (exercise.GradingMode == GradingMode.AiRubric)
         {
-            rubricCode = "LESSON_WRITING";
+            rubricCode = exercise.Type switch
+            {
+                ExerciseType.Translation => "LESSON_TRANSLATION",
+                ExerciseType.SpeakingPractice => "LESSON_SPEAKING",
+                ExerciseType.Shadowing => "LESSON_SHADOWING",
+                ExerciseType.ConversationRolePlay => "LESSON_CONVERSATION_TEXT",
+                ExerciseType.WritingPractice => "LESSON_WRITING",
+                _ => "LESSON_WRITING"
+            };
             rubricVersion = 1;
 
             if (!string.IsNullOrWhiteSpace(exercise.GradingDefinitionJson))
@@ -192,6 +320,11 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
                 catch { }
             }
 
+            if (rubricCode is "LESSON_ROLEPLAY" or "LESSON_CONVERSATION")
+            {
+                rubricCode = "LESSON_CONVERSATION_TEXT";
+            }
+
             var rubric = await _db.ScoringRubrics
                 .Include(r => r.Criteria)
                 .FirstOrDefaultAsync(r => r.Code == rubricCode && r.Version == rubricVersion, ct);
@@ -200,6 +333,8 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
             {
                 try
                 {
+                    string? taskContextJson = BuildTaskContextJson(exercise);
+
                     var aiResult = await _aiGrader.GradeSubmissionAsync(
                         exercise.Type,
                         exercise.Instructions,
@@ -207,6 +342,8 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
                         rubric,
                         answerPayloadJson,
                         exercise.MaxPoints,
+                        taskContextJson,
+                        req.AiConfig,
                         ct);
 
                     if (aiResult.IsAssessable)
@@ -274,6 +411,16 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
 
             var progress = AttemptProgressCalculator.CalculateProgress(attempt, lesson.Exercises);
 
+            string? errorMessage = answer.Status is SubmissionGradingStatus.Failed or SubmissionGradingStatus.NotAssessable
+                ? answer.GradingResultJson
+                : null;
+
+            JsonNode? answerPayload = null;
+            if (!string.IsNullOrWhiteSpace(answer.AnswerPayloadJson))
+            {
+                try { answerPayload = JsonNode.Parse(answer.AnswerPayloadJson); } catch { }
+            }
+
             var resultDto = new ExerciseAnswerResultDto(
                 AnswerId: answer.Id,
                 AttemptId: attempt.Id,
@@ -291,7 +438,9 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
                 Strengths: strengths,
                 Improvements: improvements,
                 SuggestedAnswer: suggestedAnswer,
-                AttemptProgress: progress);
+                AttemptProgress: progress,
+                ErrorMessage: errorMessage,
+                AnswerPayload: answerPayload);
 
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {
@@ -314,6 +463,50 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
                 await _idempotency.FailOperationAsync(userId, "LessonAttempt.SubmitAnswer", command.AttemptId.ToString(), command.OperationKey, CancellationToken.None);
             }
             throw;
+        }
+    }
+
+    private static string? BuildTaskContextJson(EnglishLiveTutor.Domain.Lessons.Entities.ExerciseEntity exercise)
+    {
+        var contextObj = new JsonObject();
+        try
+        {
+            var contentNode = JsonNode.Parse(exercise.ContentJson);
+            var gradingNode = JsonNode.Parse(exercise.GradingDefinitionJson ?? "{}");
+
+            if (exercise.Type == ExerciseType.Translation)
+            {
+                if (contentNode?["sourceText"] != null) contextObj["sourceText"] = contentNode["sourceText"]!.DeepClone();
+                if (contentNode?["direction"] != null) contextObj["direction"] = contentNode["direction"]!.DeepClone();
+                if (contentNode?["context"] != null) contextObj["context"] = contentNode["context"]!.DeepClone();
+                if (gradingNode?["referenceTranslations"] != null) contextObj["referenceTranslations"] = gradingNode["referenceTranslations"]!.DeepClone();
+                if (gradingNode?["requiredKeyIdeas"] != null) contextObj["requiredKeyIdeas"] = gradingNode["requiredKeyIdeas"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.Shadowing)
+            {
+                if (contentNode?["referenceText"] != null) contextObj["referenceText"] = contentNode["referenceText"]!.DeepClone();
+                else if (contentNode?["transcript"] != null) contextObj["referenceText"] = contentNode["transcript"]!.DeepClone();
+                if (contentNode?["speechRateWpm"] != null) contextObj["speechRateWpm"] = contentNode["speechRateWpm"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.WritingPractice)
+            {
+                if (contentNode?["prompt"] != null) contextObj["prompt"] = contentNode["prompt"]!.DeepClone();
+                if (contentNode?["minWords"] != null) contextObj["minWords"] = contentNode["minWords"]!.DeepClone();
+                if (contentNode?["maxWords"] != null) contextObj["maxWords"] = contentNode["maxWords"]!.DeepClone();
+                if (gradingNode?["guidelines"] != null) contextObj["guidelines"] = gradingNode["guidelines"]!.DeepClone();
+            }
+            else if (exercise.Type == ExerciseType.SpeakingPractice)
+            {
+                if (contentNode?["topic"] != null) contextObj["topic"] = contentNode["topic"]!.DeepClone();
+                if (contentNode?["instructions"] != null) contextObj["instructions"] = contentNode["instructions"]!.DeepClone();
+                if (contentNode?["targetDurationSeconds"] != null) contextObj["targetDurationSeconds"] = contentNode["targetDurationSeconds"]!.DeepClone();
+                if (contentNode?["suggestedPrompts"] != null) contextObj["suggestedPrompts"] = contentNode["suggestedPrompts"]!.DeepClone();
+            }
+            return contextObj.Count > 0 ? contextObj.ToJsonString() : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

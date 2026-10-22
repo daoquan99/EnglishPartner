@@ -132,7 +132,7 @@ public static class LessonAttemptEndpoints
             try
             {
                 int revision = bodyReq?.AttemptRevision ?? 1;
-                var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision, operationKey), ct);
+                var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision, operationKey, bodyReq?.AiConfig), ct);
                 return Results.Ok(result);
             }
             catch (NotFoundException)
@@ -155,6 +155,38 @@ public static class LessonAttemptEndpoints
 
         group.MapPost("/{id:guid}/answers/{answerId:guid}/retry-grading", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
         group.MapPost("/{id:guid}/answers/{answerId:guid}/retry", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
+
+        // Request Dictation AI Review: POST /api/lesson-attempts/{id}/answers/{answerId}/ai-review
+        group.MapPost("/{id:guid}/answers/{answerId:guid}/ai-review", async (
+            Guid id,
+            Guid answerId,
+            [FromHeader(Name = "X-Operation-Key")] string? operationKey,
+            [FromBody] RequestDictationAiReviewRequest? req,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var result = await sender.Send(new RequestDictationAiReviewCommand(id, answerId, req ?? new RequestDictationAiReviewRequest(), operationKey), ct);
+                return Results.Ok(result);
+            }
+            catch (NotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (ForbiddenException)
+            {
+                return Results.Forbid();
+            }
+            catch (ConflictException ex)
+            {
+                return Results.Conflict(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        }).RequirePermission("lesson-exercises.attempt");
 
         // Complete Attempt: POST /api/lesson-attempts/{id}/complete
         group.MapPost("/{id:guid}/complete", async (
@@ -189,5 +221,3 @@ public static class LessonAttemptEndpoints
         return app;
     }
 }
-
-public sealed record RetryGradingRequest(int AttemptRevision);

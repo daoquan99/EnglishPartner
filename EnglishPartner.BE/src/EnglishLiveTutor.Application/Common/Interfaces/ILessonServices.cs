@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using EnglishLiveTutor.Domain.Pronunciation;
 
@@ -64,10 +65,22 @@ public interface ILessonAiGrader
         ScoringRubricEntity rubric,
         string learnerSubmissionPayloadJson,
         decimal maxPoints,
+        string? taskContextJson = null,
+        LessonAiExecutionConfigDto? aiConfig = null,
         CancellationToken ct = default);
 }
 
 public interface ILessonSanitizer
 {
     string SanitizeContentForLearner(ExerciseType type, string contentJson);
+}
+
+public interface IDictationAiReviewer
+{
+    Task<DictationAiReviewDto> ReviewAsync(
+        Guid answerId,
+        string referenceTranscript,
+        string learnerTranscript,
+        LessonAiExecutionConfigDto? aiConfig = null,
+        CancellationToken ct = default);
 }
