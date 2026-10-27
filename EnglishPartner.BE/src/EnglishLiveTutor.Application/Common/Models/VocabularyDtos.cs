@@ -1,4 +1,4 @@
-namespace EnglishLiveTutor.Application.Common.Models;
+﻿namespace EnglishLiveTutor.Application.Common.Models;
 
 public sealed record PronunciationVariantDto(
     Guid Id,
@@ -118,13 +118,14 @@ public sealed record InitializeDailyPlanRequest(
 );
 
 public sealed record GenerateVocabularyRequest(
-    string ApiKey,
+    string? ApiKey = null,
     string ModelCode = "gemini-3.8-flash",
     int RequestedCount = 5,
     string CefrLevel = "B1",
     string? Topic = null,
     List<string>? ExcludedWords = null,
-    bool AssignToTodayPlan = true
+    bool AssignToTodayPlan = true,
+    string? Provider = null
 );
 
 public sealed record SubmitVocabularyReviewRequest(

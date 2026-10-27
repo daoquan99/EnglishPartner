@@ -16,6 +16,7 @@ public sealed class LessonAiGrader : ILessonAiGrader
     private readonly HttpClient _http;
     private readonly IAudioRecordingRepository _audioRepo;
     private readonly ILessonMediaStorage _mediaStorage;
+    private readonly IAgyCliRunner _agyRunner;
     private readonly IOptions<LessonAssessmentOptions> _options;
     private readonly ILogger<LessonAiGrader> _logger;
 
@@ -25,10 +26,22 @@ public sealed class LessonAiGrader : ILessonAiGrader
         ILessonMediaStorage mediaStorage,
         IOptions<LessonAssessmentOptions> options,
         ILogger<LessonAiGrader> logger)
+        : this(http, audioRepo, mediaStorage, null!, options, logger)
+    {
+    }
+
+    public LessonAiGrader(
+        HttpClient http,
+        IAudioRecordingRepository audioRepo,
+        ILessonMediaStorage mediaStorage,
+        IAgyCliRunner agyRunner,
+        IOptions<LessonAssessmentOptions> options,
+        ILogger<LessonAiGrader> logger)
     {
         _http = http;
         _audioRepo = audioRepo;
         _mediaStorage = mediaStorage;
+        _agyRunner = agyRunner;
         _options = options;
         _logger = logger;
     }
@@ -44,15 +57,22 @@ public sealed class LessonAiGrader : ILessonAiGrader
         LessonAiExecutionConfigDto? aiConfig = null,
         CancellationToken ct = default)
     {
-        string? apiKey = GeminiApiKeyResolver.ResolveKey(aiConfig?.ApiKey, _options.Value.ApiKey);
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new InvalidOperationException("Google Gemini API Key is not configured for lesson evaluation.");
-        }
+        bool isAgy = string.Equals(aiConfig?.Provider, "agy", StringComparison.OrdinalIgnoreCase) ||
+                     _agyRunner.IsAgyModel(aiConfig?.AssessmentModelCode);
 
         string modelCode = !string.IsNullOrWhiteSpace(aiConfig?.AssessmentModelCode)
             ? aiConfig.AssessmentModelCode!
-            : _options.Value.ModelCode;
+            : (isAgy ? _agyRunner.NormalizeModel(null) : _options.Value.ModelCode);
+
+        string? apiKey = null;
+        if (!isAgy)
+        {
+            apiKey = GeminiApiKeyResolver.ResolveKey(aiConfig?.ApiKey, _options.Value.ApiKey);
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                throw new InvalidOperationException("Google Gemini API Key is not configured for lesson evaluation.");
+            }
+        }
 
         // 1. Extract submission text or audio asset
         var (text, audioGuid) = ExtractSubmissionData(learnerSubmissionPayloadJson);
@@ -128,63 +148,91 @@ Rules:
   ""suggestedAnswer"": ""Gợi ý câu trả lời chuẩn (nếu có)...""
 }}";
 
-        var parts = new List<object>
-        {
-            new { text = systemInstruction }
-        };
+        string jsonText;
 
-        if (!string.IsNullOrWhiteSpace(text))
+        if (isAgy)
         {
-            parts.Add(new { text = $"Learner Submitted Text:\n\"{text}\"" });
-        }
-
-        if (!string.IsNullOrWhiteSpace(audioBase64))
-        {
-            parts.Add(new
+            if (string.IsNullOrWhiteSpace(text) && !string.IsNullOrWhiteSpace(audioBase64))
             {
-                inlineData = new
+                if (!string.IsNullOrWhiteSpace(apiKey))
                 {
-                    mimeType = audioMime,
-                    data = audioBase64
+                    _logger.LogInformation("Audio evaluation with AGY CLI requested; falling back to Gemini API because CLI is text-only.");
+                    isAgy = false;
                 }
-            });
-        }
-
-        var payload = new
-        {
-            contents = new[]
-            {
-                new { parts = parts.ToArray() }
-            },
-            generationConfig = new
-            {
-                temperature = 0.2,
-                responseMimeType = "application/json"
+                else
+                {
+                    throw new InvalidOperationException("Chấm điểm trực tiếp bằng tệp âm thanh (nói/ghi âm) yêu cầu Google Gemini Cloud API. Vui lòng cấu hình Google API Key hoặc nộp bài tập dạng văn bản.");
+                }
             }
-        };
-
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent";
-
-        var (success, statusCode, rawBody) = await GeminiHttpHelper.PostJsonWithRetryAsync(
-            _http,
-            url,
-            payload,
-            apiKey,
-            _options.Value.MaxRetries,
-            _logger,
-            ct);
-
-        if (!success)
-        {
-            _logger.LogWarning("Gemini grading failed with HTTP status {StatusCode}.", (int)statusCode);
-            throw new InvalidOperationException($"Lỗi kết nối AI khi chấm bài (mã lỗi {(int)statusCode}).");
         }
 
-        var root = JsonNode.Parse(rawBody);
-        string? jsonText = root?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-        if (string.IsNullOrWhiteSpace(jsonText))
+        if (isAgy)
         {
-            throw new InvalidOperationException("AI không trả về kết quả chấm điểm hợp lệ.");
+            string fullPrompt = $"{systemInstruction}\n\nLearner Submitted Text:\n\"{text}\"";
+            string effectiveAgyModel = _agyRunner.NormalizeModel(modelCode);
+            _logger.LogInformation("Grading lesson submission using Antigravity CLI local ({Model})...", effectiveAgyModel);
+            jsonText = await _agyRunner.ExecutePromptAsync(fullPrompt, effectiveAgyModel, ct);
+        }
+        else
+        {
+            var parts = new List<object>
+            {
+                new { text = systemInstruction }
+            };
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                parts.Add(new { text = $"Learner Submitted Text:\n\"{text}\"" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(audioBase64))
+            {
+                parts.Add(new
+                {
+                    inlineData = new
+                    {
+                        mimeType = audioMime,
+                        data = audioBase64
+                    }
+                });
+            }
+
+            var payload = new
+            {
+                contents = new[]
+                {
+                    new { parts = parts.ToArray() }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.2,
+                    responseMimeType = "application/json"
+                }
+            };
+
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent";
+
+            var (success, statusCode, rawBody) = await GeminiHttpHelper.PostJsonWithRetryAsync(
+                _http,
+                url,
+                payload,
+                apiKey,
+                _options.Value.MaxRetries,
+                _logger,
+                ct);
+
+            if (!success)
+            {
+                _logger.LogWarning("Gemini grading failed with HTTP status {StatusCode}.", (int)statusCode);
+                throw new InvalidOperationException($"Lỗi kết nối AI khi chấm bài (mã lỗi {(int)statusCode}).");
+            }
+
+            var root = JsonNode.Parse(rawBody);
+            jsonText = root?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+            if (string.IsNullOrWhiteSpace(jsonText))
+            {
+                throw new InvalidOperationException("AI không trả về kết quả chấm điểm hợp lệ.");
+            }
         }
 
         var parsed = JsonNode.Parse(jsonText);

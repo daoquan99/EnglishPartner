@@ -18,7 +18,8 @@ public sealed record GenerateLessonExercisesCommand(
     int TargetExerciseCount = 5,
     string? CustomInstructions = null,
     string CommitMode = "PreviewOnly",
-    string? OperationKey = null
+    string? OperationKey = null,
+    string? Provider = null
 ) : ICommand<LessonCandidateValidationResultDto>, IIdempotentCommand
 {
     public string? IdempotencyKey => OperationKey;
@@ -86,6 +87,7 @@ public sealed class GenerateLessonExercisesCommandHandler : ICommandHandler<Gene
             promptResult.PromptText,
             command.ApiKey,
             effectiveModel,
+            command.Provider,
             ct);
 
         JsonNode? candidateNode = ParseCandidateJson(generatedJson);
@@ -113,6 +115,7 @@ Regenerate the complete lesson exercises adhering strictly to the JSON schema wi
                     repairPrompt,
                     command.ApiKey,
                     effectiveModel,
+                    command.Provider,
                     ct);
 
                 var repairedNode = ParseCandidateJson(repairedJson);

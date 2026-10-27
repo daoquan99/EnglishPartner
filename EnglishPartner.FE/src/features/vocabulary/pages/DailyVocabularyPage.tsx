@@ -29,7 +29,6 @@ import { PronunciationHistoryDialog } from '../components/PronunciationHistoryDi
 import { AiSpeechSettingsDialog } from '@/features/speech';
 import {
   useActiveScoringRubricQuery,
-  usePronunciationModelsQuery,
   useSpeechSpeedsQuery,
   useTeacherVoicesQuery,
   useTopicsQuery,
@@ -64,6 +63,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
 import { cn } from '@/shared/lib/cn';
+import { toast } from '@/shared/lib/toast';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -94,7 +94,6 @@ export const DailyVocabularyPage: React.FC = () => {
   const initPlanMutation = useInitializeDailyPlanMutation();
 
   const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
-  const { data: audioModels = [] } = usePronunciationModelsQuery();
   const { data: allVoices = [] } = useTeacherVoicesQuery(true, false);
   const { data: speechSpeeds = [] } = useSpeechSpeedsQuery();
   const { data: vocabTopics = [] } = useTopicsQuery({
@@ -131,6 +130,12 @@ export const DailyVocabularyPage: React.FC = () => {
   const setTtsAccent = useTutorSessionStore((s) => s.setTtsAccent);
   const ttsSpeed = useTutorSessionStore((s) => s.speechSpeed);
   const setTtsSpeed = useTutorSessionStore((s) => s.setSpeechSpeed);
+  const aiProvider = useTutorSessionStore((s) => s.aiProvider);
+  const setAiProvider = useTutorSessionStore((s) => s.setAiProvider);
+  const agyModelCode = useTutorSessionStore((s) => s.agyModelCode);
+  const assessmentModelCode = useTutorSessionStore((s) => s.assessmentModelCode);
+  const effectiveAssessmentModel =
+    aiProvider === 'agy' ? agyModelCode : (assessmentModelCode || 'gemini-3.8-flash');
   const [lastSynthesizedAudio, setLastSynthesizedAudio] =
     useState<SynthesizePronunciationAudioResponseDto | null>(null);
   const [showSystemPromptUsed, setShowSystemPromptUsed] = useState(false);
@@ -151,7 +156,6 @@ export const DailyVocabularyPage: React.FC = () => {
   const [manualError, setManualError] = useState<string | null>(null);
 
   // Audio Pronunciation Studio State (Right Column 45%)
-  const [selectedAudioModel, setSelectedAudioModel] = useState<string>('gemini-3.8-flash');
   const [targetType, setTargetType] = useState<'word' | 'example'>('word');
   const [selectedExampleIndex, setSelectedExampleIndex] = useState<number>(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -187,12 +191,6 @@ export const DailyVocabularyPage: React.FC = () => {
       setSelectedVocabModel(vocabModels[0].modelCode);
     }
   }, [vocabModels, selectedVocabModel]);
-
-  useEffect(() => {
-    if (audioModels.length > 0 && !audioModels.some((m) => m.modelCode === selectedAudioModel)) {
-      setSelectedAudioModel(audioModels[0].modelCode);
-    }
-  }, [audioModels, selectedAudioModel]);
 
   const currentCard = cards[currentIndex] ?? null;
   const examples = currentCard?.examples ?? [];
@@ -441,7 +439,8 @@ export const DailyVocabularyPage: React.FC = () => {
   };
 
   const handleGenerateMoreWords = async () => {
-    if (!apiKey.trim()) {
+    const isAgy = aiProvider === 'agy';
+    if (!isAgy && !apiKey.trim()) {
       setIsAiGeneratorModalOpen(false);
       setApiKeyWarning(t('vocab.apiKeyMissingNotice'));
       requestFocusLeftMenuApiKey();
@@ -450,11 +449,12 @@ export const DailyVocabularyPage: React.FC = () => {
     setApiKeyWarning(null);
     try {
       const generated = await generateMutation.mutateAsync({
-        apiKey: apiKey.trim(),
+        apiKey: isAgy ? undefined : apiKey.trim(),
         cefrLevel: genCefr,
         topic: genTopic || 'Software Engineering & Daily Workplace',
         count: genCount,
-        modelCode: selectedVocabModel,
+        modelCode: isAgy ? agyModelCode : selectedVocabModel,
+        provider: isAgy ? 'agy' : 'gemini',
       });
       if (generated && generated.length > 0) {
         resetPronunciationAndStopRecordingSafely();
@@ -542,6 +542,11 @@ export const DailyVocabularyPage: React.FC = () => {
       return;
     }
 
+    if (aiProvider === 'agy') {
+      setAiProvider('gemini');
+      toast.info('Đã tự động chuyển sang cổng Google Gemini API (Cloud) để chấm phát âm Audio.');
+    }
+
     if (!apiKey.trim()) {
       setApiKeyWarning(
         'Vui lòng nhập Google AI Studio API Key ở Left Menu bên trái để chấm điểm phát âm bằng AI.'
@@ -560,7 +565,7 @@ export const DailyVocabularyPage: React.FC = () => {
     const capturedTargetType = targetType;
     const capturedExample = selectedExample;
     const capturedAccent = ttsAccent;
-    const capturedModelCode = selectedAudioModel;
+    const capturedModelCode = effectiveAssessmentModel;
 
     const referenceText =
       capturedTargetType === 'example'
@@ -1256,31 +1261,74 @@ export const DailyVocabularyPage: React.FC = () => {
                     <img src="/assets/icons/navigation/nav-history.svg" alt="" className="w-3.5 h-3.5 object-contain" />
                     {t('vocab.viewHistory')}
                   </Button>
-                  <Badge variant="emerald">
-                    <ShieldCheck className="w-3 h-3" /> Audio Input ({audioModels.length} Models)
-                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsTtsSettingsModalOpen(true)}
+                    title="Cấu hình AI Speech Synthesis"
+                    className="flex items-center gap-1.5"
+                  >
+                    <Cpu className="w-3.5 h-3.5 text-purple-600" />
+                    Cấu hình AI
+                  </Button>
                 </div>
               </div>
 
-              {/* Audio Pronunciation Model Selector + Target Selector */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">
-                    {t('vocab.audioModelLabel')}
-                  </label>
-                  <select
-                    value={selectedAudioModel}
-                    onChange={(e) => setSelectedAudioModel(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800"
+              {/* Cổng AI Model hệ thống & Model Chấm điểm (đồng bộ từ AI Speech Synthesis Configuration) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                    <Cpu className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Cổng AI Model hệ thống (Sinh nội dung & Chấm điểm)</span>
+                    <Badge variant={aiProvider === 'agy' ? 'emerald' : 'sky'} className="text-[10px] py-0 px-1.5">
+                      {aiProvider === 'agy' ? 'AGY Local' : 'Google Gemini API'}
+                    </Badge>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTtsSettingsModalOpen(true)}
+                    className="text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline shrink-0 cursor-pointer"
                   >
-                    {audioModels.map((m) => (
-                      <option key={m.modelCode} value={m.modelCode}>
-                        {m.displayName} ({m.modelCode})
-                      </option>
-                    ))}
-                  </select>
+                    Cấu hình
+                  </button>
                 </div>
 
+                <div className="text-xs text-slate-600 flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200/80">
+                  <span className="text-slate-500 font-medium">
+                    {aiProvider === 'agy'
+                      ? 'Model Antigravity CLI Local được chọn:'
+                      : 'Mô hình AI Chấm điểm & Nhận xét bài tập:'}
+                  </span>
+                  <span className="font-bold text-slate-800 text-[11px] font-mono">
+                    {effectiveAssessmentModel}
+                  </span>
+                </div>
+
+                {aiProvider === 'agy' && (
+                  <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-900 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span className="text-[11px] leading-relaxed">
+                        Chấm phát âm bằng giọng nói (Audio) yêu cầu Google Gemini Cloud API.
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        setAiProvider('gemini');
+                        toast.success('Đã chuyển sang cổng Google Gemini API (Cloud)');
+                      }}
+                      className="text-xs font-bold py-1 px-3 shrink-0 shadow-2xs"
+                    >
+                      Chuyển sang Google Gemini API
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">
                     {t('vocab.practiceMode')}
@@ -1476,9 +1524,24 @@ export const DailyVocabularyPage: React.FC = () => {
                 </div>
 
                 {assessmentError && (
-                  <p role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">
-                    {assessmentError}
-                  </p>
+                  <div role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex-1 min-w-[200px]">{assessmentError}</span>
+                    {aiProvider === 'agy' && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          setAiProvider('gemini');
+                          setAssessmentError(null);
+                          toast.success('Đã chuyển sang cổng Google Gemini API (Cloud)');
+                        }}
+                        className="text-xs py-1 px-3 shrink-0"
+                      >
+                        Chuyển sang Google Gemini API ngay
+                      </Button>
+                    )}
+                  </div>
                 )}
 
                 {assessmentResult ? (
@@ -1631,6 +1694,12 @@ export const DailyVocabularyPage: React.FC = () => {
 
           {genMode === 'direct' ? (
             <>
+              {aiProvider === 'agy' && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium flex items-center justify-between">
+                  <span>Đang dùng cổng Antigravity CLI Local (Model: <strong>{agyModelCode}</strong>)</span>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold">Không cần API Key</span>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">

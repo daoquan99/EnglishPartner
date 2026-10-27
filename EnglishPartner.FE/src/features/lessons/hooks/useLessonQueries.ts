@@ -362,6 +362,7 @@ export function useGenerateLessonExercisesMutation() {
       targetExerciseCount?: number;
       customInstructions?: string;
       commitMode?: 'PreviewOnly' | 'Append' | 'Replace';
+      provider?: string;
     }) => lessonApi.generateLessonExercises(payload),
     onSuccess: (_, variables) => {
       if (variables.targetLessonId && variables.commitMode && variables.commitMode !== 'PreviewOnly') {

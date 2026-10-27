@@ -104,12 +104,13 @@ export interface DailyVocabularyPlanResponseDto {
 }
 
 export interface GenerateVocabularyRequestDto {
-  apiKey: string;
+  apiKey?: string;
   cefrLevel: CefrLevel;
   topic: string;
   count: number;
   modelCode: string;
   userId?: string;
+  provider?: string;
 }
 
 export interface BuildVocabularyGenerationPromptRequestDto {

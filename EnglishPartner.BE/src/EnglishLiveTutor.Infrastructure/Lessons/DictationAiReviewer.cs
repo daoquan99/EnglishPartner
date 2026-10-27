@@ -12,17 +12,20 @@ public sealed class DictationAiReviewer : IDictationAiReviewer
 {
     private readonly HttpClient _http;
     private readonly IOptions<LessonAssessmentOptions> _options;
+    private readonly IAgyCliRunner _agyRunner;
     private readonly ILogger<DictationAiReviewer> _logger;
     private readonly TimeProvider _timeProvider;
 
     public DictationAiReviewer(
         HttpClient http,
         IOptions<LessonAssessmentOptions> options,
+        IAgyCliRunner agyRunner,
         ILogger<DictationAiReviewer> logger,
         TimeProvider timeProvider)
     {
         _http = http;
         _options = options;
+        _agyRunner = agyRunner;
         _logger = logger;
         _timeProvider = timeProvider;
     }
@@ -34,15 +37,22 @@ public sealed class DictationAiReviewer : IDictationAiReviewer
         LessonAiExecutionConfigDto? aiConfig = null,
         CancellationToken ct = default)
     {
-        string? apiKey = GeminiApiKeyResolver.ResolveKey(aiConfig?.ApiKey, _options.Value.ApiKey);
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new InvalidOperationException("Google Gemini API Key is not configured for Dictation AI review.");
-        }
+        bool isAgy = string.Equals(aiConfig?.Provider, "agy", StringComparison.OrdinalIgnoreCase) ||
+                     _agyRunner.IsAgyModel(aiConfig?.AssessmentModelCode);
 
         string modelCode = !string.IsNullOrWhiteSpace(aiConfig?.AssessmentModelCode)
             ? aiConfig.AssessmentModelCode!
-            : _options.Value.ModelCode;
+            : (isAgy ? _agyRunner.NormalizeModel(null) : _options.Value.ModelCode);
+
+        string? apiKey = null;
+        if (!isAgy)
+        {
+            apiKey = GeminiApiKeyResolver.ResolveKey(aiConfig?.ApiKey, _options.Value.ApiKey);
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                throw new InvalidOperationException("Google Gemini API Key is not configured for Dictation AI review.");
+            }
+        }
 
         string systemInstruction = $@"You are an expert English listening & phonetics coach.
 A learner completed a Dictation exercise by listening to an English sentence and writing down what they heard.
@@ -73,40 +83,53 @@ Return ONLY valid JSON matching this schema:
   ]
 }}";
 
-        var payload = new
+        string jsonText;
+
+        if (isAgy)
         {
-            contents = new[]
-            {
-                new { parts = new[] { new { text = systemInstruction } } }
-            },
-            generationConfig = new
-            {
-                temperature = 0.2,
-                responseMimeType = "application/json"
-            }
-        };
-
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent";
-
-        var (success, statusCode, rawBody) = await GeminiHttpHelper.PostJsonWithRetryAsync(
-            _http,
-            url,
-            payload,
-            apiKey,
-            _options.Value.MaxRetries,
-            _logger,
-            ct);
-
-        if (!success)
-        {
-            throw new InvalidOperationException($"Lỗi kết nối AI khi nhận xét bài chép chính tả (mã lỗi {(int)statusCode}).");
+            string effectiveAgyModel = _agyRunner.NormalizeModel(modelCode);
+            _logger.LogInformation("Reviewing dictation submission using Antigravity CLI local ({Model})...", effectiveAgyModel);
+            jsonText = await _agyRunner.ExecutePromptAsync(systemInstruction, effectiveAgyModel, ct);
         }
-
-        var root = JsonNode.Parse(rawBody);
-        string? jsonText = root?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-        if (string.IsNullOrWhiteSpace(jsonText))
+        else
         {
-            throw new InvalidOperationException("AI không trả về kết quả nhận xét Dictation hợp lệ.");
+            var payload = new
+            {
+                contents = new[]
+                {
+                    new { parts = new[] { new { text = systemInstruction } } }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.2,
+                    responseMimeType = "application/json"
+                }
+            };
+
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent";
+
+            var (success, statusCode, rawBody) = await GeminiHttpHelper.PostJsonWithRetryAsync(
+                _http,
+                url,
+                payload,
+                apiKey!,
+                _options.Value.MaxRetries,
+                _logger,
+                ct);
+
+            if (!success)
+            {
+                throw new InvalidOperationException($"Lỗi kết nối AI khi nhận xét bài chép chính tả (mã lỗi {(int)statusCode}).");
+            }
+
+            var root = JsonNode.Parse(rawBody);
+            string? parsedGeminiText = root?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+            if (string.IsNullOrWhiteSpace(parsedGeminiText))
+            {
+                throw new InvalidOperationException("AI không trả về kết quả nhận xét Dictation hợp lệ.");
+            }
+
+            jsonText = parsedGeminiText;
         }
 
         var parsed = JsonNode.Parse(jsonText);

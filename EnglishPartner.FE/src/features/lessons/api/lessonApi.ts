@@ -115,6 +115,7 @@ export const lessonApi = {
     targetExerciseCount?: number;
     customInstructions?: string;
     commitMode?: 'PreviewOnly' | 'Append' | 'Replace';
+    provider?: string;
   }): Promise<LessonCandidateValidationResultDto> => {
     const { data } = await httpClient.post<LessonCandidateValidationResultDto>(
       '/api/lessons/generation/generate',

@@ -193,7 +193,28 @@ export const DEFAULT_TOPICS: TopicDto[] = [
   { id: '90000000-0000-0000-0000-000000000025', code: 'vocab_business_idioms_phrasal_verbs', name: 'Essential Workplace Phrasal Verbs & Executive Idioms', displayNameVi: 'Cụm động từ (Phrasal Verbs) & Thành ngữ công sở thông dụng', category: 'Vocabulary Specialization', modeCode: null, suggestedCefrLevel: 'B2', supportsConversation: true, supportsVocabulary: true, description: 'Master expressions like circle back, iron out bottlenecks, on the same page.', isFeatured: true, isActive: true, displayOrder: 25 },
 ];
 
+export const AGY_LOCAL_MODELS = [
+  {
+    code: 'gemini-3.8-flash-medium',
+    name: 'Gemini 3.8 Flash (Medium) — Cân bằng (Mặc định)',
+    description: 'Cân bằng giữa tốc độ phản hồi và chất lượng suy luận',
+  },
+  {
+    code: 'gemini-3.8-flash-low',
+    name: 'Gemini 3.8 Flash (Low) — Tốc độ cao',
+    description: 'Phản hồi siêu nhanh, tối ưu hóa thời gian xử lý',
+  },
+  {
+    code: 'gemini-3.8-flash-high',
+    name: 'Gemini 3.8 Flash (High) — Suy luận sâu (Thinking)',
+    description: 'Tư duy sâu sắc cho nhận xét bài tập và sinh nội dung chuẩn xác',
+  },
+] as const;
+
 export const DEFAULT_AI_MODELS: AiModelOptionDto[] = [
+  { id: '10000000-0000-0000-0000-000000000020', displayName: 'Gemini 3.8 Flash Medium (AGY Local)', modelCode: 'gemini-3.8-flash-medium', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: false, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Model Antigravity CLI cục bộ trên máy, cân bằng tốc độ và chất lượng.', displayOrder: 20 },
+  { id: '10000000-0000-0000-0000-000000000021', displayName: 'Gemini 3.8 Flash Low (AGY Local)', modelCode: 'gemini-3.8-flash-low', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: false, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Model Antigravity CLI cục bộ trên máy với tốc độ phản hồi nhanh nhất.', displayOrder: 21 },
+  { id: '10000000-0000-0000-0000-000000000022', displayName: 'Gemini 3.8 Flash High (AGY Local)', modelCode: 'gemini-3.8-flash-high', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: false, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Model Antigravity CLI cục bộ trên máy với tư duy suy luận sâu (Thinking Mode).', displayOrder: 22 },
   { id: '10000000-0000-0000-0000-000000000001', displayName: 'Gemini 3.8 Flash (Recommended)', modelCode: 'gemini-3.8-flash', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: true, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Model đa phương thức thế hệ mới nhất, hỗ trợ cả tạo từ vựng JSON và chấm điểm phát âm trực tiếp từ âm thanh.', displayOrder: 1 },
   { id: '10000000-0000-0000-0000-000000000002', displayName: 'Gemini 3.6 Flash', modelCode: 'gemini-3.6-flash', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: true, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Hỗ trợ tạo từ vựng và đánh giá phát âm bằng âm thanh.', displayOrder: 2 },
   { id: '10000000-0000-0000-0000-000000000003', displayName: 'Gemini 3.5 Flash Lite', modelCode: 'gemini-3.5-flash-lite', supportsTextGeneration: true, supportsStructuredOutput: true, supportsAudioInput: true, supportsPronunciationAssessment: true, isAvailable: true, isDeprecated: false, isEnabled: true, capabilityNote: 'Tốc độ phản hồi cực nhanh, chi phí thấp.', displayOrder: 3 },

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Volume2, Code2, Key, Check, Sparkles } from 'lucide-react';
+import { Volume2, Code2, Key, Check, Sparkles, Cpu } from 'lucide-react';
 import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -55,6 +55,11 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
   const assessmentModelCode = useTutorSessionStore((s) => s.assessmentModelCode);
   const setAssessmentModelCode = useTutorSessionStore((s) => s.setAssessmentModelCode);
 
+  const aiProvider = useTutorSessionStore((s) => s.aiProvider);
+  const setAiProvider = useTutorSessionStore((s) => s.setAiProvider);
+  const agyModelCode = useTutorSessionStore((s) => s.agyModelCode);
+  const setAgyModelCode = useTutorSessionStore((s) => s.setAgyModelCode);
+
   const handleOpenApiKeyMenu = () => {
     onClose();
     requestFocusLeftMenuApiKey();
@@ -106,6 +111,95 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
       }
     >
       <div className="space-y-4 text-xs">
+        {/* AI Model Provider Selector */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+              <Cpu className="w-4 h-4 text-emerald-600" />
+              Cổng AI Model hệ thống (Sinh nội dung & Chấm điểm)
+            </label>
+            <Badge variant={aiProvider === 'agy' ? 'emerald' : 'sky'}>
+              {aiProvider === 'agy' ? 'AGY Local Active' : 'Google API Active'}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setAiProvider('gemini')}
+              className={cn(
+                'py-2 rounded-lg transition-all cursor-pointer text-center',
+                aiProvider === 'gemini'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              Google Gemini API (Cloud)
+            </button>
+            <button
+              type="button"
+              onClick={() => setAiProvider('agy')}
+              className={cn(
+                'py-2 rounded-lg transition-all cursor-pointer text-center',
+                aiProvider === 'agy'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              Antigravity CLI (Local máy)
+            </button>
+          </div>
+
+          {aiProvider === 'agy' ? (
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-bold text-slate-700">
+                Model Antigravity CLI Local được chọn:
+              </label>
+              <select
+                value={agyModelCode}
+                onChange={(e) => setAgyModelCode(e.target.value as any)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value="gemini-3.8-flash-medium">Gemini 3.8 Flash Medium (Cân bằng — Mặc định)</option>
+                <option value="gemini-3.8-flash-low">Gemini 3.8 Flash Low (Tốc độ cao)</option>
+                <option value="gemini-3.8-flash-high">Gemini 3.8 Flash High (Suy luận sâu / Thinking)</option>
+              </select>
+              <p className="text-[11px] text-slate-500">
+                Chạy hoàn toàn qua tiến trình <code>agy.exe</code> trên máy của bạn, không cần nhập API Key và không tiêu tốn quota đám mây cá nhân.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                Mô hình AI Chấm điểm & Nhận xét bài tập:
+              </label>
+              <select
+                value={assessmentModelCode}
+                onChange={(e) => setAssessmentModelCode(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              >
+                {assessmentModels.length > 0 ? (
+                  assessmentModels.map((m) => (
+                    <option key={m.id || m.modelCode} value={m.modelCode}>
+                      {m.displayName || m.modelCode}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="gemini-3.8-flash">gemini-3.8-flash (Khuyên dùng / Nhanh & Chuẩn)</option>
+                    <option value="gemini-2.5-flash">gemini-2.5-flash (Standard)</option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Analysis)</option>
+                  </>
+                )}
+              </select>
+              <p className="text-[11px] text-slate-500">
+                Sử dụng trực tiếp Google Gemini qua API Key bạn đã cấu hình ở menu góc trái.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* 1. TTS Model Selection */}
           <div>
@@ -190,33 +284,6 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
                   {sp.label}
                 </option>
               ))}
-            </select>
-          </div>
-
-          {/* 5. Assessment Model */}
-          <div className="sm:col-span-2">
-            <label className="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              Mô hình AI Chấm điểm & Nhận xét bài tập
-            </label>
-            <select
-              value={assessmentModelCode}
-              onChange={(e) => setAssessmentModelCode(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {assessmentModels.length > 0 ? (
-                assessmentModels.map((m) => (
-                  <option key={m.id || m.modelCode} value={m.modelCode}>
-                    {m.displayName || m.modelCode}
-                  </option>
-                ))
-              ) : (
-                <>
-                  <option value="gemini-3.8-flash">gemini-3.8-flash (Khuyên dùng / Nhanh & Chuẩn)</option>
-                  <option value="gemini-2.5-flash">gemini-2.5-flash (Standard)</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Analysis)</option>
-                </>
-              )}
             </select>
           </div>
         </div>

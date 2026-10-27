@@ -6,5 +6,7 @@ public interface ILessonAiGenerator
         string promptText,
         string? clientApiKey,
         string? modelCode,
+        string? provider = null,
         CancellationToken ct = default);
 }
+

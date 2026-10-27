@@ -42,6 +42,8 @@ export const DictationPlayer: React.FC<DictationPlayerProps> = ({
 
   const apiKey = useTutorSessionStore((s) => s.apiKey);
   const assessmentModelCode = useTutorSessionStore((s) => s.assessmentModelCode);
+  const aiProvider = useTutorSessionStore((s) => s.aiProvider);
+  const agyModelCode = useTutorSessionStore((s) => s.agyModelCode);
 
   const requestReviewMutation = useRequestDictationAiReviewMutation();
   const [localReview, setLocalReview] = useState<DictationAiReviewDto | null>(
@@ -85,13 +87,15 @@ export const DictationPlayer: React.FC<DictationPlayerProps> = ({
     if (!attemptId || !answerId) return;
     setReviewError(null);
     try {
+      const isAgy = aiProvider === 'agy';
       const rev = await requestReviewMutation.mutateAsync({
         attemptId,
         answerId,
         payload: {
           aiConfig: {
-            apiKey: apiKey || null,
-            assessmentModelCode: assessmentModelCode || null,
+            provider: isAgy ? 'agy' : 'gemini',
+            assessmentModelCode: isAgy ? agyModelCode : (assessmentModelCode || null),
+            apiKey: isAgy ? null : (apiKey || null),
           },
         },
       });
@@ -100,7 +104,7 @@ export const DictationPlayer: React.FC<DictationPlayerProps> = ({
       setReviewError(
         err?.response?.data?.error ||
           err?.response?.data?.detail ||
-          'Không thể kết nối AI để nhận xét bài chép. Vui lòng kiểm tra API Key và thử lại.'
+          'Không thể kết nối AI để nhận xét bài chép. Vui lòng kiểm tra cấu hình AI (Google API hoặc AGY CLI) và thử lại.'
       );
     }
   };

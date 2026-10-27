@@ -17,12 +17,14 @@ import {
   Key,
   Loader2,
   Code2,
+  Terminal,
 } from 'lucide-react';
 import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicker';
 import { useTopicsQuery, useVocabularyGenerationModelsQuery } from '@/features/catalog/hooks/useCatalogQueries';
+import { AGY_LOCAL_MODELS } from '@/features/catalog/api/catalogDefaults';
 import { useTutorSessionStore } from '@/features/tutor';
 import { toast } from '@/shared/lib/toast';
 import {
@@ -115,7 +117,14 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
   const [parsedCandidate, setParsedCandidate] = useState<Record<string, unknown> | null>(null);
 
   const { data: vocabModels = [] } = useVocabularyGenerationModelsQuery();
-  const { apiKey, setApiKey } = useTutorSessionStore();
+  const {
+    apiKey,
+    setApiKey,
+    aiProvider,
+    agyModelCode,
+    setAiProvider,
+    setAgyModelCode,
+  } = useTutorSessionStore();
 
   const validateMutation = useValidateCandidateMutation();
   const commitMutation = useCommitLessonImportMutation();
@@ -152,8 +161,9 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
   };
 
   const handleDirectAiGenerate = async () => {
+    const isAgy = aiProvider === 'agy';
     const keyToUse = apiKeyInput.trim() || apiKey.trim();
-    if (!keyToUse) {
+    if (!isAgy && !keyToUse) {
       toast.error('Vui lòng nhập Google AI Studio API Key để sinh bài tập AI.');
       return;
     }
@@ -166,8 +176,9 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
     setIsGeneratingAi(true);
     try {
       const res = await generateMutation.mutateAsync({
-        apiKey: keyToUse,
-        modelCode: selectedModel,
+        apiKey: isAgy ? undefined : keyToUse,
+        provider: isAgy ? 'agy' : 'gemini',
+        modelCode: isAgy ? agyModelCode : selectedModel,
         targetLessonId: targetLessonId || undefined,
         topic: finalTopic,
         cefrLevel: finalCefr,
@@ -493,61 +504,122 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
 
             {/* AI Model & API Key Configuration */}
             <div className="p-3.5 bg-emerald-50/40 border border-emerald-200/80 rounded-2xl space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center gap-1.5 text-[11px]">
-                    <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                    Chọn Model AI sinh bài tập *
-                  </label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              <div className="flex items-center justify-between pb-1 border-b border-emerald-100">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-emerald-600" /> Cổng kết nối AI
+                </span>
+                <div className="inline-flex p-0.5 bg-white border border-slate-200 rounded-lg text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setAiProvider('gemini')}
+                    className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-all ${
+                      aiProvider === 'gemini'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    {vocabModels.length > 0 ? (
-                      vocabModels.map((m) => (
-                        <option key={m.modelCode} value={m.modelCode}>
-                          {m.displayName} ({m.modelCode})
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mặc định)</option>
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between text-[11px]">
-                    <span className="flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-amber-600" />
-                      Google AI API Key
-                    </span>
-                    {apiKeyInput.trim() || apiKey.trim() ? (
-                      <span className="text-[10px] text-emerald-600 font-bold lowercase">
-                        (đã cấu hình)
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-rose-500 font-bold">
-                        (cần nhập API Key)
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    onChange={(e) => {
-                      setApiKeyInput(e.target.value);
-                      setApiKey(e.target.value.trim());
-                    }}
-                    placeholder="Nhập Google AI Studio API Key..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                    Google API (Cloud)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAiProvider('agy')}
+                    className={`px-2.5 py-1 rounded-md font-semibold text-[11px] flex items-center gap-1 transition-all ${
+                      aiProvider === 'agy'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Terminal className="w-3 h-3" />
+                    AGY CLI (Local)
+                  </button>
                 </div>
               </div>
+
+              {aiProvider === 'agy' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center gap-1.5 text-[11px]">
+                      <Terminal className="w-3.5 h-3.5 text-purple-600" />
+                      Model Antigravity CLI Local *
+                    </label>
+                    <select
+                      value={agyModelCode}
+                      onChange={(e) => setAgyModelCode(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-semibold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      {AGY_LOCAL_MODELS.map((m) => (
+                        <option key={m.code} value={m.code}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col justify-center px-3 py-2 rounded-xl border border-purple-200 bg-purple-50/50 text-xs text-purple-900">
+                    <span className="font-bold flex items-center gap-1 text-[12px] text-purple-800">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Sẵn sàng qua Antigravity CLI
+                    </span>
+                    <span className="text-[11px] text-purple-700 mt-0.5 leading-tight">
+                      Chạy trực tiếp CLI cục bộ trên máy. Không yêu cầu Google Cloud API Key.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center gap-1.5 text-[11px]">
+                      <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+                      Chọn Model Gemini Cloud *
+                    </label>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {vocabModels.length > 0 ? (
+                        vocabModels.map((m) => (
+                          <option key={m.modelCode} value={m.modelCode}>
+                            {m.displayName} ({m.modelCode})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mặc định)</option>
+                          <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between text-[11px]">
+                      <span className="flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-amber-600" />
+                        Google AI API Key
+                      </span>
+                      {apiKeyInput.trim() || apiKey.trim() ? (
+                        <span className="text-[10px] text-emerald-600 font-bold lowercase">
+                          (đã cấu hình)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-rose-500 font-bold">
+                          (cần nhập API Key)
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={(e) => {
+                        setApiKeyInput(e.target.value);
+                        setApiKey(e.target.value.trim());
+                      }}
+                      placeholder="Nhập Google AI Studio API Key..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Row 3: Exercise Types Selection with Quick Filter Chips */}

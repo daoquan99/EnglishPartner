@@ -11,6 +11,7 @@ public sealed class GeminiLessonAiGenerator : ILessonAiGenerator
     private static readonly Regex MarkdownCodeFenceRegex = new(@"```(?:json)?\s*([\s\S]*?)\s*```", RegexOptions.Compiled);
 
     private readonly HttpClient _http;
+    private readonly IAgyCliRunner? _agyRunner;
     private readonly IOptions<LessonGenerationOptions> _options;
     private readonly ILogger<GeminiLessonAiGenerator> _logger;
 
@@ -18,8 +19,18 @@ public sealed class GeminiLessonAiGenerator : ILessonAiGenerator
         HttpClient http,
         IOptions<LessonGenerationOptions> options,
         ILogger<GeminiLessonAiGenerator> logger)
+        : this(http, null, options, logger)
+    {
+    }
+
+    public GeminiLessonAiGenerator(
+        HttpClient http,
+        IAgyCliRunner? agyRunner,
+        IOptions<LessonGenerationOptions> options,
+        ILogger<GeminiLessonAiGenerator> logger)
     {
         _http = http;
+        _agyRunner = agyRunner;
         _options = options;
         _logger = logger;
     }
@@ -28,12 +39,29 @@ public sealed class GeminiLessonAiGenerator : ILessonAiGenerator
         string promptText,
         string? clientApiKey,
         string? modelCode,
+        string? provider = null,
         CancellationToken ct = default)
     {
+        bool isAgy = string.Equals(provider, "agy", StringComparison.OrdinalIgnoreCase) ||
+                     (_agyRunner?.IsAgyModel(modelCode) ?? false);
+
+        if (isAgy)
+        {
+            if (_agyRunner == null)
+            {
+                throw new InvalidOperationException("Antigravity CLI runner is not configured.");
+            }
+
+            string effectiveAgyModel = _agyRunner.NormalizeModel(modelCode);
+            _logger.LogInformation("Generating lesson exercises using local Antigravity CLI with model {Model}", effectiveAgyModel);
+            string agyResult = await _agyRunner.ExecutePromptAsync(promptText, effectiveAgyModel, ct);
+            return CleanMarkdownFences(agyResult);
+        }
+
         string? apiKey = GeminiApiKeyResolver.ResolveKey(clientApiKey, _options.Value.ApiKey);
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException("Vui lòng cấu hình hoặc cung cấp Google Gemini API Key để sinh bài tập AI.");
+            throw new InvalidOperationException("Vui lòng cấu hình hoặc cung cấp Google Gemini API Key hoặc chọn Antigravity CLI Local để sinh bài tập AI.");
         }
 
         string effectiveModel = !string.IsNullOrWhiteSpace(modelCode)

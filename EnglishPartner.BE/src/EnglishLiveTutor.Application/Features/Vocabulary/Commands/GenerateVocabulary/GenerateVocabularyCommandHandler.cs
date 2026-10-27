@@ -30,15 +30,29 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
     public async Task<List<VocabularyFlashcardDto>> HandleAsync(GenerateVocabularyCommand command, CancellationToken ct = default)
     {
         var req = command.Request;
-        if (string.IsNullOrWhiteSpace(req.ApiKey))
-            throw new InvalidOperationException("Cần cung cấp API Key của Google Gemini để sinh từ vựng AI.");
+        string requestedModelCode = string.IsNullOrWhiteSpace(req.ModelCode) ? "gemini-3.8-flash" : req.ModelCode.Trim();
+
+        bool isAgy = string.Equals(req.Provider, "agy", StringComparison.OrdinalIgnoreCase) ||
+                     requestedModelCode.StartsWith("agy:", StringComparison.OrdinalIgnoreCase) ||
+                     requestedModelCode.EndsWith("-medium", StringComparison.OrdinalIgnoreCase) ||
+                     requestedModelCode.EndsWith("-low", StringComparison.OrdinalIgnoreCase) ||
+                     requestedModelCode.EndsWith("-high", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAgy && string.IsNullOrWhiteSpace(req.ApiKey))
+            throw new InvalidOperationException("Cần cung cấp API Key của Google Gemini hoặc chọn Antigravity CLI Local để sinh từ vựng AI.");
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        string requestedModelCode = string.IsNullOrWhiteSpace(req.ModelCode) ? "gemini-3.8-flash" : req.ModelCode.Trim();
-        var model = await db.AiModelCatalog.AsNoTracking().FirstOrDefaultAsync(m => m.ModelCode == requestedModelCode, ct)
-            ?? throw new InvalidOperationException($"Model '{requestedModelCode}' không tồn tại trong AI Model Catalog.");
-        if (!model.IsEnabled || !model.IsAvailable || !model.SupportsTextGeneration || model.SupportsLiveAudio)
-            throw new InvalidOperationException($"Model '{model.DisplayName}' không hỗ trợ tạo từ vựng cấu trúc JSON.");
+        var model = await db.AiModelCatalog.AsNoTracking().FirstOrDefaultAsync(m => m.ModelCode == requestedModelCode, ct);
+
+        if (!isAgy)
+        {
+            if (model == null)
+                throw new InvalidOperationException($"Model '{requestedModelCode}' không tồn tại trong AI Model Catalog.");
+            if (!model.IsEnabled || !model.IsAvailable || !model.SupportsTextGeneration || model.SupportsLiveAudio)
+                throw new InvalidOperationException($"Model '{model.DisplayName}' không hỗ trợ tạo từ vựng cấu trúc JSON.");
+        }
+
+        string effectiveModel = model != null ? model.GetEffectiveModelCode() : requestedModelCode;
 
         var query = new BuildVocabularyGenerationPromptQuery(new(req.RequestedCount, req.CefrLevel, req.Topic, req.ExcludedWords));
         var prompt = await _promptHandler.HandleAsync(query, ct);
@@ -47,8 +61,15 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
             prompt.CefrLevel, prompt.Topic, req.AssignToTodayPlan);
         try
         {
-            var generated = await _aiGenerator.GenerateVocabularyAsync(req.ApiKey.Trim(), model.GetEffectiveModelCode(),
-                prompt.CefrLevel, prompt.Topic, prompt.RequestedCount, prompt.ExcludedWords.ToList(), ct);
+            var generated = await _aiGenerator.GenerateVocabularyAsync(
+                req.ApiKey?.Trim() ?? string.Empty,
+                effectiveModel,
+                prompt.CefrLevel,
+                prompt.Topic,
+                prompt.RequestedCount,
+                prompt.ExcludedWords.ToList(),
+                req.Provider,
+                ct);
             return await _writer.SaveAsync(context, generated, ct);
         }
         catch (Exception ex)

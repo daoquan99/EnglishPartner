@@ -1,4 +1,4 @@
-using EnglishLiveTutor.Application.Common.Interfaces;
+﻿using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.AiCatalog.Repositories;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
@@ -96,6 +96,9 @@ public static class DependencyInjection
         services.AddSingleton<FastTextTranslatorFallback>();
         services.AddSingleton<GrammarCorrectionAnalyzerService>();
         services.AddSingleton<IVocabularyGenerationContent, VocabularyGenerationContent>();
+        services.AddOptions<AntigravityCliOptions>()
+            .Bind(configuration.GetSection(AntigravityCliOptions.SectionName));
+        services.AddSingleton<IAgyCliRunner, AgyCliRunner>();
 
         services.AddOptions<VocabularyGenerationOptions>()
             .Bind(configuration.GetSection(VocabularyGenerationOptions.SectionName))

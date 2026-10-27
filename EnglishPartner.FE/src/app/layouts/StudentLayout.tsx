@@ -14,6 +14,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  Cpu,
 } from 'lucide-react';
 import { CanAccess, useCurrentUser, useLogoutMutation } from '@/features/auth';
 import { useTutorSessionStore } from '@/features/tutor';
@@ -75,9 +76,13 @@ export const StudentLayout: React.FC = () => {
     apiKey,
     showApiKey,
     apiKeyFocusTrigger,
+    aiProvider,
+    agyModelCode,
     isStudentSidebarCollapsed,
     setApiKey,
     toggleShowApiKey,
+    setAiProvider,
+    setAgyModelCode,
     toggleStudentSidebar,
   } = useTutorSessionStore();
 
@@ -278,20 +283,22 @@ export const StudentLayout: React.FC = () => {
             </Link>
           </nav>
 
-          {/* Single Google AI Studio API Key Setup inside Left Menu */}
+          {/* AI Model Provider & Google AI Studio API Key Setup inside Left Menu */}
           {isStudentSidebarCollapsed ? (
             <div className="pt-2 border-t border-slate-100 flex justify-center">
               <button
                 type="button"
                 onClick={toggleStudentSidebar}
                 title={
-                  apiKey.trim()
+                  aiProvider === 'agy'
+                    ? `Cổng AI: Antigravity CLI Local (${agyModelCode})`
+                    : apiKey.trim()
                     ? `${t('common.apiKey')}: ${t('common.apiKeySaved')}`
                     : `${t('common.apiKey')}: ${t('common.apiKeyMissing')}`
                 }
                 className={cn(
                   'w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors cursor-pointer',
-                  apiKey.trim()
+                  aiProvider === 'agy' || apiKey.trim()
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                     : 'bg-amber-50 border-amber-300 text-amber-600 animate-pulse'
                 )}
@@ -300,41 +307,89 @@ export const StudentLayout: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-1.5">
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                  <img src="/assets/icons/navigation/nav-roles.svg" alt="" className="w-3.5 h-3.5 object-contain" />
-                  {t('common.apiKey')}
-                </label>
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-slate-600" />
+                  Cổng AI Model
+                </span>
                 <span
                   className={cn(
                     'text-[10px] font-bold px-1.5 py-0.2 rounded-full',
-                    apiKey.trim()
+                    aiProvider === 'agy'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : apiKey.trim()
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-amber-100 text-amber-800'
                   )}
                 >
-                  {apiKey.trim() ? t('common.apiKeySaved') : t('common.apiKeyMissing')}
+                  {aiProvider === 'agy' ? 'AGY Local' : apiKey.trim() ? t('common.apiKeySaved') : t('common.apiKeyMissing')}
                 </span>
               </div>
-              <div className="relative flex items-center">
-                <input
-                  ref={leftMenuApiKeyRef}
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full pl-2.5 pr-9 py-1.5 text-xs font-mono rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                />
+
+              {/* Mode switch: Google API vs AGY Local */}
+              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-slate-200/70 text-[11px] font-medium">
                 <button
                   type="button"
-                  onClick={toggleShowApiKey}
-                  title={showApiKey ? 'Ẩn API Key' : 'Hiện API Key'}
-                  className="absolute right-2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  onClick={() => setAiProvider('gemini')}
+                  className={cn(
+                    'py-1 rounded-md transition-all cursor-pointer text-center',
+                    aiProvider === 'gemini'
+                      ? 'bg-white text-emerald-700 font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
                 >
-                  {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  Google API
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiProvider('agy')}
+                  className={cn(
+                    'py-1 rounded-md transition-all cursor-pointer text-center',
+                    aiProvider === 'agy'
+                      ? 'bg-white text-emerald-700 font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  AGY Local
                 </button>
               </div>
+
+              {aiProvider === 'gemini' ? (
+                <div className="relative flex items-center">
+                  <input
+                    ref={leftMenuApiKeyRef}
+                    type={showApiKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full pl-2.5 pr-9 py-1.5 text-xs font-mono rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleShowApiKey}
+                    title={showApiKey ? 'Ẩn API Key' : 'Hiện API Key'}
+                    className="absolute right-2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <select
+                    value={agyModelCode}
+                    onChange={(e) => setAgyModelCode(e.target.value as any)}
+                    className="w-full px-2 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 cursor-pointer font-medium"
+                  >
+                    <option value="gemini-3.8-flash-medium">Flash Medium (Mặc định)</option>
+                    <option value="gemini-3.8-flash-low">Flash Low (Tốc độ cao)</option>
+                    <option value="gemini-3.8-flash-high">Flash High (Suy luận sâu)</option>
+                  </select>
+                  <p className="text-[10px] text-slate-500 px-0.5 leading-tight">
+                    Chạy qua Antigravity CLI máy local (không tốn quota).
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

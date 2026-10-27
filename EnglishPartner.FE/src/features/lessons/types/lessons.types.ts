@@ -380,6 +380,7 @@ export interface AttemptProgressDto {
 export interface LessonAiExecutionConfigDto {
   apiKey?: string | null;
   assessmentModelCode?: string | null;
+  provider?: string | null;
 }
 
 export interface DictationWordSubstitutionDto {

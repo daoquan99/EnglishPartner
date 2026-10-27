@@ -8,7 +8,8 @@ public sealed record StartLessonAttemptRequest(
 
 public sealed record LessonAiExecutionConfigDto(
     string? ApiKey = null,
-    string? AssessmentModelCode = null
+    string? AssessmentModelCode = null,
+    string? Provider = null
 );
 
 public sealed record SubmitExerciseAnswerRequest(

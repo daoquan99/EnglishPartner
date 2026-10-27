@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -53,6 +53,23 @@ export const StudentLessonPlayerPage: React.FC = () => {
 
   const apiKey = useTutorSessionStore((s) => s.apiKey);
   const assessmentModelCode = useTutorSessionStore((s) => s.assessmentModelCode);
+  const aiProvider = useTutorSessionStore((s) => s.aiProvider);
+  const agyModelCode = useTutorSessionStore((s) => s.agyModelCode);
+
+  const aiConfig = useMemo(() => {
+    if (aiProvider === 'agy') {
+      return {
+        provider: 'agy',
+        assessmentModelCode: agyModelCode,
+        apiKey: null,
+      };
+    }
+    return {
+      provider: 'gemini',
+      assessmentModelCode: assessmentModelCode || null,
+      apiKey: apiKey || null,
+    };
+  }, [aiProvider, agyModelCode, assessmentModelCode, apiKey]);
 
   const { data: attempt, isLoading, refetch } = useLessonAttemptQuery(attemptId);
   const submitAnswerMutation = useSubmitExerciseAnswerMutation();
@@ -280,10 +297,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
           subQuestionId: subQuestionId ?? null,
           attemptRevision: currentRevision,
           answerPayload,
-          aiConfig: {
-            apiKey: apiKey || null,
-            assessmentModelCode: assessmentModelCode || null,
-          },
+          aiConfig,
         },
       });
 
@@ -331,10 +345,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
         answerId,
         payload: {
           attemptRevision: currentRevision,
-          aiConfig: {
-            apiKey: apiKey || null,
-            assessmentModelCode: assessmentModelCode || null,
-          },
+          aiConfig,
         },
       });
       setLastResults((prev) => ({ ...prev, [currentExercise.id]: res }));

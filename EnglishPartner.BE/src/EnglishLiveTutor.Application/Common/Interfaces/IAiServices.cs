@@ -34,6 +34,7 @@ public interface IVocabularyAiGenerator
         string topic,
         int count,
         List<string> excludedWords,
+        string? provider = null,
         CancellationToken ct = default);
 }
 

@@ -5,6 +5,11 @@ const API_KEY_STORAGE_KEY = 'lingomint_api_key';
 const TTS_MODEL_STORAGE_KEY = 'lingomint_tts_model';
 const TTS_ACCENT_STORAGE_KEY = 'lingomint_tts_accent';
 const ASSESSMENT_MODEL_STORAGE_KEY = 'lingomint_assessment_model';
+const AI_PROVIDER_STORAGE_KEY = 'lingomint_ai_provider';
+const AGY_MODEL_STORAGE_KEY = 'lingomint_agy_model';
+
+export type AiProvider = 'gemini' | 'agy';
+export type AgyModelCode = 'gemini-3.8-flash-medium' | 'gemini-3.8-flash-low' | 'gemini-3.8-flash-high';
 
 function loadInitialApiKey(): string {
   try {
@@ -12,6 +17,28 @@ function loadInitialApiKey(): string {
   } catch {
     return '';
   }
+}
+
+function loadInitialAiProvider(): AiProvider {
+  try {
+    const val = localStorage.getItem(AI_PROVIDER_STORAGE_KEY);
+    if (val === 'agy' || val === 'gemini') return val;
+  } catch {
+    // ignore
+  }
+  return 'gemini';
+}
+
+function loadInitialAgyModel(): AgyModelCode {
+  try {
+    const val = localStorage.getItem(AGY_MODEL_STORAGE_KEY);
+    if (val === 'gemini-3.8-flash-low' || val === 'gemini-3.8-flash-high' || val === 'gemini-3.8-flash-medium') {
+      return val;
+    }
+  } catch {
+    // ignore
+  }
+  return 'gemini-3.8-flash-medium';
 }
 
 function loadInitialTtsModel(): 'gemini-3.8-live' | 'gemini-3.8-live-extended-thinking' {
@@ -45,7 +72,9 @@ function loadInitialAssessmentModel(): string {
 
 /**
  * Zustand Store strictly for Client UI State:
- * - Google AI Studio API Key (exclusively rendered in the Left Menu, persisted in localStorage)
+ * - AI Provider ('gemini' Cloud or 'agy' Antigravity CLI Local)
+ * - Google AI Studio API Key (persisted in localStorage)
+ * - Antigravity Local Model Code (gemini-3.8-flash-medium, gemini-3.8-flash-low, gemini-3.8-flash-high)
  * - Left Menu collapse toggle (Student Portal & Admin Portal)
  * - Live Tutor Setup Modal state & session setup parameters
  */
@@ -53,6 +82,8 @@ interface TutorSessionUiState {
   apiKey: string;
   showApiKey: boolean;
   apiKeyFocusTrigger: number;
+  aiProvider: AiProvider;
+  agyModelCode: AgyModelCode;
   isStudentSidebarCollapsed: boolean;
   isAdminSidebarCollapsed: boolean;
   cefrLevel: CefrLevel;
@@ -73,6 +104,8 @@ interface TutorSessionUiState {
 
   setApiKey: (key: string) => void;
   toggleShowApiKey: () => void;
+  setAiProvider: (provider: AiProvider) => void;
+  setAgyModelCode: (model: AgyModelCode) => void;
   requestFocusLeftMenuApiKey: () => void;
   toggleStudentSidebar: () => void;
   setStudentSidebarCollapsed: (collapsed: boolean) => void;
@@ -109,6 +142,8 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
   apiKey: loadInitialApiKey(),
   showApiKey: false,
   apiKeyFocusTrigger: 0,
+  aiProvider: loadInitialAiProvider(),
+  agyModelCode: loadInitialAgyModel(),
   isStudentSidebarCollapsed: false,
   isAdminSidebarCollapsed: false,
   cefrLevel: 'B1',
@@ -136,6 +171,22 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
     set({ apiKey });
   },
   toggleShowApiKey: () => set((s) => ({ showApiKey: !s.showApiKey })),
+  setAiProvider: (aiProvider) => {
+    try {
+      localStorage.setItem(AI_PROVIDER_STORAGE_KEY, aiProvider);
+    } catch {
+      // ignore
+    }
+    set({ aiProvider });
+  },
+  setAgyModelCode: (agyModelCode) => {
+    try {
+      localStorage.setItem(AGY_MODEL_STORAGE_KEY, agyModelCode);
+    } catch {
+      // ignore
+    }
+    set({ agyModelCode });
+  },
   requestFocusLeftMenuApiKey: () =>
     set((s) => ({
       isStudentSidebarCollapsed: false,
