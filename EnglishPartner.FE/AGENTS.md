@@ -25,6 +25,12 @@ Hai portal đang tồn tại:
 | Thiết kế/sửa màn hình học, tutor, từ vựng, phát âm và lịch sử học viên | [student-portal-design](.agents/skills/student-portal-design/SKILL.md) |
 | Thiết kế/sửa trang quản trị, bảng dữ liệu, form CRUD và quyền thao tác | [admin-portal-design](.agents/skills/admin-portal-design/SKILL.md) |
 | Kiểm tra thiết kế, responsive và trạng thái UI của một thay đổi | [portal-design-review](.agents/skills/portal-design-review/SKILL.md) |
+| Viết/chạy test Vitest cho guard, hook, API adapter và player | [frontend-testing](.agents/skills/frontend-testing/SKILL.md) |
+| Đổi DTO/route/hub event phải đồng bộ với BE (dùng chung) | [api-contract-sync](../.agents/skills/api-contract-sync/SKILL.md) |
+| SignalR, microphone, AudioContext và vòng đời phiên live (dùng chung) | [realtime-session](../.agents/skills/realtime-session/SKILL.md) |
+| Review bảo mật: token, storage, API key BYO, guard (dùng chung) | [security-audit](../.agents/skills/security-audit/SKILL.md) |
+
+Luật chung, vai trò AI và quy trình task: [AGENTS.md gốc](../AGENTS.md).
 
 Skill hỗ trợ phạm vi người dùng đã yêu cầu; không tự cho phép thiết kế lại toàn bộ ứng dụng. Yêu cầu mới của người dùng quyết định phạm vi công việc.
 

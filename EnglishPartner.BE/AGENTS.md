@@ -9,10 +9,11 @@ The solution and namespaces currently use **EnglishLiveTutor**, target **.NET 10
 Architecture target: **Pragmatic Clean Architecture with DDD Aggregates and Feature-Based CQRS**. The target is a convention for future changes, not a claim that existing code already complies.
 
 - [Architecture decisions and target structure](.agents/architecture.md).
-- [Source-based review, 2026-10-15](docs/backend-architecture-review-2026-10-15.md).
-- [Phased refactor plan](docs/backend-refactor-plan.md).
+- [Current review and fix checklist, 2026-10-28](../docs/reviews/2026-10-28-security-performance-architecture.md).
+- [Architecture decision records](../docs/adr/README.md).
+- Shared rules, roles and task workflow for all agents: [root AGENTS.md](../AGENTS.md).
 
-The initial request authorizes review and documentation only. Do not start the refactor until a subsequent implementation request. A later explicitly authorized task can change source within its own scope; this guide does not require repeated permission.
+Implementation follows the task workflow in the root guide: a task `plan.md` under `docs/tasks/` defines the authorized scope.
 
 ## Working rules
 
@@ -40,7 +41,7 @@ Domain -> BCL only
 - **Infrastructure:** implement persistence and external provider ports. Keep EF mappings/migrations, websocket protocol, HTTP clients and storage here. A repository persists a decision; it should not decide user-facing workflow or return anonymous HTTP models.
 - **API:** bind, authenticate/authorize, invoke an Application use case/port, map result to transport. Infrastructure references for registration are expected; hubs/endpoints calling provider managers or mutating EF directly are migration debt.
 
-Keep the existing lightweight `ICommandHandler` / `IQueryHandler`; a mediator package, event bus, generic repository, separate read database or additional projects require a concrete need.
+CQRS runs on **MediatR** ([ADR-0001](../docs/adr/0001-keep-mediatr.md)). `ICommand`/`IQuery`/`ICommandHandler`/`IQueryHandler` in `Common/Interfaces/ICqrs.cs` are thin wrappers over `IRequest`/`IRequestHandler`; use them for new handlers. Dispatch only through `ISender` so pipeline behaviors apply; do not inject a handler into another handler — extract shared logic into an Application service. An event bus, generic repository, separate read database or additional projects require a concrete need.
 
 ## Behavioral rules to preserve or establish in scoped fixes
 
@@ -64,6 +65,12 @@ Read the relevant skill when its task applies; these are project-specific workfl
 | Change EF persistence, commit boundaries, adapters or migrations | [infrastructure-persistence](.agents/skills/infrastructure-persistence/SKILL.md) |
 | Change HTTP/SignalR transport and Application integration | [api-realtime](.agents/skills/api-realtime/SKILL.md) |
 | Plan or execute an authorized architecture slice | [architecture-refactor](.agents/skills/architecture-refactor/SKILL.md) |
+| Query performance, pagination, indexes, background workers | [ef-performance](.agents/skills/ef-performance/SKILL.md) |
+| Call Gemini/AGY providers, BYO key handling, AI cost and output validation | [ai-provider-integration](.agents/skills/ai-provider-integration/SKILL.md) |
+| Write or run backend tests, including cross-user authorization tests | [backend-testing](.agents/skills/backend-testing/SKILL.md) |
+| Security review of a change (shared) | [security-audit](../.agents/skills/security-audit/SKILL.md) |
+| SignalR hub and live session lifecycle (shared) | [realtime-session](../.agents/skills/realtime-session/SKILL.md) |
+| HTTP/hub contract changes that touch the FE (shared) | [api-contract-sync](../.agents/skills/api-contract-sync/SKILL.md) |
 
 ## Verification and handoff
 

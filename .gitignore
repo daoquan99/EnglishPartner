@@ -68,3 +68,7 @@ EnglishPartner.FE/dist/
 EnglishPartner.FE/node_modules/
 /EnglishPartner.FE/node_modules/.vite/deps/_metadata.json
 /EnglishPartner.FE/node_modules/.package-lock.json
+
+# AI worker logs
+docs/tasks/*/runs/
+.claude/settings.local.json

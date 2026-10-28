@@ -5,7 +5,7 @@ description: Review or change Minimal API endpoints and SignalR hubs in EnglishL
 
 # API and realtime adapters
 
-Read [AGENTS.md](../../../AGENTS.md), [API decisions](../../architecture.md#5-api), and R1/R5/R6 in [the plan](../../../docs/backend-refactor-plan.md).
+Read [AGENTS.md](../../../AGENTS.md), [API decisions](../../architecture.md#5-api), and the related items in the [2026-10-28 review](../../../../docs/reviews/2026-10-28-security-performance-architecture.md) and [ADRs](../../../../docs/adr/README.md).
 
 HTTP endpoints bind requests, enforce transport authentication/authorization, invoke an Application use case and map a response. Do not copy direct EF deletion from VoiceEndpoints. Composition-root Infrastructure references are expected; concrete provider-manager dependencies in hubs are migration debt.
 

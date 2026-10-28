@@ -5,7 +5,7 @@ description: Review or change EF Core repositories, commit boundaries, auditing,
 
 # Infrastructure and persistence
 
-Read [AGENTS.md](../../../AGENTS.md), [Infrastructure decisions](../../architecture.md#4-infrastructure) and the relevant R2/R3/R5 slice in [the plan](../../../docs/backend-refactor-plan.md).
+Read [AGENTS.md](../../../AGENTS.md), [Infrastructure decisions](../../architecture.md#4-infrastructure) and the related items in the [2026-10-28 review](../../../../docs/reviews/2026-10-28-security-performance-architecture.md).
 
 Trace the actual DbContext instance and commit owner, not just repository names. Baseline scoped repositories, factory-per-operation Topic/Conversation repositories, and Application factory writes have different tracking semantics. New write repositories in the target share one scoped AppDbContext/UoW. A singleton session adapter creates operation scopes instead of capturing scoped repositories.
 

@@ -218,4 +218,4 @@ Central error mapping may replace repeated endpoint catches, but preserve the cu
 
 ## 6. Decisions still requiring product/runtime evidence
 
-See the decision table and phase gates in [the refactor plan](../docs/backend-refactor-plan.md). Review alone does not settle anonymous demo support, historic conversation ownership, review retry semantics, rubric publication, audio retention or cross-instance session requirements.
+Decisions now live in [docs/adr](../../docs/adr/README.md) and open findings in the [2026-10-28 review](../../docs/reviews/2026-10-28-security-performance-architecture.md). Settled: historic conversations without an owner are deleted ([ADR-0002](../../docs/adr/0002-delete-ownerless-conversations.md)); cross-instance sessions use a Redis backplane with sticky sessions ([ADR-0004](../../docs/adr/0004-redis-scale-out.md)). Still unsettled: anonymous demo support, review retry semantics, rubric publication and audio retention.

@@ -5,7 +5,7 @@ description: Plan or execute a scoped refactor toward Clean Architecture with DD
 
 # Architecture refactor
 
-Read [AGENTS.md](../../../AGENTS.md), [target architecture](../../architecture.md) and [the phase plan](../../../docs/backend-refactor-plan.md). The initial 2026-10-15 request is review/docs only; implementation requires a later implementation task. Follow the current user's scope rather than treating the plan as execution authority.
+Read [AGENTS.md](../../../AGENTS.md), [target architecture](../../architecture.md) and the [2026-10-28 review](../../../../docs/reviews/2026-10-28-security-performance-architecture.md) with its fix order and [ADRs](../../../../docs/adr/README.md). The initial 2026-10-15 request is review/docs only; implementation requires a later implementation task. Follow the current user's scope rather than treating the plan as execution authority.
 
 Choose a concrete use-case slice and resolve only the decisions it depends on. Inspect current status/diffs, preserve pre-existing tracked/untracked work and remember FE shares the Git root. Record baseline checks and compatibility before moving anything.
 
