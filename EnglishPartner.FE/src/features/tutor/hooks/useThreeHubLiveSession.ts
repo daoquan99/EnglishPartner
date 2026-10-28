@@ -272,9 +272,8 @@ export function useThreeHubLiveSession() {
         const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
         for (const model of modelsToTry) {
           try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
-              apiKey.trim()
-            )}`;
+            // Key goes in a header, not the URL, so it never lands in proxy logs or browser history.
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
             const prompt = [
               `You are an expert English speaking coach evaluating a spoken sentence from a Vietnamese learner (CEFR Level: ${cefrLevel}).`,
               `Learner utterance: "${cleaned}"`,
@@ -294,7 +293,7 @@ export function useThreeHubLiveSession() {
 
             const resp = await fetch(url, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
               body: JSON.stringify({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.15 },

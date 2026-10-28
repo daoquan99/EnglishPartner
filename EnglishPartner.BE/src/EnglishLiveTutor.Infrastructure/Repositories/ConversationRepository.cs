@@ -137,6 +137,23 @@ public sealed class ConversationRepository : IConversationRepository
         return conv;
     }
 
+    public async Task<IReadOnlyList<ChatMessageEntity>> GetRecentMessagesAsync(string userId, string conversationId, int take, CancellationToken ct = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        // Live session start only needs the tail of the transcript; read it in SQL instead of loading every message and correction.
+        var latest = await db.Messages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == conversationId
+                && db.Conversations.Any(c => c.Id == conversationId && c.UserId == userId)
+                && (m.TranscriptLine1 != "" || m.TranslationLine2 != ""))
+            .OrderByDescending(m => m.SequenceOrder)
+            .Take(take)
+            .ToListAsync(ct);
+
+        latest.Reverse();
+        return latest;
+    }
+
     public async Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);

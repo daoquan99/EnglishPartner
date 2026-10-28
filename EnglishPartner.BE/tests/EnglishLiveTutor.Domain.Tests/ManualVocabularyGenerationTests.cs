@@ -21,11 +21,11 @@ public class ManualVocabularyGenerationTests
     private const string Sample = """
         [{
           "word": "resilient", "partOfSpeech": "adjective", "definitionEn": "Able to recover quickly",
-          "meaningVi": "KiÃªn cÆ°á»ng", "descriptionEn": "Useful at work", "ipaUs": "/rÉªËˆzÉªliÉ™nt/", "ipaUk": "/rÉªËˆzÉªliÉ™nt/",
+          "meaningVi": "Kiên cường", "descriptionEn": "Useful at work", "ipaUs": "/rɪˈzɪliənt/", "ipaUk": "/rɪˈzɪliənt/",
           "synonyms": ["strong"], "antonyms": ["fragile"],
           "wordFamilies": [{"relatedWord": "resilience", "partOfSpeech": "noun"}],
-          "collocations": [{"phraseEn": "resilient team", "meaningVi": "Ä‘á»™i ngÅ© kiÃªn cÆ°á»ng"}],
-          "examples": [{"sentenceEn": "She is resilient.", "sentenceVi": "CÃ´ áº¥y kiÃªn cÆ°á»ng."}],
+          "collocations": [{"phraseEn": "resilient team", "meaningVi": "đội ngũ kiên cường"}],
+          "examples": [{"sentenceEn": "She is resilient.", "sentenceVi": "Cô ấy kiên cường."}],
           "grammarPatterns": [{"pattern": "be resilient", "explanation": "be + adjective", "example": "We are resilient."}]
         }]
         """;
@@ -52,7 +52,7 @@ public class ManualVocabularyGenerationTests
         Assert.Equal("resilient", item.Word);
         Assert.Equal("B2", item.CefrLevel);
         Assert.Equal("resilience", item.WordFamilies.Single().RelatedWord);
-        Assert.Equal("CÃ´ áº¥y kiÃªn cÆ°á»ng.", item.Examples.Single().SentenceVi);
+        Assert.Equal("Cô ấy kiên cường.", item.Examples.Single().SentenceVi);
         Assert.Equal("be resilient", item.GrammarPatterns.Single().Pattern);
     }
 
@@ -64,8 +64,8 @@ public class ManualVocabularyGenerationTests
     [InlineData("[null]")]
     [InlineData("[123]")]
     [InlineData("[{\"word\": \"test\"}]")]
-    [InlineData("[{\"word\": 123, \"definitionEn\": \"meaning\", \"meaningVi\": \"nghÄ©a\"}]")]
-    [InlineData("[{\"word\": \"test\", \"definitionEn\": \"meaning\", \"meaningVi\": \"nghÄ©a\", \"synonyms\": {}}]")]
+    [InlineData("[{\"word\": 123, \"definitionEn\": \"meaning\", \"meaningVi\": \"nghĩa\"}]")]
+    [InlineData("[{\"word\": \"test\", \"definitionEn\": \"meaning\", \"meaningVi\": \"nghĩa\", \"synonyms\": {}}]")]
     [InlineData("```json\n[]")]
     public void Parser_ShouldRejectInvalidResponses(string json) =>
         Assert.Throws<InvalidOperationException>(() => new VocabularyGenerationContent().ParseResponse(json, "B1"));

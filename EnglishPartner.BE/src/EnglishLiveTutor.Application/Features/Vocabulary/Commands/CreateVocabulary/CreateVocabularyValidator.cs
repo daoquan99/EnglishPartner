@@ -6,6 +6,6 @@ public sealed class CreateVocabularyValidator : AbstractValidator<CreateVocabula
 {
     public CreateVocabularyValidator()
     {
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }

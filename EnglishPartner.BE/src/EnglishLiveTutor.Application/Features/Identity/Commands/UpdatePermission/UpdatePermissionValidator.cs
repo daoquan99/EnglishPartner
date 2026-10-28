@@ -6,7 +6,7 @@ public sealed class UpdatePermissionValidator : AbstractValidator<UpdatePermissi
 {
     public UpdatePermissionValidator()
     {
-        RuleFor(x => x.PermissionId).NotEmpty().WithMessage("PermissionId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.PermissionId).NotEmpty().WithMessage("PermissionId không được để trống.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }

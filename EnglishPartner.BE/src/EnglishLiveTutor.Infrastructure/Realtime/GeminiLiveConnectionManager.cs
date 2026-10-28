@@ -434,8 +434,8 @@ public sealed class GeminiLiveConnectionManager : ILiveSessionService, IDisposab
                 await RemoveBridgeIfExistsAsync(bridgeKey);
 
                 var state = await GetOrInitTurnStateAsync(conversationId, req.CefrLevel);
-                var convWithHistory = await _repo.GetConversationWithHistoryAsync(userId, conversationId);
-                var previousMessages = convWithHistory?.Messages.ToList() ?? new List<ChatMessageEntity>();
+                // The prompt and the history seed both use at most the last 16 turns.
+                var previousMessages = (await _repo.GetRecentMessagesAsync(userId, conversationId, 16)).ToList();
 
                 string modelId = req.ExtendedThinking
                     ? "models/gemini-3.8-live-extended-thinking"

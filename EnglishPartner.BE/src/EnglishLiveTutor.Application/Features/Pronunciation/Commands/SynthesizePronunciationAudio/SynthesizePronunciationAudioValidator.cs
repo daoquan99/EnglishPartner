@@ -6,6 +6,6 @@ public sealed class SynthesizePronunciationAudioValidator : AbstractValidator<Sy
 {
     public SynthesizePronunciationAudioValidator()
     {
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }

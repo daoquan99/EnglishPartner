@@ -14,6 +14,8 @@ public interface IConversationRepository
         CancellationToken ct = default);
 
     Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default);
+    /// <summary>Last <paramref name="take"/> non-empty messages of a conversation owned by the user, oldest first.</summary>
+    Task<IReadOnlyList<ChatMessageEntity>> GetRecentMessagesAsync(string userId, string conversationId, int take, CancellationToken ct = default);
 
     Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default);
 

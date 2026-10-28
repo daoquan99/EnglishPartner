@@ -6,6 +6,6 @@ public sealed class GetPronunciationAudioValidator : AbstractValidator<GetPronun
 {
     public GetPronunciationAudioValidator()
     {
-        RuleFor(x => x.TargetId).NotEmpty().WithMessage("TargetId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.TargetId).NotEmpty().WithMessage("TargetId không được để trống.");
     }
 }

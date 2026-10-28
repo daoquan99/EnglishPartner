@@ -61,7 +61,7 @@ export const adminApi = {
     pageSize?: number;
     paged?: boolean;
   }): Promise<PagedResultDto<VocabularyFlashcardDto>> {
-    const { data } = await httpClient.get<any>('/api/vocabularies', {
+    const { data } = await httpClient.get<PagedResultDto<VocabularyFlashcardDto> | VocabularyFlashcardDto[]>('/api/vocabularies', {
       params,
     });
     if (Array.isArray(data)) {
@@ -319,7 +319,7 @@ export const adminApi = {
   // 6. Users, Roles & Permissions CRUD (/api/users, /api/roles, /api/permissions)
   // ---------------------------------------------------------------------------
   async listUsers(params?: PaginationQueryParams): Promise<PagedResultDto<UserProfileDto>> {
-    const { data } = await httpClient.get<any>('/api/users', {
+    const { data } = await httpClient.get<PagedResultDto<UserProfileDto> | UserProfileDto[]>('/api/users', {
       params,
     });
     if (Array.isArray(data)) {

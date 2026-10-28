@@ -6,6 +6,6 @@ public sealed class UpsertTopicValidator : AbstractValidator<UpsertTopicCommand>
 {
     public UpsertTopicValidator()
     {
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }

@@ -6,6 +6,6 @@ public sealed class DeleteRoleValidator : AbstractValidator<DeleteRoleCommand>
 {
     public DeleteRoleValidator()
     {
-        RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId không được để trống.");
     }
 }

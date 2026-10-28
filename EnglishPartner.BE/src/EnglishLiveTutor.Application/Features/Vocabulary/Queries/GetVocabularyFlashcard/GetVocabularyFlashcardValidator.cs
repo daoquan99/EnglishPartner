@@ -6,7 +6,7 @@ public sealed class GetVocabularyFlashcardValidator : AbstractValidator<GetVocab
 {
     public GetVocabularyFlashcardValidator()
     {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Id khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
-        RuleFor(x => x.UserId).NotEmpty().WithMessage("UserId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Id không được để trống.");
+        RuleFor(x => x.UserId).NotEmpty().WithMessage("UserId không được để trống.");
     }
 }

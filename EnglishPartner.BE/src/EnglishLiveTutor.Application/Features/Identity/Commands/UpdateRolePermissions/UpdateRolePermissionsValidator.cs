@@ -6,7 +6,7 @@ public sealed class UpdateRolePermissionsValidator : AbstractValidator<UpdateRol
 {
     public UpdateRolePermissionsValidator()
     {
-        RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.RoleId).NotEmpty().WithMessage("RoleId không được để trống.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }

@@ -6,6 +6,6 @@ public sealed class GetTeacherVoiceByIdValidator : AbstractValidator<GetTeacherV
 {
     public GetTeacherVoiceByIdValidator()
     {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Id khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Id không được để trống.");
     }
 }

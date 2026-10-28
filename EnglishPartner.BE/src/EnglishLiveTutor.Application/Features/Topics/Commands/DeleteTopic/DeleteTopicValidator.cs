@@ -6,6 +6,6 @@ public sealed class DeleteTopicValidator : AbstractValidator<DeleteTopicCommand>
 {
     public DeleteTopicValidator()
     {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Id khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Id không được để trống.");
     }
 }

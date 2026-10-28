@@ -6,6 +6,6 @@ public sealed class DeletePermissionValidator : AbstractValidator<DeletePermissi
 {
     public DeletePermissionValidator()
     {
-        RuleFor(x => x.PermissionId).NotEmpty().WithMessage("PermissionId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.PermissionId).NotEmpty().WithMessage("PermissionId không được để trống.");
     }
 }

@@ -102,6 +102,8 @@ public class ConversationOwnershipAndRealtimeLifecycleTests
             throw new DbUpdateException("Database connection failed");
         public Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default) =>
             throw new DbUpdateException("Database connection failed");
+        public Task<IReadOnlyList<ChatMessageEntity>> GetRecentMessagesAsync(string userId, string conversationId, int take, CancellationToken ct = default) =>
+            throw new DbUpdateException("Database connection failed");
         public Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default) =>
             throw new DbUpdateException("Database connection failed");
         public Task<ConversationEntity> CreateConversationAsync(string userId, string? id, string? title, string cefrLevel, bool extendedThinking, string voiceName, double speechSpeed, string conversationMode = "daily_conversation", string topic = "", string? customSystemPrompt = null, CancellationToken ct = default) =>
@@ -167,6 +169,7 @@ public class ConversationOwnershipAndRealtimeLifecycleTests
         public Task<List<ConversationSummary>> ListConversationsAsync(string userId, CancellationToken ct = default) => _inner.ListConversationsAsync(userId, ct);
         public Task<(List<ConversationSummary> Items, int TotalCount)> ListConversationsPagedAsync(string userId, string? search = null, int? page = null, int? pageSize = null, CancellationToken ct = default) => _inner.ListConversationsPagedAsync(userId, search, page, pageSize, ct);
         public Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default) => _inner.GetConversationWithHistoryAsync(userId, id, ct);
+        public Task<IReadOnlyList<ChatMessageEntity>> GetRecentMessagesAsync(string userId, string conversationId, int take, CancellationToken ct = default) => _inner.GetRecentMessagesAsync(userId, conversationId, take, ct);
         public Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default) => _inner.GetConversationByIdAsync(id, ct);
         public Task<ConversationEntity> CreateConversationAsync(string userId, string? id, string? title, string cefrLevel, bool extendedThinking, string voiceName, double speechSpeed, string conversationMode = "daily_conversation", string topic = "", string? customSystemPrompt = null, CancellationToken ct = default) => _inner.CreateConversationAsync(userId, id, title, cefrLevel, extendedThinking, voiceName, speechSpeed, conversationMode, topic, customSystemPrompt, ct);
         public Task<ConversationEntity?> UpdateConversationSettingsAsync(string userId, string id, string? title, string cefrLevel, bool extendedThinking, string voiceName, double speechSpeed, string conversationMode = "daily_conversation", string topic = "", string? customSystemPrompt = null, CancellationToken ct = default) => _inner.UpdateConversationSettingsAsync(userId, id, title, cefrLevel, extendedThinking, voiceName, speechSpeed, conversationMode, topic, customSystemPrompt, ct);
@@ -1383,5 +1386,27 @@ public class ConversationOwnershipAndRealtimeLifecycleTests
         Assert.True(newBridge.AudioReceived);
 
         manager.Dispose();
+    }
+
+    // =========================================================================
+    // 24. Live session start reads only the transcript tail, scoped to the owner
+    // =========================================================================
+    [Fact]
+    public async Task Repository_GetRecentMessages_ReturnsLastTurnsOldestFirst_OnlyForOwner()
+    {
+        string dbName = Guid.NewGuid().ToString();
+        var repo = new ConversationRepository(new TestDbFactory(dbName));
+        await repo.CreateConversationAsync("user-1", "conv-tail", "Tail Test", "B1", false, "Aoede", 1.0);
+
+        for (int i = 1; i <= 20; i++)
+        {
+            await repo.UpsertMessageTranscriptAsync("conv-tail", $"t{i}", i % 2 == 0 ? "ai" : "user", i, $"line {i}", isFinal: true);
+        }
+
+        var recent = await repo.GetRecentMessagesAsync("user-1", "conv-tail", 16);
+
+        Assert.Equal(16, recent.Count);
+        Assert.Equal(Enumerable.Range(5, 16).ToArray(), recent.Select(m => m.SequenceOrder).ToArray());
+        Assert.Empty(await repo.GetRecentMessagesAsync("user-2", "conv-tail", 16));
     }
 }

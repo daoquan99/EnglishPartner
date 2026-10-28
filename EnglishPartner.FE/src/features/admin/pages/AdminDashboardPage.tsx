@@ -21,21 +21,24 @@ import {
   useAdminVoicesQuery,
 } from '../hooks/useAdminQueries';
 
+const COUNT_ONLY_PARAMS = { page: 1, pageSize: 1, paged: true } as const;
+
 export const AdminDashboardPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: vocabularies } = useAdminVocabulariesQuery();
+  // Dashboard only needs totals: ask for one row and read totalCount.
+  const { data: vocabularies } = useAdminVocabulariesQuery(COUNT_ONLY_PARAMS);
   const { data: topics = [] } = useAdminTopicsQuery();
   const { data: modes = [] } = useConversationModesQuery();
   const { data: speeds = [] } = useAdminSpeechSpeedsQuery();
   const { data: voices = [] } = useAdminVoicesQuery();
-  const { data: users } = useAdminUsersQuery();
+  const { data: users } = useAdminUsersQuery(COUNT_ONLY_PARAMS);
   const { data: roles = [] } = useAdminRolesQuery();
   const { data: aiModels = [] } = useAdminAiModelsQuery();
 
   const cards = [
     {
       title: t('nav.adminVocabularies'),
-      value: `${vocabularies?.totalCount ?? (Array.isArray(vocabularies) ? vocabularies.length : 0)} ${t('vocab.wordsUnit')}`,
+      value: `${vocabularies?.totalCount ?? 0} ${t('vocab.wordsUnit')}`,
       sub: t('nav.adminVocabulariesSub'),
       to: '/admin/vocabularies',
       icon: <img src="/assets/icons/navigation/nav-reviews.svg" alt="" className="w-5 h-5 object-contain" />,
@@ -70,7 +73,7 @@ export const AdminDashboardPage: React.FC = () => {
     },
     {
       title: t('nav.adminUsers'),
-      value: `${users?.totalCount ?? (Array.isArray(users) ? users.length : 0)} users`,
+      value: `${users?.totalCount ?? 0} users`,
       sub: t('nav.adminUsersSub'),
       to: '/admin/users',
       icon: <img src="/assets/icons/navigation/nav-account.svg" alt="" className="w-5 h-5 object-contain" />,

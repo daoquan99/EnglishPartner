@@ -6,7 +6,7 @@ public sealed class AssignUserRolesValidator : AbstractValidator<AssignUserRoles
 {
     public AssignUserRolesValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty().WithMessage("UserId khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
-        RuleFor(x => x.Request).NotNull().WithMessage("Request khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+        RuleFor(x => x.UserId).NotEmpty().WithMessage("UserId không được để trống.");
+        RuleFor(x => x.Request).NotNull().WithMessage("Request không được để trống.");
     }
 }
