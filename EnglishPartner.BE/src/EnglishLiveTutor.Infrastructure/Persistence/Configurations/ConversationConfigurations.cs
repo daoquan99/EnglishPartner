@@ -13,6 +13,7 @@ public sealed class ConversationEntityConfiguration : IEntityTypeConfiguration<C
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
         builder.Property(e => e.Id).HasMaxLength(64);
+        builder.Property(e => e.UserId).HasMaxLength(64).IsRequired();
         builder.Property(e => e.Title).HasMaxLength(256).IsRequired();
         builder.Property(e => e.CefrLevel).HasMaxLength(16).IsRequired();
         builder.Property(e => e.VoiceName).HasMaxLength(64).IsRequired();
@@ -24,6 +25,8 @@ public sealed class ConversationEntityConfiguration : IEntityTypeConfiguration<C
             createdAtColumnName: "CreatedAt",
             updatedAtColumnName: "UpdatedAt");
         builder.ConfigureSoftDelete<ConversationEntity, string>();
+
+        builder.HasIndex(e => new { e.UserId, e.UpdatedAtUtc });
 
         builder.HasMany(e => e.Messages)
             .WithOne()

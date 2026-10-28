@@ -23,6 +23,13 @@ public sealed class FallingWordGameRepository : IFallingWordGameRepository
             .FirstOrDefaultAsync(s => s.Id == sessionId, ct);
     }
 
+    public Task<FallingWordGameSessionEntity?> GetByIdWithRoundsForUserAsync(Guid sessionId, string userId, CancellationToken ct = default)
+    {
+        return _db.FallingWordGameSessions
+            .Include(s => s.Rounds)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+    }
+
     public async Task AddAsync(FallingWordGameSessionEntity session, CancellationToken ct = default)
     {
         await _db.FallingWordGameSessions.AddAsync(session, ct);

@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Domain.AiCatalog;
+using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Prompts;
 using EnglishLiveTutor.Domain.Topics;
@@ -8,17 +8,35 @@ using EnglishLiveTutor.Infrastructure.Identity;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Vocabulary;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace EnglishLiveTutor.Infrastructure.Persistence;
 
 public static class DatabaseSeeder
 {
-    public static async Task EnsureSchemaAndSeedAsync(IDbContextFactory<AppDbContext> dbFactory)
+    public static async Task EnsureSchemaAndSeedAsync(
+        IDbContextFactory<AppDbContext> dbFactory,
+        AdminUserSeedOptions? adminOptions = null,
+        DemoLearnerSeedOptions? demoLearnerOptions = null,
+        IHostEnvironment? environment = null,
+        ILogger? logger = null,
+        bool migrate = true,
+        bool seed = true)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
         // 1. Ensure all Vocabulary, Daily Learning, AI Model Catalog, and Pronunciation tables exist in SQL Server
-        await db.Database.MigrateAsync();
+        if (migrate)
+        {
+            await db.Database.MigrateAsync();
+        }
+
+        if (!seed)
+        {
+            return;
+        }
 
         // 2. Seed AI Model Catalog idempotently
         if (!await db.AiModelCatalog.AnyAsync())
@@ -345,7 +363,7 @@ public static class DatabaseSeeder
         }
 
         // 7. Seed Default Permissions, Roles (ADMIN, TEACHER, LEARNER), and Starter Accounts
-        await SeedIdentityAsync(db);
+        await SeedIdentityAsync(db, adminOptions, demoLearnerOptions, environment, logger);
     }
 
     private static List<VocabularyEntity> BuildStarterVocabularyCatalog()
@@ -997,7 +1015,12 @@ public static class DatabaseSeeder
             displayOrder: 30)
     };
 
-    private static async Task SeedIdentityAsync(AppDbContext db)
+    public static async Task SeedIdentityAsync(
+        AppDbContext db,
+        AdminUserSeedOptions? adminOptions = null,
+        DemoLearnerSeedOptions? demoLearnerOptions = null,
+        IHostEnvironment? environment = null,
+        ILogger? logger = null)
     {
         if (!await db.Permissions.AnyAsync())
         {
@@ -1125,36 +1148,92 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
         }
 
-        if (!await db.Users.AnyAsync())
+        var hasher = new Pbkdf2PasswordHasher();
+        var adminRoleId = Guid.Parse("70000000-0000-0000-0000-000000000001");
+        var learnerRoleId = Guid.Parse("70000000-0000-0000-0000-000000000003");
+
+        string adminUsername = adminOptions?.Username ?? "admin";
+        if (!await db.Users.AnyAsync(u => u.Username == adminUsername))
         {
-            var hasher = new Pbkdf2PasswordHasher();
-            var adminRoleId = Guid.Parse("70000000-0000-0000-0000-000000000001");
-            var learnerRoleId = Guid.Parse("70000000-0000-0000-0000-000000000003");
+            if (string.IsNullOrWhiteSpace(adminOptions?.Password))
+            {
+                logger?.LogWarning("Admin user seeding skipped: AdminUser:Password is not configured. Configure 'AdminUser:Password' via user-secrets or environment variables.");
+            }
+            else if (adminOptions.Password.Length < 8)
+            {
+                logger?.LogWarning("Admin user seeding skipped: AdminUser:Password must be at least 8 characters long.");
+            }
+            else
+            {
+                var adminUser = UserEntity.Create(
+                    username: adminUsername,
+                    email: adminOptions.Email,
+                    fullName: adminOptions.FullName,
+                    passwordHash: hasher.HashPassword(adminOptions.Password),
+                    preferredCefrLevel: adminOptions.PreferredCefrLevel,
+                    preferredVoiceName: adminOptions.PreferredVoiceName,
+                    id: Guid.Parse("80000000-0000-0000-0000-000000000001"));
+                adminUser.AssignRole(adminRoleId);
+                db.Users.Add(adminUser);
+                await db.SaveChangesAsync();
+                logger?.LogInformation("Admin user '{Username}' seeded successfully.", adminUsername);
+            }
+        }
 
-            var adminUser = UserEntity.Create(
-                username: "admin",
-                email: "admin@lingomint.local",
-                fullName: "LingoMint Administrator",
-                passwordHash: hasher.HashPassword("Admin@123"),
-                preferredCefrLevel: "C1",
-                preferredVoiceName: "Aoede",
-                id: Guid.Parse("80000000-0000-0000-0000-000000000001"));
-            adminUser.AssignRole(adminRoleId);
-
-            var defaultLearner = UserEntity.Create(
-                username: "default-learner",
-                email: "learner@lingomint.local",
-                fullName: "Há»c viÃªn Máº·c Ä‘á»‹nh",
-                passwordHash: hasher.HashPassword("Learner@123"),
-                preferredCefrLevel: "B1",
-                preferredVoiceName: "Aoede",
-                id: Guid.Parse("80000000-0000-0000-0000-000000000002"));
-            defaultLearner.AssignRole(learnerRoleId);
-
-            db.Users.AddRange(adminUser, defaultLearner);
-            await db.SaveChangesAsync();
+        bool isDev = environment?.IsDevelopment() ?? false;
+        if (isDev)
+        {
+            string learnerUsername = demoLearnerOptions?.Username ?? "default-learner";
+            if (!await db.Users.AnyAsync(u => u.Username == learnerUsername))
+            {
+                if (string.IsNullOrWhiteSpace(demoLearnerOptions?.Password))
+                {
+                    logger?.LogInformation("Demo learner seeding skipped: DemoLearner:Password is not configured.");
+                }
+                else if (demoLearnerOptions.Password.Length < 8)
+                {
+                    logger?.LogWarning("Demo learner seeding skipped: DemoLearner:Password must be at least 8 characters long.");
+                }
+                else
+                {
+                    var defaultLearner = UserEntity.Create(
+                        username: learnerUsername,
+                        email: demoLearnerOptions.Email,
+                        fullName: demoLearnerOptions.FullName,
+                        passwordHash: hasher.HashPassword(demoLearnerOptions.Password),
+                        preferredCefrLevel: demoLearnerOptions.PreferredCefrLevel,
+                        preferredVoiceName: demoLearnerOptions.PreferredVoiceName,
+                        id: Guid.Parse("80000000-0000-0000-0000-000000000002"));
+                    defaultLearner.AssignRole(learnerRoleId);
+                    db.Users.Add(defaultLearner);
+                    await db.SaveChangesAsync();
+                    logger?.LogInformation("Demo learner '{Username}' seeded successfully.", learnerUsername);
+                }
+            }
         }
     }
+
+    public static AdminUserSeedOptions GetAdminUserOptions(IConfiguration? configuration = null)
+    {
+        var options = new AdminUserSeedOptions();
+        if (configuration != null)
+        {
+            configuration.GetSection(AdminUserSeedOptions.SectionName).Bind(options);
+        }
+        return options;
+    }
+
+    public static DemoLearnerSeedOptions GetDemoLearnerOptions(IConfiguration? configuration = null)
+    {
+        var options = new DemoLearnerSeedOptions();
+        if (configuration != null)
+        {
+            configuration.GetSection(DemoLearnerSeedOptions.SectionName).Bind(options);
+        }
+        return options;
+    }
+
+
     public static List<TopicEntity> BuildDefaultTopics() => new()
     {
         // --- Software Engineering & Technical Interview Topics ---

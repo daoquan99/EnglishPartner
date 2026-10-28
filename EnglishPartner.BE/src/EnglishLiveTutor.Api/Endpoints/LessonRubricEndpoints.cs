@@ -1,7 +1,7 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
-using EnglishLiveTutor.Application.Common.Exceptions;
-using EnglishLiveTutor.Application.Features.Lessons.Commands.RubricCommands;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Features.Lessons.Commands.RubricCommands;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.RubricQueries;
 using MediatR;
 
@@ -42,7 +42,7 @@ public static class LessonRubricEndpoints
             CancellationToken ct) =>
         {
             var rubric = await sender.Send(new GetLessonRubricByIdQuery(id), ct);
-            return rubric is null ? Results.NotFound() : Results.Ok(rubric);
+            return rubric is null ? ApiProblem.NotFound("Không tìm thấy rubric.") : Results.Ok(rubric);
         }).RequirePermission("lessons.read");
 
         // 3. Create Rubric Template: POST /api/lesson-rubrics
@@ -51,15 +51,8 @@ public static class LessonRubricEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new CreateLessonRubricCommand(req), ct);
-                return Results.Created($"/api/lesson-rubrics/{created.Id}", created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new CreateLessonRubricCommand(req), ct);
+            return Results.Created($"/api/lesson-rubrics/{created.Id}", created);
         }).RequirePermission("lesson-rubrics.manage");
 
         // 4. Activate Rubric: POST /api/lesson-rubrics/{id}/activate
@@ -68,15 +61,8 @@ public static class LessonRubricEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                await sender.Send(new ActivateLessonRubricCommand(id), ct);
-                return Results.Ok(new { message = "Rubric activated successfully." });
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
+            await sender.Send(new ActivateLessonRubricCommand(id), ct);
+            return Results.Ok(new { message = "Rubric activated successfully." });
         }).RequirePermission("lesson-rubrics.manage");
 
         // 5. Deactivate Rubric: POST /api/lesson-rubrics/{id}/deactivate
@@ -85,15 +71,8 @@ public static class LessonRubricEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                await sender.Send(new DeactivateLessonRubricCommand(id), ct);
-                return Results.Ok(new { message = "Rubric deactivated successfully." });
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
+            await sender.Send(new DeactivateLessonRubricCommand(id), ct);
+            return Results.Ok(new { message = "Rubric deactivated successfully." });
         }).RequirePermission("lesson-rubrics.manage");
 
         return app;

@@ -3,6 +3,7 @@ using EnglishLiveTutor.Application.Common.Exceptions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,14 +24,14 @@ public sealed class ExerciseCommandHandlers :
     ICommandHandler<ReorderDraftExercisesCommand, LessonDetailAuthorDto>
 {
     private readonly IAppDbContext _db;
-    private readonly IQueryHandler<GetLessonByIdQuery, object?> _getLessonByIdHandler;
+    private readonly ILessonDetailBuilder _lessonDetailBuilder;
 
     public ExerciseCommandHandlers(
         IAppDbContext db,
-        IQueryHandler<GetLessonByIdQuery, object?> getLessonByIdHandler)
+        ILessonDetailBuilder lessonDetailBuilder)
     {
         _db = db;
-        _getLessonByIdHandler = getLessonByIdHandler;
+        _lessonDetailBuilder = lessonDetailBuilder;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(AddExerciseToDraftCommand command, CancellationToken ct = default)
@@ -67,8 +68,8 @@ public sealed class ExerciseCommandHandlers :
 
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(UpdateDraftExerciseCommand command, CancellationToken ct = default)
@@ -105,8 +106,8 @@ public sealed class ExerciseCommandHandlers :
 
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(RemoveDraftExerciseCommand command, CancellationToken ct = default)
@@ -119,8 +120,8 @@ public sealed class ExerciseCommandHandlers :
         lesson.RemoveExercise(command.ExerciseId);
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(ReorderDraftExercisesCommand command, CancellationToken ct = default)
@@ -133,7 +134,7 @@ public sealed class ExerciseCommandHandlers :
         lesson.ReorderExercises(command.Request.OrderedExerciseIds);
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 }

@@ -7,7 +7,7 @@ public sealed class PronunciationAssessmentEntity : AggregateRoot<Guid>
 {
     private List<PronunciationCriterionScoreEntity> _criterionScores = new();
 
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public Guid VocabularyId { get; private set; }
     public Guid SenseId { get; private set; }
     public string TargetType { get; private set; } = "Word"; // Word | Sentence
@@ -58,7 +58,10 @@ public sealed class PronunciationAssessmentEntity : AggregateRoot<Guid>
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId is required.", nameof(userId));
+
+        UserId = userId.Trim();
         VocabularyId = vocabularyId;
         SenseId = senseId;
         TargetType = string.IsNullOrWhiteSpace(targetType) ? "Word" : targetType.Trim();

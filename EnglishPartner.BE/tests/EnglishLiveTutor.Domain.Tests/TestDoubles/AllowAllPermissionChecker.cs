@@ -1,6 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 
-namespace EnglishLiveTutor.Infrastructure.Security;
+namespace EnglishLiveTutor.Domain.Tests.TestDoubles;
 
 public sealed class AllowAllPermissionChecker : IPermissionChecker
 {

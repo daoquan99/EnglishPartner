@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Prompts.Commands.DeleteCefrLevelPrompt;
@@ -43,15 +44,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new UpsertSpeechSpeedCommand(req), ct);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new UpsertSpeechSpeedCommand(req), ct);
+            return Results.Ok(result);
         }).RequirePermission("prompts.manage");
 
         group.MapPut("/speech-speeds/{id:guid}", async (
@@ -60,15 +54,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new UpdateSpeechSpeedCommand(id, req), ct);
-                return result is null ? Results.NotFound(new { error = "Không tìm thấy cấu hình tốc độ nói." }) : Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new UpdateSpeechSpeedCommand(id, req), ct);
+            return result is null ? ApiProblem.NotFound("Không tìm thấy cấu hình tốc độ nói.") : Results.Ok(result);
         }).RequirePermission("prompts.manage");
 
         group.MapDelete("/speech-speeds/{id:guid}", async (
@@ -77,7 +64,7 @@ public static class PromptEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteSpeechSpeedCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy cấu hình tốc độ nói.");
         }).RequirePermission("prompts.manage");
 
         // --- 2. CEFR Level Prompts CRUD ---
@@ -99,15 +86,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new UpsertCefrLevelPromptCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new UpsertCefrLevelPromptCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("prompts.manage");
 
         group.MapPut("/cefr-levels/{cefrLevel}", async (
@@ -116,15 +96,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpsertCefrLevelPromptCommand(cefrLevel, req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpsertCefrLevelPromptCommand(cefrLevel, req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("prompts.manage");
 
         group.MapDelete("/cefr-levels/{cefrLevel}", async (
@@ -133,7 +106,7 @@ public static class PromptEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteCefrLevelPromptCommand(cefrLevel), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy CEFR prompt.");
         }).RequirePermission("prompts.manage");
 
         // --- 3. Conversation Mode Prompts CRUD ---
@@ -156,15 +129,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new UpsertConversationModePromptCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new UpsertConversationModePromptCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("prompts.manage");
 
         group.MapPut("/modes", async (
@@ -172,15 +138,8 @@ public static class PromptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpsertConversationModePromptCommand(req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpsertConversationModePromptCommand(req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("prompts.manage");
 
         group.MapDelete("/modes/{modeCode}", async (
@@ -189,7 +148,7 @@ public static class PromptEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteConversationModePromptCommand(modeCode), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy conversation mode prompt.");
         }).RequirePermission("prompts.manage");
 
         // --- 4. System Instruction Preview ---

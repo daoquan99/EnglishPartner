@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="EnglishLiveTutor.Domain.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EnglishLiveTutor.Domain\EnglishLiveTutor.Domain.csproj" />
     <ProjectReference Include="..\EnglishLiveTutor.Application\EnglishLiveTutor.Application.csproj" />
   </ItemGroup>

@@ -5,6 +5,10 @@ using System.Text.Json;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLiveTutor.Infrastructure.Identity;
 
@@ -70,14 +74,79 @@ public sealed class HmacJwtTokenService : IJwtTokenService
     private readonly int _accessTokenMinutes;
     private readonly TimeProvider _timeProvider;
 
-    public HmacJwtTokenService(IConfiguration? configuration = null, TimeProvider? timeProvider = null)
+    [ActivatorUtilitiesConstructor]
+    public HmacJwtTokenService(
+        IOptions<JwtOptions> options,
+        IHostEnvironment? environment = null,
+        ILogger<HmacJwtTokenService>? logger = null,
+        TimeProvider? timeProvider = null)
+        : this(options.Value, environment, logger, timeProvider)
     {
-        _secretKey = configuration?["Jwt:SecretKey"]
-            ?? "EnglishLiveTutor_Default_Super_Secret_Signing_Key_2026_AtLeast32Bytes!";
-        _issuer = configuration?["Jwt:Issuer"] ?? "EnglishLiveTutor.Api";
-        _audience = configuration?["Jwt:Audience"] ?? "EnglishLiveTutor.Client";
-        _accessTokenMinutes = int.TryParse(configuration?["Jwt:AccessTokenMinutes"], out int mins) && mins > 0 ? mins : 60;
+    }
+
+    public HmacJwtTokenService(
+        JwtOptions? options = null,
+        IHostEnvironment? environment = null,
+        ILogger<HmacJwtTokenService>? logger = null,
+        TimeProvider? timeProvider = null)
+    {
+        var opts = options ?? new JwtOptions();
+        _issuer = string.IsNullOrWhiteSpace(opts.Issuer) ? "EnglishLiveTutor.Api" : opts.Issuer;
+        _audience = string.IsNullOrWhiteSpace(opts.Audience) ? "EnglishLiveTutor.Client" : opts.Audience;
+        _accessTokenMinutes = opts.AccessTokenMinutes > 0 ? opts.AccessTokenMinutes : 60;
         _timeProvider = timeProvider ?? TimeProvider.System;
+
+        bool isDev = environment?.IsDevelopment() ?? false;
+
+        if (string.IsNullOrWhiteSpace(opts.SecretKey))
+        {
+            if (isDev)
+            {
+                byte[] randomBytes = RandomNumberGenerator.GetBytes(64);
+                _secretKey = Convert.ToBase64String(randomBytes);
+                logger?.LogWarning("Jwt:SecretKey is not configured. Generated a temporary 64-byte key for Development mode. Tokens will be invalidated upon restart.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Jwt:SecretKey configuration is required in non-Development environments. Please configure the 'Jwt:SecretKey' setting.");
+            }
+        }
+        else
+        {
+            int byteCount = Encoding.UTF8.GetByteCount(opts.SecretKey);
+            if (byteCount < 32)
+            {
+                throw new InvalidOperationException($"Jwt:SecretKey must be at least 32 bytes (256 bits) long. Current key length is {byteCount} bytes. Please configure 'Jwt:SecretKey'.");
+            }
+            _secretKey = opts.SecretKey;
+        }
+    }
+
+    public HmacJwtTokenService(
+        IConfiguration? configuration,
+        TimeProvider? timeProvider = null,
+        IHostEnvironment? environment = null,
+        ILogger<HmacJwtTokenService>? logger = null)
+        : this(CreateOptionsFromConfiguration(configuration), environment, logger, timeProvider)
+    {
+    }
+
+    private static JwtOptions CreateOptionsFromConfiguration(IConfiguration? configuration)
+    {
+        var opts = new JwtOptions();
+        if (configuration != null)
+        {
+            configuration.GetSection(JwtOptions.SectionName).Bind(opts);
+            if (string.IsNullOrWhiteSpace(opts.SecretKey) && configuration["Jwt:SecretKey"] is string directKey)
+            {
+                opts.SecretKey = directKey;
+            }
+            if (int.TryParse(configuration["Jwt:AccessTokenMinutes"], out int mins) && mins > 0)
+            {
+                opts.AccessTokenMinutes = mins;
+            }
+        }
+        return opts;
     }
 
     public GeneratedAccessToken GenerateAccessToken(

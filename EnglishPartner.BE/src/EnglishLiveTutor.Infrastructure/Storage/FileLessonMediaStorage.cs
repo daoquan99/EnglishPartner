@@ -142,11 +142,15 @@ public sealed class FileLessonMediaStorage : ILessonMediaStorage
             relative = relative["media/".Length..];
         }
 
-        // Prevent path traversal
-        string normalized = relative.Replace("..", "").Replace("//", "/");
-        string full = Path.GetFullPath(Path.Combine(_storageRoot, normalized));
+        // Prevent path traversal: reject rooted keys, then require the resolved path to stay inside the root directory
+        // (comparing against "root + separator" so a sibling such as "lesson-media-evil" does not pass the prefix check).
+        if (Path.IsPathRooted(relative)) return null;
+        string full = Path.GetFullPath(Path.Combine(_storageRoot, relative));
+        string rootWithSeparator = Path.EndsInDirectorySeparator(_storageRoot)
+            ? _storageRoot
+            : _storageRoot + Path.DirectorySeparatorChar;
 
-        if (!full.StartsWith(_storageRoot, StringComparison.OrdinalIgnoreCase))
+        if (!full.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
         {
             return null; // Path traversal detected
         }

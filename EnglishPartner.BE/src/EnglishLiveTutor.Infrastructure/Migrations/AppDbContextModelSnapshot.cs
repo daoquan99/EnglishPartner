@@ -197,12 +197,19 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                         .HasColumnType("nvarchar(64)")
                         .HasColumnName("UpdatedBy");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("VoiceName")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAtUtc");
 
                     b.ToTable("Conversations", (string)null);
                 });

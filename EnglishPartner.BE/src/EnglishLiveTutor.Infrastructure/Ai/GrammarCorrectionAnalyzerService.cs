@@ -16,6 +16,11 @@ public sealed class GrammarCorrectionAnalyzerService
     private readonly HttpClient _http;
     private readonly FastTextTranslatorFallback _translator;
 
+    public GrammarCorrectionAnalyzerService(HttpMessageHandler handler, FastTextTranslatorFallback translator)
+        : this(new HttpClient(handler), translator)
+    {
+    }
+
     public GrammarCorrectionAnalyzerService(HttpClient http, FastTextTranslatorFallback translator)
     {
         _http = http;

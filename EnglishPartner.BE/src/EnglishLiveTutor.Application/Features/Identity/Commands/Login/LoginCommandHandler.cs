@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
 namespace EnglishLiveTutor.Application.Features.Identity.Commands.Login;
@@ -39,10 +40,13 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, AuthResp
         var now = DateTimeOffset.UtcNow;
         user.RecordLogin(now);
 
-        string refreshTokenStr = _jwtService.GenerateRefreshTokenString();
+        string rawRefreshToken = _jwtService.GenerateRefreshTokenString();
+        string tokenHash = RefreshTokenEntity.HashToken(rawRefreshToken);
         var refreshExpires = now.AddDays(30);
-        user.IssueRefreshToken(refreshTokenStr, refreshExpires, command.IpAddress, req.DeviceInfo);
 
+        user.IssueRefreshToken(tokenHash, refreshExpires, command.IpAddress, req.DeviceInfo);
+
+        await _userRepo.PurgeExpiredOrRevokedRefreshTokensAsync(user.Id, now, ct);
         await _userRepo.SaveChangesAsync(ct);
 
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
@@ -52,7 +56,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, AuthResp
         return new AuthResponseDto(
             AccessToken: accessToken.AccessToken,
             AccessTokenExpiresAtUtc: accessToken.ExpiresAtUtc,
-            RefreshToken: refreshTokenStr,
+            RefreshToken: rawRefreshToken,
             RefreshTokenExpiresAtUtc: refreshExpires,
             User: IdentityProjectionHelper.MapToProfileDto(user, roleCodes, permissionCodes)
         );

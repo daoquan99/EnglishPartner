@@ -4,15 +4,21 @@ namespace EnglishLiveTutor.Domain.Conversations.Repositories;
 
 public interface IConversationRepository
 {
-    Task<List<ConversationSummary>> ListConversationsAsync(CancellationToken ct = default);
+    Task<List<ConversationSummary>> ListConversationsAsync(string userId, CancellationToken ct = default);
+
     Task<(List<ConversationSummary> Items, int TotalCount)> ListConversationsPagedAsync(
+        string userId,
         string? search = null,
         int? page = null,
         int? pageSize = null,
         CancellationToken ct = default);
-    Task<ConversationEntity?> GetConversationWithHistoryAsync(string id, CancellationToken ct = default);
 
-    Task<ConversationEntity> CreateOrUpdateConversationAsync(
+    Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default);
+
+    Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default);
+
+    Task<ConversationEntity> CreateConversationAsync(
+        string userId,
         string? id,
         string? title,
         string cefrLevel,
@@ -24,7 +30,33 @@ public interface IConversationRepository
         string? customSystemPrompt = null,
         CancellationToken ct = default);
 
-    Task<bool> DeleteConversationAsync(string id, CancellationToken ct = default);
+    Task<ConversationEntity?> UpdateConversationSettingsAsync(
+        string userId,
+        string id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default);
+
+    Task<ConversationEntity> CreateOrUpdateConversationAsync(
+        string userId,
+        string? id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default);
+
+    Task<bool> DeleteConversationAsync(string userId, string id, CancellationToken ct = default);
 
     Task<int> GetMaxSequenceOrderAsync(string conversationId, CancellationToken ct = default);
 

@@ -1,9 +1,9 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
-using EnglishLiveTutor.Application.Common.Exceptions;
-using EnglishLiveTutor.Application.Features.Lessons.Commands.AttemptOperations;
 using EnglishLiveTutor.Application.Common.Models;
-using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
+using EnglishLiveTutor.Application.Features.Lessons.Commands.AttemptOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.SynthesizeExerciseAudio;
+using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,27 +20,8 @@ public static class LessonAttemptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var attempt = await sender.Send(new StartLessonAttemptCommand(id, operationKey), ct);
-                return Results.Created($"/api/lesson-attempts/{attempt.AttemptId}", attempt);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ForbiddenException)
-            {
-                return Results.Forbid();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var attempt = await sender.Send(new StartLessonAttemptCommand(id, operationKey), ct);
+            return Results.Created($"/api/lesson-attempts/{attempt.AttemptId}", attempt);
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
         var group = app.MapGroup("/api/lesson-attempts").RequireAuthorization();
@@ -48,14 +29,8 @@ public static class LessonAttemptEndpoints
         group.MapPost("/{id:guid}/exercises/{exerciseId:guid}/synthesize", async (
             Guid id, Guid exerciseId, SynthesizeExerciseAudioRequest request, ISender sender, CancellationToken ct) =>
         {
-            try
-            {
-                return Results.Ok(await sender.Send(new SynthesizeExerciseAudioCommand(id, exerciseId, request), ct));
-            }
-            catch (NotFoundException) { return Results.NotFound(); }
-            catch (ForbiddenException) { return Results.Forbid(); }
-            catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
-        }).RequirePermission("lesson-exercises.attempt");
+            return Results.Ok(await sender.Send(new SynthesizeExerciseAudioCommand(id, exerciseId, request), ct));
+        }).RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // List Learner's Attempts: GET /api/lesson-attempts
         group.MapGet("/", async (
@@ -84,7 +59,7 @@ public static class LessonAttemptEndpoints
         {
             var attempt = await sender.Send(new ResumeLessonAttemptQuery(id), ct);
             return attempt is null
-                ? Results.NotFound(new { error = $"Lesson attempt with ID '{id}' was not found." })
+                ? ApiProblem.NotFound($"Lesson attempt with ID '{id}' was not found.")
                 : Results.Ok(attempt);
         }
 
@@ -101,24 +76,12 @@ public static class LessonAttemptEndpoints
                 var result = await sender.Send(new SubmitExerciseAnswerCommand(id, req, operationKey), ct);
                 return Results.Ok(result);
             }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ForbiddenException)
-            {
-                return Results.Forbid();
-            }
             catch (InvalidOperationException ex)
             {
                 // Concurrency or lifecycle conflict
-                return Results.Conflict(new { error = ex.Message });
+                return ApiProblem.Conflict(ex.Message);
             }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).RequirePermission("lesson-exercises.attempt");
+        }).RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // Retry Answer Grading: POST /api/lesson-attempts/{id}/answers/{answerId}/retry-grading and /retry
         async Task<IResult> RetryGradingHandler(
@@ -129,32 +92,13 @@ public static class LessonAttemptEndpoints
             ISender sender,
             CancellationToken ct)
         {
-            try
-            {
-                int revision = bodyReq?.AttemptRevision ?? 1;
-                var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision, operationKey, bodyReq?.AiConfig), ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ForbiddenException)
-            {
-                return Results.Forbid();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            int revision = bodyReq?.AttemptRevision ?? 1;
+            var result = await sender.Send(new RetryAnswerGradingCommand(id, answerId, revision, operationKey, bodyReq?.AiConfig), ct);
+            return Results.Ok(result);
         }
 
-        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry-grading", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
-        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry", RetryGradingHandler).RequirePermission("lesson-exercises.attempt");
+        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry-grading", RetryGradingHandler).RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
+        group.MapPost("/{id:guid}/answers/{answerId:guid}/retry", RetryGradingHandler).RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // Request Dictation AI Review: POST /api/lesson-attempts/{id}/answers/{answerId}/ai-review
         group.MapPost("/{id:guid}/answers/{answerId:guid}/ai-review", async (
@@ -165,28 +109,9 @@ public static class LessonAttemptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new RequestDictationAiReviewCommand(id, answerId, req ?? new RequestDictationAiReviewRequest(), operationKey), ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ForbiddenException)
-            {
-                return Results.Forbid();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).RequirePermission("lesson-exercises.attempt");
+            var result = await sender.Send(new RequestDictationAiReviewCommand(id, answerId, req ?? new RequestDictationAiReviewRequest(), operationKey), ct);
+            return Results.Ok(result);
+        }).RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // Complete Attempt: POST /api/lesson-attempts/{id}/complete
         group.MapPost("/{id:guid}/complete", async (
@@ -195,27 +120,8 @@ public static class LessonAttemptEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var completed = await sender.Send(new CompleteLessonAttemptCommand(id, operationKey), ct);
-                return Results.Ok(completed);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ForbiddenException)
-            {
-                return Results.Forbid();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var completed = await sender.Send(new CompleteLessonAttemptCommand(id, operationKey), ct);
+            return Results.Ok(completed);
         }).RequirePermission("lesson-exercises.attempt");
 
         return app;

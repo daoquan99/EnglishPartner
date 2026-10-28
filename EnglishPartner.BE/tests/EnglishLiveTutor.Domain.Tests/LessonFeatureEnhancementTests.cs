@@ -16,6 +16,7 @@ using EnglishLiveTutor.Application.Features.Lessons.Commands.MediaOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.RolePlayOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.MediaQueryOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.RolePlayQueries;
 using EnglishLiveTutor.Application.Features.Lessons.Validation;
@@ -375,9 +376,9 @@ public class LessonFeatureEnhancementTests
     {
         var (db, clock, user, uow, idempotency) = CreateContext("teacher-author");
         var sanitizer = new LessonSanitizer();
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
+        var lessonDetailBuilder = new LessonDetailBuilder(db, sanitizer);
         var validator = new LessonCandidateValidator(db);
-        var commitHandler = new CommitLessonImportCommandHandler(db, uow, validator, getByIdHandler, user, idempotency);
+        var commitHandler = new CommitLessonImportCommandHandler(db, uow, validator, lessonDetailBuilder, user, idempotency);
 
         // Invalid candidate: multiple choice with missing correctOptionId match
         var invalidCandidateJson = @"{
@@ -425,7 +426,7 @@ public class LessonFeatureEnhancementTests
         var aiGrader = new FakeLessonAiGrader();
         var retryHandler = new RetryAnswerGradingCommandHandler(db, bob, clock, deterministicGrader, aiGrader, uow, idempotency);
 
-        await Assert.ThrowsAsync<ForbiddenException>(() =>
+        await Assert.ThrowsAsync<NotFoundException>(() =>
             retryHandler.HandleAsync(new RetryAnswerGradingCommand(attempt.Id, answer.Id, attempt.AttemptRevision)));
     }
 

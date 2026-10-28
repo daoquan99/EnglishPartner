@@ -29,7 +29,7 @@ public sealed class GetPronunciationHistoryQueryHandler : IQueryHandler<GetPronu
 
         var list = await q
             .OrderByDescending(a => a.CreatedAtUtc)
-            .Take(query.Limit)
+            .Take(Math.Clamp(query.Limit, 1, 100)) // history grows without bound; cap a client-supplied limit
             .ToListAsync(ct);
 
         return list.Select(a => new PronunciationAssessmentResultDto(

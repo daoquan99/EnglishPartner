@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
-using EnglishLiveTutor.Application.Common.Exceptions;
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.DraftOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.ExerciseOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.ImportOperations;
-using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonExerciseTypes;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.ListLessons;
@@ -71,15 +71,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new CreateLessonDraftCommand(req), ct);
-                return Results.Created($"/api/lessons/{created.Id}", created);
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new CreateLessonDraftCommand(req), ct);
+            return Results.Created($"/api/lessons/{created.Id}", created);
         }).RequirePermission("lessons.manage");
 
         // 4. Get Lesson By ID (Author DTO for Admin/Teacher; sanitized Learner DTO for Learner)
@@ -93,7 +86,7 @@ public static class LessonEndpoints
             bool isAuthor = IsLessonAuthorOrAdmin(httpContext.User);
             bool effectiveIsLearner = isAuthor ? (isLearner ?? false) : true;
             var lesson = await sender.Send(new GetLessonByIdQuery(id, IsLearner: effectiveIsLearner), ct);
-            return lesson is null ? Results.NotFound() : Results.Ok(lesson);
+            return lesson is null ? ApiProblem.NotFound("Không tìm thấy bài học.") : Results.Ok(lesson);
         }).RequirePermission("lessons.read");
 
         // 5. Update Draft Lesson
@@ -104,23 +97,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpdateLessonDraftCommand(id, req, ifMatch), ct);
-                return Results.Ok(updated);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpdateLessonDraftCommand(id, req, ifMatch), ct);
+            return Results.Ok(updated);
         }).RequirePermission("lessons.manage");
 
         // 6. Delete Draft Lesson
@@ -129,19 +107,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                await sender.Send(new DeleteLessonDraftCommand(id), ct);
-                return Results.NoContent();
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            await sender.Send(new DeleteLessonDraftCommand(id), ct);
+            return Results.NoContent();
         }).RequirePermission("lessons.manage");
 
         // 7. Create Draft Revision from Lesson (supports both /revision and /revisions)
@@ -153,23 +120,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct)
         {
-            try
-            {
-                var revision = await sender.Send(new CreateDraftRevisionCommand(id), ct);
-                return Results.Created($"/api/lessons/{revision.DraftLessonId}", revision);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound(new { error = $"Lesson with ID '{id}' was not found." });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var revision = await sender.Send(new CreateDraftRevisionCommand(id), ct);
+            return Results.Created($"/api/lessons/{revision.DraftLessonId}", revision);
         }
 
         // 8. Publish Lesson
@@ -180,24 +132,9 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var req = bodyReq ?? new PublishLessonRequest(null);
-                var published = await sender.Send(new PublishLessonCommand(id, req, ifMatch), ct);
-                return Results.Ok(published);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var req = bodyReq ?? new PublishLessonRequest(null);
+            var published = await sender.Send(new PublishLessonCommand(id, req, ifMatch), ct);
+            return Results.Ok(published);
         }).RequirePermission("lessons.publish");
 
         // 9. Archive Lesson
@@ -206,15 +143,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                await sender.Send(new ArchiveLessonCommand(id), ct);
-                return Results.Ok(new { message = "Lesson archived successfully." });
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
+            await sender.Send(new ArchiveLessonCommand(id), ct);
+            return Results.Ok(new { message = "Lesson archived successfully." });
         }).RequirePermission("lessons.publish");
 
         // 9b. Revert to Draft (Unpublish)
@@ -223,19 +153,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct)
         {
-            try
-            {
-                var reverted = await sender.Send(new RevertLessonToDraftCommand(id), ct);
-                return Results.Ok(reverted);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var reverted = await sender.Send(new RevertLessonToDraftCommand(id), ct);
+            return Results.Ok(reverted);
         }
 
         group.MapPost("/{id:guid}/unpublish", RevertToDraftHandler).RequirePermission("lessons.publish");
@@ -248,19 +167,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var lesson = await sender.Send(new AddExerciseToDraftCommand(id, req), ct);
-                return Results.Ok(lesson);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var lesson = await sender.Send(new AddExerciseToDraftCommand(id, req), ct);
+            return Results.Ok(lesson);
         }).RequirePermission("lessons.manage");
 
         group.MapPut("/{id:guid}/exercises/{exerciseId:guid}", async (
@@ -270,19 +178,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var lesson = await sender.Send(new UpdateDraftExerciseCommand(id, exerciseId, req), ct);
-                return Results.Ok(lesson);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var lesson = await sender.Send(new UpdateDraftExerciseCommand(id, exerciseId, req), ct);
+            return Results.Ok(lesson);
         }).RequirePermission("lessons.manage");
 
         group.MapDelete("/{id:guid}/exercises/{exerciseId:guid}", async (
@@ -291,19 +188,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var lesson = await sender.Send(new RemoveDraftExerciseCommand(id, exerciseId), ct);
-                return Results.Ok(lesson);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var lesson = await sender.Send(new RemoveDraftExerciseCommand(id, exerciseId), ct);
+            return Results.Ok(lesson);
         }).RequirePermission("lessons.manage");
 
         async Task<IResult> ReorderExercisesHandler(
@@ -312,19 +198,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct)
         {
-            try
-            {
-                var lesson = await sender.Send(new ReorderDraftExercisesCommand(id, req), ct);
-                return Results.Ok(lesson);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var lesson = await sender.Send(new ReorderDraftExercisesCommand(id, req), ct);
+            return Results.Ok(lesson);
         }
 
         group.MapPut("/{id:guid}/exercises/order", ReorderExercisesHandler).RequirePermission("lessons.manage");
@@ -346,29 +221,14 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            if (!string.IsNullOrWhiteSpace(operationKey) && string.IsNullOrWhiteSpace(command.OperationKey))
             {
-                if (!string.IsNullOrWhiteSpace(operationKey) && string.IsNullOrWhiteSpace(command.OperationKey))
-                {
-                    command = command with { OperationKey = operationKey };
-                }
+                command = command with { OperationKey = operationKey };
+            }
 
-                var result = await sender.Send(command, ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).RequirePermission("lessons.generate");
+            var result = await sender.Send(command, ct);
+            return Results.Ok(result);
+        }).RequireRateLimiting("ai").RequirePermission("lessons.generate");
 
         async Task<IResult> ValidateCandidateHandler(
             HttpRequest request,
@@ -379,7 +239,7 @@ public static class LessonEndpoints
             var body = await reader.ReadToEndAsync(ct);
             if (string.IsNullOrWhiteSpace(body))
             {
-                return Results.BadRequest(new { error = "Request body cannot be empty." });
+                return ApiProblem.BadRequest("Request body cannot be empty.");
             }
 
             string jsonToValidate = body;
@@ -416,23 +276,8 @@ public static class LessonEndpoints
             ISender sender,
             CancellationToken ct)
         {
-            try
-            {
-                var committed = await sender.Send(new CommitLessonImportCommand(req, operationKey), ct);
-                return Results.Ok(committed);
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound();
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var committed = await sender.Send(new CommitLessonImportCommand(req, operationKey), ct);
+            return Results.Ok(committed);
         }
 
         group.MapPost("/import/commit", CommitImportHandler).RequirePermission("lessons.manage");

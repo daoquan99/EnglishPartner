@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
@@ -49,24 +50,19 @@ public static class VocabularyEndpoints
         group.MapGet("/{vocabularyId:guid}/flashcard", async (
             Guid vocabularyId,
             Guid? senseId,
-            string? userId,
             ICurrentUser currentUser,
             ISender sender,
             CancellationToken ct) =>
         {
-            string effectiveUserId = !string.IsNullOrWhiteSpace(userId)
-                ? userId.Trim()
-                : (currentUser.UserId ?? "");
-
-            if (string.IsNullOrWhiteSpace(effectiveUserId))
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             var dto = await sender.Send(
-                new GetVocabularyFlashcardQuery(vocabularyId, senseId, effectiveUserId),
+                new GetVocabularyFlashcardQuery(vocabularyId, senseId, currentUser.UserId!),
                 ct);
-            return dto is null ? Results.NotFound() : Results.Ok(dto);
+            return dto is null ? ApiProblem.NotFound("Không tìm thấy flashcard từ vựng.") : Results.Ok(dto);
         });
 
         group.MapPost("/generate", async (
@@ -77,34 +73,20 @@ public static class VocabularyEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                var cards = await sender.Send(new GenerateVocabularyCommand(userId, req), ct);
-                return Results.Ok(cards);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        });
+            string userId = currentUser.UserId!;
+            var cards = await sender.Send(new GenerateVocabularyCommand(userId, req), ct);
+            return Results.Ok(cards);
+        }).RequireRateLimiting("ai");
 
         group.MapPost("/generation/prompt", async (
             BuildVocabularyGenerationPromptRequest req,
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                return Results.Ok(await sender.Send(new BuildVocabularyGenerationPromptQuery(req), ct));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return Results.Ok(await sender.Send(new BuildVocabularyGenerationPromptQuery(req), ct));
         });
 
         group.MapPost("/generation/import", async (
@@ -115,18 +97,11 @@ public static class VocabularyEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                return Results.Ok(await sender.Send(new ImportVocabularyJsonCommand(userId, req), ct));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            string userId = currentUser.UserId!;
+            return Results.Ok(await sender.Send(new ImportVocabularyJsonCommand(userId, req), ct));
         });
 
         // Admin Create Vocabulary Flashcard
@@ -135,15 +110,8 @@ public static class VocabularyEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new CreateVocabularyCommand(req), ct);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new CreateVocabularyCommand(req), ct);
+            return Results.Ok(result);
         }).RequirePermission("vocabularies.manage");
 
         // Admin Update Vocabulary Flashcard
@@ -153,15 +121,8 @@ public static class VocabularyEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new UpdateVocabularyCommand(id, req), ct);
-                return result is null ? Results.NotFound(new { error = "Không tìm thấy từ vựng cần cập nhật." }) : Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new UpdateVocabularyCommand(id, req), ct);
+            return result is null ? ApiProblem.NotFound("Không tìm thấy từ vựng cần cập nhật.") : Results.Ok(result);
         }).RequirePermission("vocabularies.manage");
 
         // Admin Delete Vocabulary Flashcard
@@ -171,7 +132,7 @@ public static class VocabularyEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteVocabularyCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy từ vựng.");
         }).RequirePermission("vocabularies.manage");
 
         return app;

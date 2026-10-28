@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Topics;
 using EnglishLiveTutor.Domain.Topics.Repositories;
 using EnglishLiveTutor.Infrastructure.Persistence;
@@ -80,11 +81,11 @@ public sealed class TopicRepository : ITopicRepository
         {
             string term = search.Trim().ToLowerInvariant();
             query = query.Where(t =>
-                t.Code.ToLower().Contains(term) ||
+                t.Code.Contains(term) ||
                 t.Name.ToLower().Contains(term) ||
                 t.DisplayNameVi.ToLower().Contains(term) ||
                 t.Category.ToLower().Contains(term) ||
-                (t.ModeCode != null && t.ModeCode.ToLower().Contains(term)));
+                (t.ModeCode != null && t.ModeCode.Contains(term)));
         }
 
         int totalCount = await query.CountAsync(ct);
@@ -97,7 +98,7 @@ public sealed class TopicRepository : ITopicRepository
         if (hasPaging)
         {
             int effPage = Math.Max(1, page ?? 1);
-            int effSize = Math.Clamp(pageSize ?? 20, 1, 500);
+            int effSize = Math.Clamp(pageSize ?? PagedResultDto<TopicEntity>.DefaultPageSize, 1, PagedResultDto<TopicEntity>.MaxPageSize);
             var pagedItems = await ordered
                 .Skip((effPage - 1) * effSize)
                 .Take(effSize)
@@ -105,7 +106,7 @@ public sealed class TopicRepository : ITopicRepository
             return (pagedItems, totalCount);
         }
 
-        var allItems = await ordered.ToListAsync(ct);
+        var allItems = await ordered.Take(PagedResultDto<TopicEntity>.MaxUnpagedItems).ToListAsync(ct);
         return (allItems, totalCount);
     }
 

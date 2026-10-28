@@ -8,6 +8,7 @@ public sealed class ConversationEntity : AggregateRoot<string>
     private List<ChatMessageEntity> _messages = new();
     private List<LanguageCorrectionEntity> _corrections = new();
 
+    public string UserId { get; private set; } = null!;
     public string Title { get; private set; } = "Buổi luyện nói mới";
     public string CefrLevel { get; private set; } = "B1";
     public bool ExtendedThinking { get; private set; }
@@ -27,6 +28,7 @@ public sealed class ConversationEntity : AggregateRoot<string>
     }
 
     public ConversationEntity(
+        string userId,
         string? id,
         string? title,
         string cefrLevel = "B1",
@@ -38,6 +40,12 @@ public sealed class ConversationEntity : AggregateRoot<string>
         string? customSystemPrompt = null)
         : base(string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N")[..12] : id.Trim())
     {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new ArgumentException("UserId is required.", nameof(userId));
+        }
+
+        UserId = userId.Trim();
         string cleanMode = string.IsNullOrWhiteSpace(conversationMode) ? "daily_conversation" : conversationMode.Trim();
         string cleanTopic = (topic ?? string.Empty).Trim();
         string cleanCefr = string.IsNullOrWhiteSpace(cefrLevel) ? "B1" : cefrLevel.Trim();
@@ -57,6 +65,7 @@ public sealed class ConversationEntity : AggregateRoot<string>
     }
 
     public static ConversationEntity Create(
+        string userId,
         string? id,
         string? title,
         string cefrLevel = "B1",
@@ -66,7 +75,7 @@ public sealed class ConversationEntity : AggregateRoot<string>
         string conversationMode = "daily_conversation",
         string topic = "",
         string? customSystemPrompt = null) =>
-        new(id, title, cefrLevel, extendedThinking, voiceName, speechSpeed, conversationMode, topic, customSystemPrompt);
+        new(userId, id, title, cefrLevel, extendedThinking, voiceName, speechSpeed, conversationMode, topic, customSystemPrompt);
 
     public void UpdateSettings(
         string? title,

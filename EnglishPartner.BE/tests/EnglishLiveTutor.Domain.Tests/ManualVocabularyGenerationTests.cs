@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
@@ -6,6 +6,7 @@ using EnglishLiveTutor.Application.Features.Vocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
+using EnglishLiveTutor.Application.Features.Vocabulary.Services;
 using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Infrastructure.Ai;
@@ -78,7 +79,7 @@ public class ManualVocabularyGenerationTests
             db.Vocabularies.Add(VocabularyEntity.Create("already saved"));
             await db.SaveChangesAsync();
         }
-        var result = await new BuildVocabularyGenerationPromptQueryHandler(factory, new VocabularyGenerationContent())
+        var result = await new BuildVocabularyGenerationPromptQueryHandler(new VocabularyPromptBuilder(factory, new VocabularyGenerationContent()))
             .HandleAsync(new(new(RequestedCount: 3, CefrLevel: "b2", Topic: " Work ", ExcludedWords: ["Custom", " custom "])));
         Assert.Contains("Generate 3 distinct", result.Prompt);
         Assert.Contains("CEFR level B2", result.Prompt);
@@ -200,7 +201,7 @@ public class ManualVocabularyGenerationTests
         }
         var generator = new FakeGenerator();
         var handler = new GenerateVocabularyCommandHandler(factory, generator,
-            new BuildVocabularyGenerationPromptQueryHandler(factory, new VocabularyGenerationContent()),
+            new VocabularyPromptBuilder(factory, new VocabularyGenerationContent()),
             new VocabularyGenerationWriter(factory, NullLogger<VocabularyGenerationWriter>.Instance));
         var result = await handler.HandleAsync(new("learner-a", new("test-key", "test-model", CefrLevel: "B2")));
         Assert.Single(result);

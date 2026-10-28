@@ -4,6 +4,7 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Common.Utilities;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.LessonAttempts;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -23,20 +24,20 @@ public sealed class StartLessonAttemptCommandHandler : ICommandHandler<StartLess
     private readonly ICurrentUser _currentUser;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IIdempotencyService _idempotency;
-    private readonly IQueryHandler<ResumeLessonAttemptQuery, LessonAttemptResumeDto?> _resumeHandler;
+    private readonly ILessonAttemptResumeBuilder _resumeBuilder;
 
     public StartLessonAttemptCommandHandler(
         IAppDbContext db,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         IIdempotencyService idempotency,
-        IQueryHandler<ResumeLessonAttemptQuery, LessonAttemptResumeDto?> resumeHandler)
+        ILessonAttemptResumeBuilder resumeBuilder)
     {
         _db = db;
         _currentUser = currentUser;
         _unitOfWork = unitOfWork;
         _idempotency = idempotency;
-        _resumeHandler = resumeHandler;
+        _resumeBuilder = resumeBuilder;
     }
 
     public async Task<LessonAttemptResumeDto> HandleAsync(StartLessonAttemptCommand command, CancellationToken ct = default)
@@ -44,7 +45,7 @@ public sealed class StartLessonAttemptCommandHandler : ICommandHandler<StartLess
         string? userId = _currentUser.UserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new ForbiddenException("Authentication required to start a lesson attempt.");
+            throw new UnauthorizedAccessException("Authentication required to start a lesson attempt.");
         }
 
         string fingerprint = IdempotencyFingerprint.Compute(command, ("LessonId", command.LessonId));
@@ -90,7 +91,7 @@ public sealed class StartLessonAttemptCommandHandler : ICommandHandler<StartLess
             _db.LessonAttempts.Add(attempt);
             await _unitOfWork.CommitChangesAsync(ct);
 
-            var resumeDto = await _resumeHandler.HandleAsync(new ResumeLessonAttemptQuery(attempt.Id), ct);
+            var resumeDto = await _resumeBuilder.BuildAsync(attempt.Id, ct);
 
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {

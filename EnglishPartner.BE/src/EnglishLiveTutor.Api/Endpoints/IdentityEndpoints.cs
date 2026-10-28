@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Identity.Commands.AdminCreateUser;
@@ -37,18 +38,11 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await sender.Send(new RegisterUserCommand(req, ip), ct);
-                AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).AllowAnonymous();
+            string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await sender.Send(new RegisterUserCommand(req, ip), ct);
+            AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+            return Results.Ok(result);
+        }).RequireRateLimiting("auth").AllowAnonymous();
 
         authGroup.MapPost("/login", async (
             HttpContext httpContext,
@@ -56,18 +50,11 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await sender.Send(new LoginCommand(req, ip), ct);
-                AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).AllowAnonymous();
+            string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await sender.Send(new LoginCommand(req, ip), ct);
+            AppendRefreshTokenCookie(httpContext, result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+            return Results.Ok(result);
+        }).RequireRateLimiting("auth").AllowAnonymous();
 
         authGroup.MapPost("/refresh", async (
             HttpContext httpContext,
@@ -83,7 +70,7 @@ public static class IdentityEndpoints
 
                 if (string.IsNullOrWhiteSpace(rawToken))
                 {
-                    return Results.Unauthorized();
+                    return ApiProblem.Unauthorized("Thiếu refresh token.", httpContext);
                 }
 
                 string? ip = httpContext.Connection.RemoteIpAddress?.ToString();
@@ -95,9 +82,9 @@ public static class IdentityEndpoints
             catch (InvalidOperationException ex)
             {
                 DeleteRefreshTokenCookie(httpContext);
-                return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status401Unauthorized);
+                return ApiProblem.Unauthorized(ex.Message, httpContext);
             }
-        }).AllowAnonymous();
+        }).RequireRateLimiting("auth-refresh").AllowAnonymous();
 
         authGroup.MapPost("/revoke", async (
             HttpContext httpContext,
@@ -105,28 +92,21 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            string? rawToken = !string.IsNullOrWhiteSpace(req?.RefreshToken)
+                ? req.RefreshToken
+                : httpContext.Request.Cookies[RefreshCookieName];
+
+            DeleteRefreshTokenCookie(httpContext);
+
+            if (string.IsNullOrWhiteSpace(rawToken))
             {
-                string? rawToken = !string.IsNullOrWhiteSpace(req?.RefreshToken)
-                    ? req.RefreshToken
-                    : httpContext.Request.Cookies[RefreshCookieName];
-
-                DeleteRefreshTokenCookie(httpContext);
-
-                if (string.IsNullOrWhiteSpace(rawToken))
-                {
-                    return Results.Ok(new { revoked = true });
-                }
-
-                bool revoked = await sender.Send(
-                    new RevokeRefreshTokenCommand(new RevokeTokenRequest(rawToken, req?.Reason ?? "User logout")),
-                    ct);
-                return Results.Ok(new { revoked });
+                return Results.Ok(new { revoked = true });
             }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+
+            bool revoked = await sender.Send(
+                new RevokeRefreshTokenCommand(new RevokeTokenRequest(rawToken, req?.Reason ?? "User logout")),
+                ct);
+            return Results.Ok(new { revoked });
         }).AllowAnonymous();
 
         authGroup.MapGet("/me", async (
@@ -136,7 +116,7 @@ public static class IdentityEndpoints
         {
             if (httpContext.User?.Identity?.IsAuthenticated != true)
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             string? sub = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -144,11 +124,11 @@ public static class IdentityEndpoints
 
             if (!Guid.TryParse(sub, out var userId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             var profile = await sender.Send(new GetUserProfileQuery(userId), ct);
-            return profile is null ? Results.NotFound() : Results.Ok(profile);
+            return profile is null ? ApiProblem.NotFound("Không tìm thấy người dùng.") : Results.Ok(profile);
         }).RequireAuthorization();
 
         // Users Management (Admin RBAC Protected)
@@ -173,7 +153,7 @@ public static class IdentityEndpoints
             CancellationToken ct) =>
         {
             var profile = await sender.Send(new GetUserProfileQuery(id), ct);
-            return profile is null ? Results.NotFound() : Results.Ok(profile);
+            return profile is null ? ApiProblem.NotFound("Không tìm thấy người dùng.") : Results.Ok(profile);
         }).RequirePermission("users.read");
 
         usersGroup.MapPut("/{id:guid}/roles", async (
@@ -182,15 +162,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new AssignUserRolesCommand(id, req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new AssignUserRolesCommand(id, req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("users.manage");
 
         usersGroup.MapPost("/", async (
@@ -198,15 +171,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new AdminCreateUserCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new AdminCreateUserCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("users.manage");
 
         usersGroup.MapPut("/{id:guid}", async (
@@ -215,17 +181,10 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new AdminUpdateUserCommand(id, req), ct);
-                return updated is null
-                    ? Results.NotFound(new { error = "Không tìm thấy người dùng." })
-                    : Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new AdminUpdateUserCommand(id, req), ct);
+            return updated is null
+                ? ApiProblem.NotFound("Không tìm thấy người dùng.")
+                : Results.Ok(updated);
         }).RequirePermission("users.manage");
 
         usersGroup.MapDelete("/{id:guid}", async (
@@ -234,7 +193,7 @@ public static class IdentityEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteUserCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy người dùng.");
         }).RequirePermission("users.manage");
 
         // Roles Management
@@ -258,15 +217,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new CreateRoleCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new CreateRoleCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("roles.manage");
 
         rolesGroup.MapPut("/{id:guid}/permissions", async (
@@ -275,15 +227,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpdateRolePermissionsCommand(id, req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpdateRolePermissionsCommand(id, req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("roles.manage");
 
         rolesGroup.MapDelete("/{id:guid}", async (
@@ -291,15 +236,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                bool deleted = await sender.Send(new DeleteRoleCommand(id), ct);
-                return deleted ? Results.NoContent() : Results.NotFound();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            bool deleted = await sender.Send(new DeleteRoleCommand(id), ct);
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy vai trò.");
         }).RequirePermission("roles.manage");
 
         // Permissions Management
@@ -323,15 +261,8 @@ public static class IdentityEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new CreatePermissionCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new CreatePermissionCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("roles.manage");
 
         permissionsGroup.MapPut("/{id:guid}", async (
@@ -341,7 +272,7 @@ public static class IdentityEndpoints
             CancellationToken ct) =>
         {
             var updated = await sender.Send(new UpdatePermissionCommand(id, req), ct);
-            return updated is null ? Results.NotFound() : Results.Ok(updated);
+            return updated is null ? ApiProblem.NotFound("Không tìm thấy quyền.") : Results.Ok(updated);
         }).RequirePermission("roles.manage");
 
         permissionsGroup.MapDelete("/{id:guid}", async (
@@ -350,7 +281,7 @@ public static class IdentityEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeletePermissionCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy quyền.");
         }).RequirePermission("roles.manage");
 
         return app;
@@ -361,7 +292,7 @@ public static class IdentityEndpoints
         httpContext.Response.Cookies.Append(RefreshCookieName, refreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = httpContext.Request.IsHttps,
+            Secure = true,
             SameSite = SameSiteMode.Lax,
             Expires = expiresAtUtc,
             Path = "/api/auth"
@@ -373,7 +304,7 @@ public static class IdentityEndpoints
         httpContext.Response.Cookies.Delete(RefreshCookieName, new CookieOptions
         {
             HttpOnly = true,
-            Secure = httpContext.Request.IsHttps,
+            Secure = true,
             SameSite = SameSiteMode.Lax,
             Path = "/api/auth"
         });

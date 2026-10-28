@@ -30,15 +30,10 @@ public sealed class GetFallingWordSessionQueryHandler : IQueryHandler<GetFalling
             throw new UnauthorizedAccessException("Vui lòng đăng nhập để xem thông tin phiên chơi.");
         }
 
-        var session = await _repo.GetByIdWithRoundsAsync(query.SessionId, ct);
+        var session = await _repo.GetByIdWithRoundsForUserAsync(query.SessionId, userId, ct);
         if (session == null)
         {
             return null;
-        }
-
-        if (session.UserId != userId)
-        {
-            throw new ForbiddenException("Bạn không có quyền xem phiên trò chơi của người dùng khác.");
         }
 
         var now = _timeProvider.GetUtcNow();

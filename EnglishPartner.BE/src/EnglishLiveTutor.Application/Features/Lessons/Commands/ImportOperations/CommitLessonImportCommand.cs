@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Common.Utilities;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.Lessons;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,7 @@ public sealed class CommitLessonImportCommandHandler : ICommandHandler<CommitLes
     private readonly IAppDbContext _db;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILessonCandidateValidator _validator;
-    private readonly IQueryHandler<GetLessonByIdQuery, object?> _getLessonByIdHandler;
+    private readonly ILessonDetailBuilder _lessonDetailBuilder;
     private readonly ICurrentUser _currentUser;
     private readonly IIdempotencyService _idempotency;
 
@@ -32,14 +33,14 @@ public sealed class CommitLessonImportCommandHandler : ICommandHandler<CommitLes
         IAppDbContext db,
         IUnitOfWork unitOfWork,
         ILessonCandidateValidator validator,
-        IQueryHandler<GetLessonByIdQuery, object?> getLessonByIdHandler,
+        ILessonDetailBuilder lessonDetailBuilder,
         ICurrentUser currentUser,
         IIdempotencyService idempotency)
     {
         _db = db;
         _unitOfWork = unitOfWork;
         _validator = validator;
-        _getLessonByIdHandler = getLessonByIdHandler;
+        _lessonDetailBuilder = lessonDetailBuilder;
         _currentUser = currentUser;
         _idempotency = idempotency;
     }
@@ -171,8 +172,8 @@ public sealed class CommitLessonImportCommandHandler : ICommandHandler<CommitLes
         {
             await _unitOfWork.CommitChangesAsync(ct);
 
-            var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-            var result = (LessonDetailAuthorDto)dto!;
+            var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+            var result = dto!;
 
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {

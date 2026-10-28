@@ -1,44 +1,72 @@
-using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Exceptions;
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Domain.Conversations.Entities;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
 using EnglishLiveTutor.Infrastructure.Persistence;
-using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Infrastructure.Repositories;
 
 public sealed class ConversationRepository : IConversationRepository
 {
+    private static readonly object _inMemoryLock = new();
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly TimeProvider _timeProvider;
-    private readonly ICurrentUser? _currentUser;
-    private readonly SemaphoreSlim _writeLock = new(1, 1);
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        for (Exception? cur = ex; cur != null; cur = cur.InnerException)
+        {
+            if (cur is Microsoft.Data.SqlClient.SqlException sqlEx &&
+                (sqlEx.Number == 2627 || sqlEx.Number == 2601))
+            {
+                return true;
+            }
+
+            if (cur is ArgumentException argEx &&
+                argEx.Message.Contains("same key has already been added", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            string msg = cur.Message;
+            if (msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("Primary key constraint violation", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public ConversationRepository(
         IDbContextFactory<AppDbContext> dbFactory,
-        TimeProvider? timeProvider = null,
-        ICurrentUser? currentUser = null)
+        TimeProvider? timeProvider = null)
     {
         _dbFactory = dbFactory;
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _currentUser = currentUser;
     }
 
-    public async Task<List<ConversationSummary>> ListConversationsAsync(CancellationToken ct = default)
+    public async Task<List<ConversationSummary>> ListConversationsAsync(string userId, CancellationToken ct = default)
     {
-        var (items, _) = await ListConversationsPagedAsync(null, null, null, ct);
+        var (items, _) = await ListConversationsPagedAsync(userId, null, null, null, ct);
         return items;
     }
 
     public async Task<(List<ConversationSummary> Items, int TotalCount)> ListConversationsPagedAsync(
+        string userId,
         string? search = null,
         int? page = null,
         int? pageSize = null,
         CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var query = db.Conversations.AsNoTracking().AsQueryable();
+        var query = db.Conversations
+            .AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -82,7 +110,7 @@ public sealed class ConversationRepository : IConversationRepository
         if (hasPaging)
         {
             int effPage = Math.Max(1, page ?? 1);
-            int effSize = Math.Clamp(pageSize ?? 20, 1, 500);
+            int effSize = Math.Clamp(pageSize ?? PagedResultDto<ConversationSummary>.DefaultPageSize, 1, PagedResultDto<ConversationSummary>.MaxPageSize);
             var pagedItems = await projected
                 .Skip((effPage - 1) * effSize)
                 .Take(effSize)
@@ -90,11 +118,11 @@ public sealed class ConversationRepository : IConversationRepository
             return (pagedItems, totalCount);
         }
 
-        var items = await projected.ToListAsync(ct);
+        var items = await projected.Take(PagedResultDto<ConversationSummary>.MaxUnpagedItems).ToListAsync(ct);
         return (items, totalCount);
     }
 
-    public async Task<ConversationEntity?> GetConversationWithHistoryAsync(string id, CancellationToken ct = default)
+    public async Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var conv = await db.Conversations
@@ -104,9 +132,18 @@ public sealed class ConversationRepository : IConversationRepository
                 .Where(m => m.TranscriptLine1 != "" || m.TranslationLine2 != "")
                 .OrderBy(m => m.SequenceOrder))
             .Include(c => c.Corrections.OrderByDescending(x => x.CreatedAtUtc))
-            .FirstOrDefaultAsync(c => c.Id == id, ct);
+            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
 
         return conv;
+    }
+
+    public async Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        return await db.Conversations
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
     }
 
     public async Task<int> GetMaxSequenceOrderAsync(string conversationId, CancellationToken ct = default)
@@ -124,7 +161,8 @@ public sealed class ConversationRepository : IConversationRepository
             .MaxAsync(ct) ?? 0;
     }
 
-    public async Task<ConversationEntity> CreateOrUpdateConversationAsync(
+    public async Task<ConversationEntity> CreateConversationAsync(
+        string userId,
         string? id,
         string? title,
         string cefrLevel,
@@ -136,49 +174,126 @@ public sealed class ConversationRepository : IConversationRepository
         string? customSystemPrompt = null,
         CancellationToken ct = default)
     {
-        await _writeLock.WaitAsync(ct);
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        var conv = ConversationEntity.Create(
+            userId: userId,
+            id: id,
+            title: title,
+            cefrLevel: cefrLevel,
+            extendedThinking: extendedThinking,
+            voiceName: voiceName,
+            speechSpeed: speechSpeed,
+            conversationMode: conversationMode,
+            topic: topic,
+            customSystemPrompt: customSystemPrompt);
+
+        db.Conversations.Add(conv);
         try
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
-            ConversationEntity? conv = null;
-            if (!string.IsNullOrWhiteSpace(id))
-            {
-                conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id, ct);
-            }
-
-            if (conv is null)
-            {
-                conv = ConversationEntity.Create(
-                    id: id,
-                    title: title,
-                    cefrLevel: cefrLevel,
-                    extendedThinking: extendedThinking,
-                    voiceName: voiceName,
-                    speechSpeed: speechSpeed,
-                    conversationMode: conversationMode,
-                    topic: topic,
-                    customSystemPrompt: customSystemPrompt);
-                db.Conversations.Add(conv);
-            }
-            else
-            {
-                conv.UpdateSettings(
-                    title: title,
-                    cefrLevel: cefrLevel,
-                    extendedThinking: extendedThinking,
-                    voiceName: voiceName,
-                    speechSpeed: speechSpeed,
-                    conversationMode: conversationMode,
-                    topic: topic,
-                    customSystemPrompt: customSystemPrompt);
-            }
-
             await db.SaveChangesAsync(ct);
             return conv;
         }
-        finally
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
-            _writeLock.Release();
+            throw new NotFoundException("Không tìm thấy hội thoại.");
+        }
+    }
+
+    public async Task<ConversationEntity?> UpdateConversationSettingsAsync(
+        string userId,
+        string id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
+        if (conv is null)
+        {
+            return null;
+        }
+
+        conv.UpdateSettings(
+            title: title,
+            cefrLevel: cefrLevel,
+            extendedThinking: extendedThinking,
+            voiceName: voiceName,
+            speechSpeed: speechSpeed,
+            conversationMode: conversationMode,
+            topic: topic,
+            customSystemPrompt: customSystemPrompt);
+
+        await db.SaveChangesAsync(ct);
+        return conv;
+    }
+
+    public async Task<ConversationEntity> CreateOrUpdateConversationAsync(
+        string userId,
+        string? id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        ConversationEntity? conv = null;
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            conv = await db.Conversations.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id, ct);
+        }
+
+        if (conv is null)
+        {
+            conv = ConversationEntity.Create(
+                userId: userId,
+                id: id,
+                title: title,
+                cefrLevel: cefrLevel,
+                extendedThinking: extendedThinking,
+                voiceName: voiceName,
+                speechSpeed: speechSpeed,
+                conversationMode: conversationMode,
+                topic: topic,
+                customSystemPrompt: customSystemPrompt);
+            db.Conversations.Add(conv);
+        }
+        else
+        {
+            if (conv.IsDeleted || conv.UserId != userId)
+            {
+                throw new NotFoundException("Không tìm thấy hội thoại.");
+            }
+
+            conv.UpdateSettings(
+                title: title,
+                cefrLevel: cefrLevel,
+                extendedThinking: extendedThinking,
+                voiceName: voiceName,
+                speechSpeed: speechSpeed,
+                conversationMode: conversationMode,
+                topic: topic,
+                customSystemPrompt: customSystemPrompt);
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return conv;
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            throw new NotFoundException("Không tìm thấy hội thoại.");
         }
     }
 
@@ -194,45 +309,145 @@ public sealed class ConversationRepository : IConversationRepository
         if (string.IsNullOrWhiteSpace(fullTranscript))
             return;
 
-        await _writeLock.WaitAsync(ct);
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
-            var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
-            if (conv is null)
-                return;
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
 
-            var msg = await db.Messages.FirstOrDefaultAsync(
-                m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker,
+        if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            lock (_inMemoryLock)
+            {
+                var conv = db.Conversations.FirstOrDefault(c => c.Id == conversationId);
+                if (conv is null) return;
+
+                var msg = db.Messages.FirstOrDefault(
+                    m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker);
+
+                if (msg is null)
+                {
+                    msg = ChatMessageEntity.CreateWithTranscript(
+                        conversationId: conversationId,
+                        turnId: turnId,
+                        speaker: speaker,
+                        sequenceOrder: sequenceOrder,
+                        fullTranscript: fullTranscript,
+                        isFinal: isFinal);
+                    db.Messages.Add(msg);
+                }
+                else
+                {
+                    if (!isFinal && msg.IsFinal)
+                    {
+                        return;
+                    }
+                    msg.UpdateTranscript(fullTranscript, isFinal, sequenceOrder);
+                }
+
+                conv.Touch(_timeProvider.GetUtcNow());
+                if (speaker == "user")
+                {
+                    conv.UpdateTitleFromFirstUserMessage(fullTranscript);
+                }
+                db.SaveChanges();
+                return;
+            }
+        }
+
+        var convEntity = await db.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+        if (convEntity is null)
+            return;
+
+        if (!isFinal)
+        {
+            int rows = await db.Messages
+                .Where(m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker && !m.IsFinal)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(m => m.TranscriptLine1, fullTranscript)
+                    .SetProperty(m => m.SequenceOrder, m => (sequenceOrder > 0 && (m.SequenceOrder == 0 || sequenceOrder < m.SequenceOrder)) ? sequenceOrder : m.SequenceOrder),
+                    ct);
+
+            if (rows > 0)
+            {
+                convEntity.Touch(_timeProvider.GetUtcNow());
+                if (speaker == "user") convEntity.UpdateTitleFromFirstUserMessage(fullTranscript);
+                await db.SaveChangesAsync(ct);
+                return;
+            }
+
+            bool alreadyFinal = await db.Messages.AnyAsync(
+                m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker && m.IsFinal, ct);
+            if (alreadyFinal)
+            {
+                return;
+            }
+
+            var newMsg = ChatMessageEntity.CreateWithTranscript(
+                conversationId: conversationId,
+                turnId: turnId,
+                speaker: speaker,
+                sequenceOrder: sequenceOrder,
+                fullTranscript: fullTranscript,
+                isFinal: false);
+            db.Messages.Add(newMsg);
+            convEntity.Touch(_timeProvider.GetUtcNow());
+            if (speaker == "user") convEntity.UpdateTitleFromFirstUserMessage(fullTranscript);
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                await using var retryDb = await _dbFactory.CreateDbContextAsync(ct);
+                await retryDb.Messages
+                    .Where(m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker && !m.IsFinal)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(m => m.TranscriptLine1, fullTranscript)
+                        .SetProperty(m => m.SequenceOrder, m => (sequenceOrder > 0 && (m.SequenceOrder == 0 || sequenceOrder < m.SequenceOrder)) ? sequenceOrder : m.SequenceOrder),
+                        ct);
+            }
+            return;
+        }
+
+        int updatedRows = await db.Messages
+            .Where(m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.TranscriptLine1, fullTranscript)
+                .SetProperty(m => m.IsFinal, true)
+                .SetProperty(m => m.SequenceOrder, m => (sequenceOrder > 0 && (m.SequenceOrder == 0 || sequenceOrder < m.SequenceOrder)) ? sequenceOrder : m.SequenceOrder),
                 ct);
 
-            if (msg is null)
-            {
-                msg = ChatMessageEntity.CreateWithTranscript(
-                    conversationId: conversationId,
-                    turnId: turnId,
-                    speaker: speaker,
-                    sequenceOrder: sequenceOrder,
-                    fullTranscript: fullTranscript,
-                    isFinal: isFinal);
-                db.Messages.Add(msg);
-            }
-            else
-            {
-                msg.UpdateTranscript(fullTranscript, isFinal, sequenceOrder);
-            }
+        if (updatedRows > 0)
+        {
+            convEntity.Touch(_timeProvider.GetUtcNow());
+            if (speaker == "user") convEntity.UpdateTitleFromFirstUserMessage(fullTranscript);
+            await db.SaveChangesAsync(ct);
+            return;
+        }
 
-            conv.Touch(_timeProvider.GetUtcNow());
-            if (speaker == "user")
-            {
-                conv.UpdateTitleFromFirstUserMessage(fullTranscript);
-            }
+        var finalMsg = ChatMessageEntity.CreateWithTranscript(
+            conversationId: conversationId,
+            turnId: turnId,
+            speaker: speaker,
+            sequenceOrder: sequenceOrder,
+            fullTranscript: fullTranscript,
+            isFinal: true);
+        db.Messages.Add(finalMsg);
+        convEntity.Touch(_timeProvider.GetUtcNow());
+        if (speaker == "user") convEntity.UpdateTitleFromFirstUserMessage(fullTranscript);
 
+        try
+        {
             await db.SaveChangesAsync(ct);
         }
-        finally
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
-            _writeLock.Release();
+            await using var retryDb = await _dbFactory.CreateDbContextAsync(ct);
+            await retryDb.Messages
+                .Where(m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(m => m.TranscriptLine1, fullTranscript)
+                    .SetProperty(m => m.IsFinal, true)
+                    .SetProperty(m => m.SequenceOrder, m => (sequenceOrder > 0 && (m.SequenceOrder == 0 || sequenceOrder < m.SequenceOrder)) ? sequenceOrder : m.SequenceOrder),
+                    ct);
         }
     }
 
@@ -247,79 +462,105 @@ public sealed class ConversationRepository : IConversationRepository
         if (string.IsNullOrWhiteSpace(fullVietnameseText))
             return;
 
-        await _writeLock.WaitAsync(ct);
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+
+        if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            lock (_inMemoryLock)
+            {
+                var conv = db.Conversations.FirstOrDefault(c => c.Id == conversationId);
+                if (conv is null) return;
+
+                var msg = db.Messages.FirstOrDefault(
+                    m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker);
+
+                if (msg is null)
+                {
+                    msg = ChatMessageEntity.CreateWithTranslation(
+                        conversationId: conversationId,
+                        turnId: turnId,
+                        speaker: speaker,
+                        sequenceOrder: sequenceOrder,
+                        fullVietnameseText: fullVietnameseText);
+                    db.Messages.Add(msg);
+                }
+                else
+                {
+                    msg.UpdateTranslation(fullVietnameseText, sequenceOrder);
+                }
+
+                conv.Touch(_timeProvider.GetUtcNow());
+                db.SaveChanges();
+                return;
+            }
+        }
+
+        var convEntity = await db.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+        if (convEntity is null)
+            return;
+
+        var existingMsg = await db.Messages.FirstOrDefaultAsync(
+            m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker,
+            ct);
+
+        if (existingMsg is null)
+        {
+            existingMsg = ChatMessageEntity.CreateWithTranslation(
+                conversationId: conversationId,
+                turnId: turnId,
+                speaker: speaker,
+                sequenceOrder: sequenceOrder,
+                fullVietnameseText: fullVietnameseText);
+            db.Messages.Add(existingMsg);
+        }
+        else
+        {
+            existingMsg.UpdateTranslation(fullVietnameseText, sequenceOrder);
+        }
+
+        convEntity.Touch(_timeProvider.GetUtcNow());
+
         try
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
-            var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
-            if (conv is null)
-                return;
-
-            var msg = await db.Messages.FirstOrDefaultAsync(
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            await using var retryDb = await _dbFactory.CreateDbContextAsync(ct);
+            var retryConv = await retryDb.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            var retryMsg = await retryDb.Messages.FirstOrDefaultAsync(
                 m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker,
                 ct);
 
-            if (msg is null)
+            if (retryMsg is not null)
             {
-                msg = ChatMessageEntity.CreateWithTranslation(
-                    conversationId: conversationId,
-                    turnId: turnId,
-                    speaker: speaker,
-                    sequenceOrder: sequenceOrder,
-                    fullVietnameseText: fullVietnameseText);
-                db.Messages.Add(msg);
+                retryMsg.UpdateTranslation(fullVietnameseText, sequenceOrder);
+                retryConv?.Touch(_timeProvider.GetUtcNow());
+                await retryDb.SaveChangesAsync(ct);
             }
-            else
-            {
-                msg.UpdateTranslation(fullVietnameseText, sequenceOrder);
-            }
-
-            conv.Touch(_timeProvider.GetUtcNow());
-            await db.SaveChangesAsync(ct);
-        }
-        finally
-        {
-            _writeLock.Release();
         }
     }
 
     public async Task SaveCorrectionAsync(LanguageCorrectionEntity correction, CancellationToken ct = default)
     {
-        await _writeLock.WaitAsync(ct);
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
-            bool exists = await db.Conversations.AnyAsync(c => c.Id == correction.ConversationId, ct);
-            if (!exists)
-                return;
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        bool exists = await db.Conversations.AnyAsync(c => c.Id == correction.ConversationId, ct);
+        if (!exists)
+            return;
 
-            db.Corrections.Add(correction);
-            await db.SaveChangesAsync(ct);
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
+        db.Corrections.Add(correction);
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> DeleteConversationAsync(string id, CancellationToken ct = default)
+    public async Task<bool> DeleteConversationAsync(string userId, string id, CancellationToken ct = default)
     {
-        await _writeLock.WaitAsync(ct);
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
-            var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id, ct);
-            if (conv is null)
-                return false;
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
+        if (conv is null)
+            return false;
 
-            string actor = string.IsNullOrWhiteSpace(_currentUser?.UserId) ? "system" : _currentUser.UserId!.Trim();
-            conv.SoftDelete(_timeProvider.GetUtcNow(), actor);
-            await db.SaveChangesAsync(ct);
-            return true;
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
+        conv.SoftDelete(_timeProvider.GetUtcNow(), userId);
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 }

@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Learning.Commands.InitializeDailyVocabularyPlan;
@@ -24,7 +25,7 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             var settings = await sender.Send(new GetLearningSettingsQuery(currentUser.UserId!), ct);
@@ -39,20 +40,13 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                var updated = await sender.Send(
-                    new UpdateLearningSettingsCommand(currentUser.UserId!, req),
-                    ct);
-                return Results.Ok(updated);
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(
+                new UpdateLearningSettingsCommand(currentUser.UserId!, req),
+                ct);
+            return Results.Ok(updated);
         });
 
         var group = app.MapGroup("/api/learning/flashcards").RequireAuthorization();
@@ -65,7 +59,7 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             string userId = currentUser.UserId!;
@@ -75,12 +69,12 @@ public static class DailyLearningEndpoints
 
             if (plan is null)
             {
-                return Results.NotFound(new
-                {
-                    code = "daily_plan_not_initialized",
-                    error = "daily_plan_not_initialized",
-                    message = "Kế hoạch học tập từ vựng hôm nay chưa được khởi tạo."
-                });
+                return ApiProblem.NotFound(
+                    "Kế hoạch học tập từ vựng hôm nay chưa được khởi tạo.",
+                    customExtensions: new Dictionary<string, object?>
+                    {
+                        ["code"] = "daily_plan_not_initialized"
+                    });
             }
 
             return Results.Ok(plan);
@@ -94,21 +88,14 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                var plan = await sender.Send(
-                    new InitializeDailyVocabularyPlanCommand(userId, req ?? new InitializeDailyPlanRequest()),
-                    ct);
-                return Results.Ok(plan);
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            string userId = currentUser.UserId!;
+            var plan = await sender.Send(
+                new InitializeDailyVocabularyPlanCommand(userId, req ?? new InitializeDailyPlanRequest()),
+                ct);
+            return Results.Ok(plan);
         });
 
         group.MapPost("/{itemId:guid}/review", async (
@@ -120,21 +107,14 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                var updatedCard = await sender.Send(
-                    new SubmitVocabularyReviewCommand(userId, itemId, req),
-                    ct);
-                return Results.Ok(updatedCard);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            string userId = currentUser.UserId!;
+            var updatedCard = await sender.Send(
+                new SubmitVocabularyReviewCommand(userId, itemId, req),
+                ct);
+            return Results.Ok(updatedCard);
         });
 
         group.MapPost("/review", async (
@@ -145,21 +125,14 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                var updatedCard = await sender.Send(
-                    new SubmitVocabularyReviewCommand(userId, null, req),
-                    ct);
-                return Results.Ok(updatedCard);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            string userId = currentUser.UserId!;
+            var updatedCard = await sender.Send(
+                new SubmitVocabularyReviewCommand(userId, null, req),
+                ct);
+            return Results.Ok(updatedCard);
         });
 
         group.MapGet("/progress", async (
@@ -169,7 +142,7 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             string userId = currentUser.UserId!;
@@ -185,7 +158,7 @@ public static class DailyLearningEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             string userId = currentUser.UserId!;

@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
 namespace EnglishLiveTutor.Application.Features.Identity.Commands.RevokeRefreshToken;
@@ -15,15 +16,16 @@ public sealed class RevokeRefreshTokenCommandHandler : ICommandHandler<RevokeRef
 
     public async Task<bool> HandleAsync(RevokeRefreshTokenCommand command, CancellationToken ct = default)
     {
-        string token = command.Request.RefreshToken?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(token))
+        string rawToken = command.Request.RefreshToken?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rawToken))
             return false;
 
-        var user = await _userRepo.GetByRefreshTokenAsync(token, ct);
+        string tokenHash = RefreshTokenEntity.HashToken(rawToken);
+        var user = await _userRepo.GetByRefreshTokenAsync(tokenHash, ct);
         if (user is null)
             return false;
 
-        user.RevokeRefreshToken(token, DateTimeOffset.UtcNow, command.Request.Reason);
+        user.RevokeRefreshToken(tokenHash, DateTimeOffset.UtcNow, command.Request.Reason ?? "Revoked by user");
         await _userRepo.SaveChangesAsync(ct);
         return true;
     }

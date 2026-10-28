@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,12 +22,12 @@ public sealed class ListUsersQueryHandler : IQueryHandler<ListUsersQuery, PagedR
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search.Trim().ToLowerInvariant();
-            string normEmailTerm = query.Search.Trim().ToUpperInvariant();
+            string normUpperTerm = query.Search.Trim().ToUpperInvariant();
             q = q.Where(u =>
                 u.Username.ToLower().Contains(term) ||
-                u.NormalizedEmail.Contains(normEmailTerm) ||
+                u.NormalizedEmail.Contains(normUpperTerm) ||
                 u.FullName.ToLower().Contains(term) ||
-                u.UserRoles.Any(ur => db.Roles.Any(r => r.Id == ur.RoleId && r.Code.ToLower().Contains(term))));
+                u.UserRoles.Any(ur => db.Roles.Any(r => r.Id == ur.RoleId && r.Code.Contains(normUpperTerm))));
         }
 
         var ordered = q.OrderByDescending(u => u.CreatedAtUtc);

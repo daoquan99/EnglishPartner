@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Domain.Lessons;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -55,33 +56,26 @@ public sealed class ListLessonsQueryHandler : IQueryHandler<ListLessonsQuery, Pa
             dbQuery = dbQuery.Where(l => l.Title.ToLower().Contains(term) || l.Topic.ToLower().Contains(term));
         }
 
-        dbQuery = dbQuery.OrderByDescending(l => l.CreatedAtUtc);
+        var ordered = dbQuery.OrderByDescending(l => l.CreatedAtUtc);
 
-        int totalCount = await dbQuery.CountAsync(ct);
-        int page = Math.Max(1, query.Page ?? 1);
-        int pageSize = Math.Clamp(query.PageSize ?? 20, 1, 500);
-
-        var lessons = await dbQuery
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        var dtos = lessons.Select(l => new LessonSummaryDto(
-            Id: l.Id,
-            Title: l.Title,
-            CefrLevel: l.CefrLevel,
-            Topic: l.Topic,
-            Content: l.Content,
-            EstimatedMinutes: l.EstimatedMinutes,
-            Status: l.Status.ToString(),
-            Version: l.Version,
-            ExerciseCount: l.Exercises.Count,
-            TotalMaxPoints: l.Exercises.Sum(e => e.MaxPoints),
-            PublishedAtUtc: l.PublishedAtUtc,
-            RowVersion: l.RowVersion != null ? Convert.ToBase64String(l.RowVersion) : null
-        )).ToList();
-
-        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
-        return new PagedResultDto<LessonSummaryDto>(dtos, totalCount, page, pageSize, totalPages);
+        return await PagedResultDto<LessonEntity>.CreateProjectedAsync(
+            ordered,
+            (pageLessons, _) => Task.FromResult(pageLessons.Select(l => new LessonSummaryDto(
+                Id: l.Id,
+                Title: l.Title,
+                CefrLevel: l.CefrLevel,
+                Topic: l.Topic,
+                Content: l.Content,
+                EstimatedMinutes: l.EstimatedMinutes,
+                Status: l.Status.ToString(),
+                Version: l.Version,
+                ExerciseCount: l.Exercises.Count,
+                TotalMaxPoints: l.Exercises.Sum(e => e.MaxPoints),
+                PublishedAtUtc: l.PublishedAtUtc,
+                RowVersion: l.RowVersion != null ? Convert.ToBase64String(l.RowVersion) : null
+            )).ToList()),
+            query.Page ?? 1, // Lesson lists keep their historical default page (20 rows) when the client sends no paging.
+            query.PageSize,
+            ct);
     }
 }

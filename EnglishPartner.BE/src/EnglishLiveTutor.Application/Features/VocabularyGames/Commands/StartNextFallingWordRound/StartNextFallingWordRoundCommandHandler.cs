@@ -35,13 +35,8 @@ public sealed class StartNextFallingWordRoundCommandHandler : ICommandHandler<St
             throw new UnauthorizedAccessException("Vui lòng đăng nhập để tiếp tục trò chơi.");
         }
 
-        var session = await _repo.GetByIdWithRoundsAsync(command.SessionId, ct)
+        var session = await _repo.GetByIdWithRoundsForUserAsync(command.SessionId, userId, ct)
             ?? throw new NotFoundException($"Phiên trò chơi với ID '{command.SessionId}' không tồn tại.");
-
-        if (session.UserId != userId)
-        {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên phiên trò chơi của người dùng khác.");
-        }
 
         if (session.Status == FallingWordGameStatus.Completed || session.Status == FallingWordGameStatus.Abandoned)
         {

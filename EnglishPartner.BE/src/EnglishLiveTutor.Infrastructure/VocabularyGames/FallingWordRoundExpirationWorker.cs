@@ -1,8 +1,10 @@
 using EnglishLiveTutor.Application.Features.VocabularyGames.Commands.ExpireFallingWordRounds;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLiveTutor.Infrastructure.VocabularyGames;
 
@@ -15,21 +17,49 @@ public sealed class FallingWordRoundExpirationWorker : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<FallingWordRoundExpirationWorker> _logger;
-    private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(2);
+    private readonly TimeSpan _pollingInterval;
+
+    public TimeSpan PollingInterval => _pollingInterval;
 
     public FallingWordRoundExpirationWorker(
         IServiceProvider serviceProvider,
         TimeProvider timeProvider,
-        ILogger<FallingWordRoundExpirationWorker> logger)
+        ILogger<FallingWordRoundExpirationWorker> logger,
+        IOptions<VocabularyGamesOptions>? options = null,
+        IConfiguration? configuration = null)
     {
         _serviceProvider = serviceProvider;
         _timeProvider = timeProvider;
         _logger = logger;
+
+        int pollSeconds = VocabularyGamesOptions.DefaultExpirationPollSeconds;
+        if (options?.Value != null)
+        {
+            pollSeconds = options.Value.ExpirationPollSeconds;
+        }
+        else if (configuration != null)
+        {
+            var configSec = configuration.GetValue<int?>("VocabularyGames:ExpirationPollSeconds");
+            if (configSec.HasValue)
+            {
+                pollSeconds = configSec.Value;
+            }
+        }
+
+        if (pollSeconds < VocabularyGamesOptions.MinExpirationPollSeconds || pollSeconds > VocabularyGamesOptions.MaxExpirationPollSeconds)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                pollSeconds,
+                $"VocabularyGames:ExpirationPollSeconds must be between {VocabularyGamesOptions.MinExpirationPollSeconds} and {VocabularyGamesOptions.MaxExpirationPollSeconds} seconds.");
+        }
+
+        _pollingInterval = TimeSpan.FromSeconds(pollSeconds);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("FallingWordRoundExpirationWorker started.");
+        _logger.LogInformation("FallingWordRoundExpirationWorker started with polling interval {PollingIntervalSeconds}s.", _pollingInterval.TotalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {

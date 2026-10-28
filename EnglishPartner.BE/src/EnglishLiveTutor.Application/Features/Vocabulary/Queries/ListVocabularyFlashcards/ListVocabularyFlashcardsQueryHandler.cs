@@ -56,12 +56,12 @@ public sealed class ListVocabularyFlashcardsQueryHandler(IAppDbContextFactory db
         bool hasPaging = page.HasValue || pageSize.HasValue;
         int effPage = Math.Max(1, page ?? 1);
         int effSize = hasPaging
-            ? Math.Clamp(pageSize ?? 20, 1, 500)
-            : Math.Max(1, totalCount);
+            ? Math.Clamp(pageSize ?? PagedResultDto<VocabularyFlashcardDto>.DefaultPageSize, 1, PagedResultDto<VocabularyFlashcardDto>.MaxPageSize)
+            : Math.Clamp(totalCount, 1, PagedResultDto<VocabularyFlashcardDto>.MaxUnpagedItems);
 
         var pagePairs = hasPaging
             ? await orderedPairs.Skip((effPage - 1) * effSize).Take(effSize).ToListAsync(ct)
-            : await orderedPairs.ToListAsync(ct);
+            : await orderedPairs.Take(PagedResultDto<VocabularyFlashcardDto>.MaxUnpagedItems).ToListAsync(ct);
 
         var pageVocabIds = pagePairs.Select(p => p.VocabularyId).Distinct().ToList();
         var vocabDict = await db.Vocabularies

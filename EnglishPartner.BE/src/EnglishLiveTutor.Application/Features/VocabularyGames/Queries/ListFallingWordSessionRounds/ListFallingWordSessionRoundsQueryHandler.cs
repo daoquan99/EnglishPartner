@@ -31,13 +31,8 @@ public sealed class ListFallingWordSessionRoundsQueryHandler : IQueryHandler<Lis
 
         var session = await _db.FallingWordGameSessions
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == query.SessionId, ct)
+            .FirstOrDefaultAsync(s => s.Id == query.SessionId && s.UserId == userId, ct)
             ?? throw new NotFoundException($"Phiên trò chơi với ID '{query.SessionId}' không tồn tại.");
-
-        if (session.UserId != userId)
-        {
-            throw new ForbiddenException("Bạn không có quyền xem chi tiết phiên chơi của người dùng khác.");
-        }
 
         bool isTerminalSession = session.Status == FallingWordGameStatus.Completed || session.Status == FallingWordGameStatus.Abandoned;
 

@@ -52,7 +52,10 @@ public sealed class SubmitVocabularyReviewCommandHandler : ICommandHandler<Submi
                 {
                     if (dailyItemId.HasValue && dailyItemId.Value != Guid.Empty)
                     {
-                        var existingItem = await _db.DailyVocabularyItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == dailyItemId.Value, ct);
+                        var existingItem = await (from i in _db.DailyVocabularyItems.AsNoTracking()
+                                                  join p in _db.DailyVocabularyPlans.AsNoTracking() on i.PlanId equals p.Id
+                                                  where i.Id == dailyItemId.Value && p.UserId == userId
+                                                  select i).FirstOrDefaultAsync(ct);
                         return cachedCard with
                         {
                             DailyItemId = dailyItemId.Value,

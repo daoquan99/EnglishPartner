@@ -34,11 +34,13 @@ public sealed class SynthesizeExerciseAudioCommandHandler(
 {
     public async Task<ExerciseAudioDto> HandleAsync(SynthesizeExerciseAudioCommand command, CancellationToken ct = default)
     {
+        string? currentUserId = currentUser.UserId;
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
+
         var attempt = await db.LessonAttempts.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == command.AttemptId, ct)
+            .FirstOrDefaultAsync(a => a.Id == command.AttemptId && a.UserId == currentUserId, ct)
             ?? throw new NotFoundException("Không tìm thấy lượt làm bài.");
-        if (string.IsNullOrWhiteSpace(currentUser.UserId) || attempt.UserId != currentUser.UserId)
-            throw new ForbiddenException("Bạn không có quyền truy cập âm thanh của lượt làm bài này.");
 
         var lesson = await db.Lessons.AsNoTracking().Include(l => l.Exercises)
             .FirstOrDefaultAsync(l => l.Id == attempt.LessonId, ct)

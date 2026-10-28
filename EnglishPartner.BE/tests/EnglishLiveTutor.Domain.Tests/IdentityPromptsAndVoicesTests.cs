@@ -7,12 +7,26 @@ using EnglishLiveTutor.Infrastructure.Identity;
 using EnglishLiveTutor.Infrastructure.Persistence;
 using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace EnglishLiveTutor.Domain.Tests;
 
 public class IdentityPromptsAndVoicesTests
 {
+    private sealed class FakeHostEnvironment : IHostEnvironment
+    {
+        public FakeHostEnvironment(string environmentName)
+        {
+            EnvironmentName = environmentName;
+        }
+
+        public string EnvironmentName { get; set; }
+        public string ApplicationName { get; set; } = "EnglishLiveTutor.Domain.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = null!;
+    }
     [Fact]
     public void UserAggregate_ShouldManageRoles_AndRotateOrRevokeRefreshTokens()
     {
@@ -46,7 +60,8 @@ public class IdentityPromptsAndVoicesTests
     [Fact]
     public void JwtTokenService_ShouldGenerateValidJwtAndRefreshToken()
     {
-        var jwtService = new HmacJwtTokenService();
+        var env = new FakeHostEnvironment(Environments.Development);
+        var jwtService = new HmacJwtTokenService(environment: env);
         var user = UserEntity.Create("bob", "bob@lingomint.local", "Bob Tran", "hash");
 
         var tokenResult = jwtService.GenerateAccessToken(

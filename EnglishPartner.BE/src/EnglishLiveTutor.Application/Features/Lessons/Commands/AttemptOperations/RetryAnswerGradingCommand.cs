@@ -55,7 +55,7 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
         string? userId = _currentUser.UserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new ForbiddenException("Authentication required to retry answer grading.");
+            throw new UnauthorizedAccessException("Authentication required to retry answer grading.");
         }
 
         string fingerprint = IdempotencyFingerprint.Compute(
@@ -85,16 +85,15 @@ public sealed class RetryAnswerGradingCommandHandler : ICommandHandler<RetryAnsw
 
         var attempt = await _db.LessonAttempts
             .Include(a => a.Answers)
-            .FirstOrDefaultAsync(a => a.Id == command.AttemptId, ct)
-            ?? throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
+            .FirstOrDefaultAsync(a => a.Id == command.AttemptId && a.UserId == userId, ct);
 
-        if (!string.Equals(attempt.UserId, userId, StringComparison.OrdinalIgnoreCase))
+        if (attempt == null)
         {
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {
                 await _idempotency.FailOperationAsync(userId, "LessonAttempt.RetryGrading", command.AttemptId.ToString(), command.OperationKey, CancellationToken.None);
             }
-            throw new ForbiddenException("You are not authorized to retry grading for this attempt.");
+            throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
         }
 
         var answer = attempt.Answers.FirstOrDefault(a => a.Id == command.AnswerId)

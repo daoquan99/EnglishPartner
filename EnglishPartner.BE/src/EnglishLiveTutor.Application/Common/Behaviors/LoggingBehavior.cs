@@ -17,13 +17,13 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         var requestName = typeof(TRequest).Name;
         var stopwatch = Stopwatch.StartNew();
 
-        logger.LogInformation("Handling {RequestName}", requestName);
+        logger.LogDebug("Handling {RequestName}", requestName);
 
         try
         {
             var response = await next(ct);
 
-            logger.LogInformation(
+            logger.LogDebug(
                 "Handled {RequestName} in {ElapsedMs}ms",
                 requestName,
                 stopwatch.ElapsedMilliseconds);
@@ -33,9 +33,9 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         catch (Exception ex)
         {
             logger.LogWarning(
-                ex,
-                "Failed {RequestName} after {ElapsedMs}ms",
+                "Failed {RequestName} with {ExceptionType} after {ElapsedMs}ms",
                 requestName,
+                ex.GetType().Name,
                 stopwatch.ElapsedMilliseconds);
 
             throw;

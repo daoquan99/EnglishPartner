@@ -4,7 +4,7 @@ namespace EnglishLiveTutor.Domain.Learning;
 
 public sealed class VocabularyReviewAttemptEntity : AggregateRoot<Guid>
 {
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public Guid VocabularyId { get; private set; }
     public Guid SenseId { get; private set; }
     public string ReviewType { get; private set; } = "FlashcardRecall";
@@ -29,7 +29,10 @@ public sealed class VocabularyReviewAttemptEntity : AggregateRoot<Guid>
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId is required.", nameof(userId));
+
+        UserId = userId.Trim();
         VocabularyId = vocabularyId;
         SenseId = senseId;
         ReviewType = string.IsNullOrWhiteSpace(reviewType) ? "FlashcardRecall" : reviewType.Trim();

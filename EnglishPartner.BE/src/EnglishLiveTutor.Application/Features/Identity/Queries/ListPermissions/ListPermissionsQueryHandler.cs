@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,7 +22,7 @@ public sealed class ListPermissionsQueryHandler : IQueryHandler<ListPermissionsQ
         {
             string term = query.Search.Trim().ToLowerInvariant();
             q = q.Where(p =>
-                p.Code.ToLower().Contains(term) ||
+                p.Code.Contains(term) ||
                 p.Name.ToLower().Contains(term) ||
                 p.Module.ToLower().Contains(term) ||
                 p.Description.ToLower().Contains(term));

@@ -1,8 +1,10 @@
 using EnglishLiveTutor.Application.Common.Behaviors;
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Validation;
 using EnglishLiveTutor.Application.Features.Pronunciation;
 using EnglishLiveTutor.Application.Features.Vocabulary;
+using EnglishLiveTutor.Application.Features.Vocabulary.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,26 +45,11 @@ public static class DependencyInjection
         services.AddScoped<IPronunciationTargetResolver, PronunciationTargetResolver>();
         services.AddScoped<ILessonCandidateValidator, LessonCandidateValidator>();
 
-        // Register custom CQRS handler interfaces (IQueryHandler, ICommandHandler) for direct injection
-        var handlerTypes = assembly.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract);
-
-        foreach (var type in handlerTypes)
-        {
-            foreach (var iface in type.GetInterfaces())
-            {
-                if (iface.IsGenericType)
-                {
-                    var genericDef = iface.GetGenericTypeDefinition();
-                    if (genericDef == typeof(IQueryHandler<,>) ||
-                        genericDef == typeof(ICommandHandler<,>) ||
-                        genericDef == typeof(ICommandHandler<>))
-                    {
-                        services.AddTransient(iface, type);
-                    }
-                }
-            }
-        }
+        // Application services extracted for shared logic (no handler injects another handler)
+        services.AddScoped<ILessonAttemptResumeBuilder, LessonAttemptResumeBuilder>();
+        services.AddScoped<ILessonDetailBuilder, LessonDetailBuilder>();
+        services.AddScoped<ILessonRubricDetailBuilder, LessonRubricDetailBuilder>();
+        services.AddScoped<IVocabularyPromptBuilder, VocabularyPromptBuilder>();
 
         return services;
     }

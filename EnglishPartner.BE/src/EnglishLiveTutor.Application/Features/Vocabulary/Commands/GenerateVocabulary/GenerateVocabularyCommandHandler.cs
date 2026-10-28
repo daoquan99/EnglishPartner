@@ -1,6 +1,7 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
+using EnglishLiveTutor.Application.Features.Vocabulary.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,18 +13,18 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
 
     private readonly IAppDbContextFactory _dbFactory;
     private readonly IVocabularyAiGenerator _aiGenerator;
-    private readonly IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto> _promptHandler;
+    private readonly IVocabularyPromptBuilder _promptBuilder;
     private readonly VocabularyGenerationWriter _writer;
 
     public GenerateVocabularyCommandHandler(
         IAppDbContextFactory dbFactory,
         IVocabularyAiGenerator aiGenerator,
-        IQueryHandler<BuildVocabularyGenerationPromptQuery, VocabularyGenerationPromptDto> promptHandler,
+        IVocabularyPromptBuilder promptBuilder,
         VocabularyGenerationWriter writer)
     {
         _dbFactory = dbFactory;
         _aiGenerator = aiGenerator;
-        _promptHandler = promptHandler;
+        _promptBuilder = promptBuilder;
         _writer = writer;
     }
 
@@ -54,8 +55,7 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
 
         string effectiveModel = model != null ? model.GetEffectiveModelCode() : requestedModelCode;
 
-        var query = new BuildVocabularyGenerationPromptQuery(new(req.RequestedCount, req.CefrLevel, req.Topic, req.ExcludedWords));
-        var prompt = await _promptHandler.HandleAsync(query, ct);
+        var prompt = await _promptBuilder.BuildPromptAsync(new(req.RequestedCount, req.CefrLevel, req.Topic, req.ExcludedWords), ct);
 
         var context = new VocabularyGenerationContext(command.UserId, requestedModelCode, prompt.RequestedCount,
             prompt.CefrLevel, prompt.Topic, req.AssignToTodayPlan);

@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Topics.Commands.DeleteTopic;
@@ -48,7 +49,7 @@ public static class TopicEndpoints
             CancellationToken ct) =>
         {
             var topic = await sender.Send(new GetTopicByIdQuery(id), ct);
-            return topic is null ? Results.NotFound() : Results.Ok(topic);
+            return topic is null ? ApiProblem.NotFound("Không tìm thấy chủ đề.") : Results.Ok(topic);
         });
 
         group.MapPost("/", async (
@@ -56,15 +57,8 @@ public static class TopicEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var saved = await sender.Send(new UpsertTopicCommand(null, req), ct);
-                return Results.Ok(saved);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var saved = await sender.Send(new UpsertTopicCommand(null, req), ct);
+            return Results.Ok(saved);
         }).RequirePermission("topics.manage");
 
         group.MapPut("/{id:guid}", async (
@@ -73,15 +67,8 @@ public static class TopicEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var saved = await sender.Send(new UpsertTopicCommand(id, req), ct);
-                return Results.Ok(saved);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var saved = await sender.Send(new UpsertTopicCommand(id, req), ct);
+            return Results.Ok(saved);
         }).RequirePermission("topics.manage");
 
         group.MapDelete("/{id:guid}", async (
@@ -90,7 +77,7 @@ public static class TopicEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteTopicCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy chủ đề.");
         }).RequirePermission("topics.manage");
 
         return app;

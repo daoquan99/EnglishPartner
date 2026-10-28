@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Voices;
 using EnglishLiveTutor.Domain.Voices.Repositories;
 using EnglishLiveTutor.Infrastructure.Persistence;
@@ -86,7 +87,7 @@ public sealed class TeacherVoiceRepository : ITeacherVoiceRepository
         if (hasPaging)
         {
             int effPage = Math.Max(1, page ?? 1);
-            int effSize = Math.Clamp(pageSize ?? 20, 1, 500);
+            int effSize = Math.Clamp(pageSize ?? PagedResultDto<TeacherVoiceEntity>.DefaultPageSize, 1, PagedResultDto<TeacherVoiceEntity>.MaxPageSize);
             var pagedItems = await ordered
                 .Skip((effPage - 1) * effSize)
                 .Take(effSize)
@@ -94,7 +95,7 @@ public sealed class TeacherVoiceRepository : ITeacherVoiceRepository
             return (pagedItems, totalCount);
         }
 
-        var allItems = await ordered.ToListAsync(ct);
+        var allItems = await ordered.Take(PagedResultDto<TeacherVoiceEntity>.MaxUnpagedItems).ToListAsync(ct);
         return (allItems, totalCount);
     }
 

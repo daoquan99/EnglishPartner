@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
@@ -36,16 +37,9 @@ public static class PronunciationEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new SynthesizePronunciationAudioCommand(req), ct);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        });
+            var result = await sender.Send(new SynthesizePronunciationAudioCommand(req), ct);
+            return Results.Ok(result);
+        }).RequireRateLimiting("ai");
 
         // Query Persisted Pronunciation Audio from Cache
         group.MapGet("/audio", async (
@@ -62,34 +56,27 @@ public static class PronunciationEndpoints
         {
             if (string.IsNullOrWhiteSpace(targetId) || !Guid.TryParse(targetId, out var parsedTargetId) || parsedTargetId == Guid.Empty)
             {
-                return Results.NotFound(new { error = "Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm." });
+                return ApiProblem.NotFound("Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm.");
             }
 
             Guid? parsedVocabId = Guid.TryParse(vocabularyId, out var vid) ? vid : null;
             Guid? parsedSenseId = Guid.TryParse(senseId, out var sid) ? sid : null;
 
-            try
-            {
-                var result = await sender.Send(
-                    new GetPronunciationAudioQuery(
-                        targetType,
-                        parsedTargetId,
-                        voiceName,
-                        speechSpeed,
-                        accent,
-                        modelCode,
-                        parsedVocabId,
-                        parsedSenseId),
-                    ct);
+            var result = await sender.Send(
+                new GetPronunciationAudioQuery(
+                    targetType,
+                    parsedTargetId,
+                    voiceName,
+                    speechSpeed,
+                    accent,
+                    modelCode,
+                    parsedVocabId,
+                    parsedSenseId),
+                ct);
 
-                return result is null
-                    ? Results.NotFound(new { error = "Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm." })
-                    : Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return result is null
+                ? ApiProblem.NotFound("Không tìm thấy âm thanh phát âm đã lưu trong bộ nhớ đệm.")
+                : Results.Ok(result);
         });
 
         // List all Scoring Rubrics for Admin CRUD (Database-level IQueryable Pagination)
@@ -112,7 +99,7 @@ public static class PronunciationEndpoints
             CancellationToken ct) =>
         {
             var rubric = await sender.Send(new GetActiveScoringRubricQuery(), ct);
-            return rubric is null ? Results.NotFound() : Results.Ok(rubric);
+            return rubric is null ? ApiProblem.NotFound("Không tìm thấy rubric phát âm đang hoạt động.") : Results.Ok(rubric);
         });
 
         group.MapPost("/rubrics", async (
@@ -120,15 +107,8 @@ public static class PronunciationEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var created = await sender.Send(new UpdateScoringRubricCommand(req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var created = await sender.Send(new UpdateScoringRubricCommand(req), ct);
+            return Results.Ok(created);
         }).RequirePermission("rubrics.manage");
 
         group.MapPut("/rubrics/{code}", async (
@@ -137,15 +117,8 @@ public static class PronunciationEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpdateScoringRubricCommand(code, req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpdateScoringRubricCommand(code, req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("rubrics.manage");
 
         group.MapDelete("/rubrics/{code}", async (
@@ -154,7 +127,7 @@ public static class PronunciationEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteScoringRubricCommand(code), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy rubric phát âm.");
         }).RequirePermission("rubrics.manage");
 
         group.MapPost("/assessments", async (
@@ -165,40 +138,28 @@ public static class PronunciationEndpoints
         {
             if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
-            try
-            {
-                string userId = currentUser.UserId!;
-                var result = await sender.Send(new AssessPronunciationCommand(userId, req), ct);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        });
+            string userId = currentUser.UserId!;
+            var result = await sender.Send(new AssessPronunciationCommand(userId, req), ct);
+            return Results.Ok(result);
+        }).RequireRateLimiting("ai");
 
         group.MapGet("/assessments/history", async (
-            string? userId,
             Guid? vocabularyId,
             int? take,
             ICurrentUser currentUser,
             ISender sender,
             CancellationToken ct) =>
         {
-            string effectiveUserId = !string.IsNullOrWhiteSpace(userId)
-                ? userId.Trim()
-                : (currentUser.UserId ?? "");
-
-            if (string.IsNullOrWhiteSpace(effectiveUserId))
+            if (string.IsNullOrWhiteSpace(currentUser.UserId))
             {
-                return Results.Unauthorized();
+                return ApiProblem.Unauthorized();
             }
 
             var history = await sender.Send(
-                new GetPronunciationHistoryQuery(effectiveUserId, vocabularyId, take ?? 20),
+                new GetPronunciationHistoryQuery(currentUser.UserId!, vocabularyId, take ?? 20),
                 ct);
             return Results.Ok(history);
         });

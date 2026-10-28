@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.AiModels.Commands.CreateAiModelConfig;
@@ -34,15 +35,8 @@ public static class AiModelEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new CreateAiModelConfigCommand(req), ct);
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new CreateAiModelConfigCommand(req), ct);
+            return Results.Ok(result);
         }).RequirePermission("rubrics.manage");
 
         modelsGroup.MapPut("/{id:guid}", async (
@@ -51,15 +45,8 @@ public static class AiModelEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new UpdateAiModelConfigCommand(id, req), ct);
-                return result is null ? Results.NotFound(new { error = "Không tìm thấy AI Model." }) : Results.Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new UpdateAiModelConfigCommand(id, req), ct);
+            return result is null ? ApiProblem.NotFound("Không tìm thấy AI Model.") : Results.Ok(result);
         }).RequirePermission("rubrics.manage");
 
         modelsGroup.MapDelete("/{id:guid}", async (
@@ -68,7 +55,7 @@ public static class AiModelEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteAiModelConfigCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy AI Model.");
         }).RequirePermission("rubrics.manage");
 
         return app;

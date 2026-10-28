@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 
 namespace EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabularyFlashcard;
@@ -6,5 +6,5 @@ namespace EnglishLiveTutor.Application.Features.Vocabulary.Queries.GetVocabulary
 public sealed record GetVocabularyFlashcardQuery(
     Guid Id,
     Guid? SenseId,
-    string UserId = "default-learner"
+    string UserId
 ) : IQuery<VocabularyFlashcardDto?>;

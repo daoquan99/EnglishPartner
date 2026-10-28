@@ -20,7 +20,7 @@ public sealed class GetLearningHistoryQueryHandler : IQueryHandler<GetLearningHi
             .AsNoTracking()
             .Where(r => r.UserId == query.UserId)
             .OrderByDescending(r => r.ReviewedAt)
-            .Take(query.Limit)
+            .Take(Math.Clamp(query.Limit, 1, 100)) // history grows without bound; cap a client-supplied limit
             .ToListAsync(ct);
 
         var vocabIds = recentReviews.Select(r => r.VocabularyId).Distinct().ToList();

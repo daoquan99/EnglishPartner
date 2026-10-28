@@ -60,7 +60,7 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
         string? userId = _currentUser.UserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new ForbiddenException("Authentication required to submit exercise answer.");
+            throw new UnauthorizedAccessException("Authentication required to submit exercise answer.");
         }
 
         string fingerprint = IdempotencyFingerprint.Compute(
@@ -89,16 +89,15 @@ public sealed class SubmitExerciseAnswerCommandHandler : ICommandHandler<SubmitE
 
         var attempt = await _db.LessonAttempts
             .Include(a => a.Answers)
-            .FirstOrDefaultAsync(a => a.Id == command.AttemptId, ct)
-            ?? throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
+            .FirstOrDefaultAsync(a => a.Id == command.AttemptId && a.UserId == userId, ct);
 
-        if (!string.Equals(attempt.UserId, userId, StringComparison.OrdinalIgnoreCase))
+        if (attempt == null)
         {
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {
                 await _idempotency.FailOperationAsync(userId, "LessonAttempt.SubmitAnswer", command.AttemptId.ToString(), command.OperationKey, CancellationToken.None);
             }
-            throw new ForbiddenException("You are not authorized to submit answers for this attempt.");
+            throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
         }
 
         var req = command.Request;

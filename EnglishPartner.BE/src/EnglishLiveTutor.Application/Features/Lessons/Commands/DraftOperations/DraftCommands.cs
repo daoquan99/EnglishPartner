@@ -3,6 +3,7 @@ using EnglishLiveTutor.Application.Common.Exceptions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.Lessons;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -35,18 +36,18 @@ public sealed class DraftCommandHandlers :
     private readonly IAppDbContext _db;
     private readonly ICurrentUser _currentUser;
     private readonly TimeProvider _timeProvider;
-    private readonly IQueryHandler<GetLessonByIdQuery, object?> _getLessonByIdHandler;
+    private readonly ILessonDetailBuilder _lessonDetailBuilder;
 
     public DraftCommandHandlers(
         IAppDbContext db,
         ICurrentUser currentUser,
         TimeProvider timeProvider,
-        IQueryHandler<GetLessonByIdQuery, object?> getLessonByIdHandler)
+        ILessonDetailBuilder lessonDetailBuilder)
     {
         _db = db;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
-        _getLessonByIdHandler = getLessonByIdHandler;
+        _lessonDetailBuilder = lessonDetailBuilder;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(CreateLessonDraftCommand command, CancellationToken ct = default)
@@ -65,8 +66,8 @@ public sealed class DraftCommandHandlers :
         _db.Lessons.Add(lesson);
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     public async Task<LessonDetailAuthorDto> HandleAsync(UpdateLessonDraftCommand command, CancellationToken ct = default)
@@ -91,8 +92,8 @@ public sealed class DraftCommandHandlers :
 
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     public async Task HandleAsync(DeleteLessonDraftCommand command, CancellationToken ct = default)
@@ -185,8 +186,8 @@ public sealed class DraftCommandHandlers :
         lesson.RevertToDraft();
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getLessonByIdHandler.HandleAsync(new GetLessonByIdQuery(lesson.Id, IsLearner: false), ct);
-        return (LessonDetailAuthorDto)dto!;
+        var dto = await _lessonDetailBuilder.BuildAuthorDetailAsync(lesson.Id, ct);
+        return dto!;
     }
 
     private static void ValidateConcurrency(byte[]? entityRowVersion, string? clientToken)

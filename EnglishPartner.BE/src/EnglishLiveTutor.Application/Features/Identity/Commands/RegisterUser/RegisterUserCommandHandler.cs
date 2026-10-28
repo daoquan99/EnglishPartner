@@ -1,6 +1,7 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Identity;
+using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
 namespace EnglishLiveTutor.Application.Features.Identity.Commands.RegisterUser;
@@ -50,18 +51,19 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
             preferredVoiceName: req.PreferredVoiceName,
             timeZoneId: req.TimeZoneId);
 
-        var learnerRole = await _roleRepo.GetByCodeWithPermissionsAsync("LEARNER", ct);
-        if (learnerRole is not null)
-        {
-            user.AssignRole(learnerRole.Id);
-        }
+        var learnerRole = await _roleRepo.GetByCodeWithPermissionsAsync("LEARNER", ct)
+            ?? throw new InvalidOperationException("Hệ thống chưa thiết lập vai trò LEARNER. Vui lòng liên hệ quản trị viên.");
+
+        user.AssignRole(learnerRole.Id);
 
         var now = DateTimeOffset.UtcNow;
         user.RecordLogin(now);
 
-        string refreshTokenStr = _jwtService.GenerateRefreshTokenString();
+        string rawRefreshToken = _jwtService.GenerateRefreshTokenString();
+        string tokenHash = RefreshTokenEntity.HashToken(rawRefreshToken);
         var refreshExpires = now.AddDays(30);
-        user.IssueRefreshToken(refreshTokenStr, refreshExpires, command.IpAddress, "Registration");
+
+        user.IssueRefreshToken(tokenHash, refreshExpires, command.IpAddress, "Registration");
 
         await _userRepo.AddAsync(user, ct);
         await _userRepo.SaveChangesAsync(ct);
@@ -73,7 +75,7 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
         return new AuthResponseDto(
             AccessToken: accessToken.AccessToken,
             AccessTokenExpiresAtUtc: accessToken.ExpiresAtUtc,
-            RefreshToken: refreshTokenStr,
+            RefreshToken: rawRefreshToken,
             RefreshTokenExpiresAtUtc: refreshExpires,
             User: IdentityProjectionHelper.MapToProfileDto(user, roleCodes, permissionCodes)
         );

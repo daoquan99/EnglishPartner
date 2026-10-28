@@ -56,6 +56,11 @@ public sealed class ChatMessageEntity : Entity<string>
 
     public void UpdateTranscript(string fullTranscript, bool isFinal, int sequenceOrder)
     {
+        if (IsFinal && !isFinal)
+        {
+            return;
+        }
+
         TranscriptLine1 = fullTranscript;
         IsFinal = isFinal || IsFinal;
         if (sequenceOrder > 0 && (SequenceOrder == 0 || sequenceOrder < SequenceOrder))

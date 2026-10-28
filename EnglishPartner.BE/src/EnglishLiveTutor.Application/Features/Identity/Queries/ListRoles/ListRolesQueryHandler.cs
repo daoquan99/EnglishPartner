@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +25,9 @@ public sealed class ListRolesQueryHandler : IQueryHandler<ListRolesQuery, PagedR
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search.Trim().ToLowerInvariant();
+            string upperTerm = query.Search.Trim().ToUpperInvariant();
             q = q.Where(r =>
-                r.Code.ToLower().Contains(term) ||
+                r.Code.Contains(upperTerm) ||
                 r.Name.ToLower().Contains(term) ||
                 r.Description.ToLower().Contains(term));
         }

@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.SynthesizeExerciseAudio;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.AttemptOperations;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using System.Text.Json.Nodes;
 using EnglishLiveTutor.Domain.LessonAttempts;
 using EnglishLiveTutor.Domain.Lessons;
@@ -57,7 +58,7 @@ public class LessonPlayerRegressionTests
         db.Lessons.Add(lesson); db.LessonAttempts.Add(attempt); await db.SaveChangesAsync();
         var provider = new FakeTts();
         var handler = new SynthesizeExerciseAudioCommandHandler(db, new User("another"), provider, new FakeAudioRepository(), new PronunciationSynthesisLock());
-        await Assert.ThrowsAsync<ForbiddenException>(() => handler.HandleAsync(new(attempt.Id, exercise.Id, new(ApiKey: "test-only"))));
+        await Assert.ThrowsAsync<NotFoundException>(() => handler.HandleAsync(new(attempt.Id, exercise.Id, new(ApiKey: "test-only"))));
         Assert.Equal(0, provider.Calls);
     }
 
@@ -120,7 +121,7 @@ public class LessonPlayerRegressionTests
         var attempt = LessonAttemptEntity.Start(lesson.Id, "learner", 1, 5);
         db.Lessons.Add(lesson); db.LessonAttempts.Add(attempt); await db.SaveChangesAsync();
         var user = new User("learner");
-        var resume = new AttemptQueryHandlers(db, user, new LessonSanitizer());
+        var resume = new AttemptQueryHandlers(db, user, new LessonAttemptResumeBuilder(db, user, new LessonSanitizer()));
         var unitOfWork = new UnitOfWork(db);
         var idempotency = new IdempotencyService(db);
         var handler = new SubmitExerciseAnswerCommandHandler(

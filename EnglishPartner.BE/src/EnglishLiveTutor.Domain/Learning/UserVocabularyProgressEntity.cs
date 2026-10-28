@@ -4,7 +4,7 @@ namespace EnglishLiveTutor.Domain.Learning;
 
 public sealed class UserVocabularyProgressEntity : AggregateRoot<Guid>
 {
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public Guid VocabularyId { get; private set; }
     public Guid SenseId { get; private set; }
     public int MasteryLevel { get; private set; } // 0..100
@@ -36,7 +36,10 @@ public sealed class UserVocabularyProgressEntity : AggregateRoot<Guid>
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId is required.", nameof(userId));
+
+        UserId = userId.Trim();
         VocabularyId = vocabularyId;
         SenseId = senseId;
         MasteryLevel = Math.Clamp(masteryLevel, 0, 100);

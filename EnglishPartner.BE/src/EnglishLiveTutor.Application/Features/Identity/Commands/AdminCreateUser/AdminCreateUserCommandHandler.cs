@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -19,8 +19,11 @@ public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateU
     public async Task<UserProfileDto> HandleAsync(AdminCreateUserCommand command, CancellationToken ct = default)
     {
         var req = command.Request;
-        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Email))
-            throw new InvalidOperationException("Username và Email là bắt buộc.");
+        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
+            throw new InvalidOperationException("Username, Email và Password là bắt buộc.");
+
+        if (req.Password.Length < 8)
+            throw new InvalidOperationException("Mật khẩu phải có ít nhất 8 ký tự.");
 
         await using var db = await _dbFactory.CreateDbContextAsync(ct);
         string cleanUsername = req.Username.Trim();
@@ -33,7 +36,7 @@ public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateU
             cleanUsername,
             req.Email.Trim(),
             string.IsNullOrWhiteSpace(req.FullName) ? cleanUsername : req.FullName.Trim(),
-            _hasher.HashPassword(string.IsNullOrWhiteSpace(req.Password) ? "Learner@123" : req.Password),
+            _hasher.HashPassword(req.Password),
             req.PreferredCefrLevel,
             req.PreferredVoiceName);
 

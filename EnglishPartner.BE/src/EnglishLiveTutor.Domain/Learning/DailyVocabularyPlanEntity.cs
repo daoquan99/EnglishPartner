@@ -7,7 +7,7 @@ public sealed class DailyVocabularyPlanEntity : AggregateRoot<Guid>
 {
     private List<DailyVocabularyItemEntity> _items = new();
 
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public string LearningDate { get; private set; } = string.Empty; // yyyy-MM-dd in User TimeZone
     public string TimeZoneId { get; private set; } = "Asia/Ho_Chi_Minh";
     public int NewVocabularyTarget { get; private set; } = 20;

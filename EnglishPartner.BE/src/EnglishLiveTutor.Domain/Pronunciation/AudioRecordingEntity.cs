@@ -4,7 +4,7 @@ namespace EnglishLiveTutor.Domain.Pronunciation;
 
 public sealed class AudioRecordingEntity : AggregateRoot<Guid>
 {
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public string StorageKey { get; private set; } = string.Empty;
     public string ContentType { get; private set; } = "audio/webm";
     public long FileSizeBytes { get; private set; }
@@ -27,7 +27,10 @@ public sealed class AudioRecordingEntity : AggregateRoot<Guid>
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId is required.", nameof(userId));
+
+        UserId = userId.Trim();
         StorageKey = storageKey?.Trim() ?? string.Empty;
         ContentType = string.IsNullOrWhiteSpace(contentType) ? "audio/webm" : contentType.Trim();
         FileSizeBytes = fileSizeBytes;

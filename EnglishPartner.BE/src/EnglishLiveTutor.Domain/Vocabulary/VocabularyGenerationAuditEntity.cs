@@ -7,7 +7,7 @@ namespace EnglishLiveTutor.Domain.Vocabulary;
 /// </summary>
 public sealed class VocabularyGenerationAuditEntity : AggregateRoot<Guid>
 {
-    public string UserId { get; private set; } = "default-learner";
+    public string UserId { get; private set; } = string.Empty;
     public string ModelCode { get; private set; } = string.Empty;
     public string PromptVersion { get; private set; } = "VOCAB_GEN_V1";
     public int RequestedCount { get; private set; }
@@ -28,7 +28,10 @@ public sealed class VocabularyGenerationAuditEntity : AggregateRoot<Guid>
         Guid? id = null)
         : base(id ?? Guid.NewGuid())
     {
-        UserId = string.IsNullOrWhiteSpace(userId) ? "default-learner" : userId.Trim();
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId is required.", nameof(userId));
+
+        UserId = userId.Trim();
         ModelCode = modelCode?.Trim() ?? string.Empty;
         PromptVersion = string.IsNullOrWhiteSpace(promptVersion) ? "VOCAB_GEN_V1" : promptVersion.Trim();
         RequestedCount = requestedCount;

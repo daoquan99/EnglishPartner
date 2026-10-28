@@ -22,11 +22,8 @@ public sealed class SynthesizeFallingWordAudioCommandHandler(
         if (string.IsNullOrWhiteSpace(currentUser.UserId))
             throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
-        var session = await gameRepository.GetByIdWithRoundsAsync(command.SessionId, ct)
+        var session = await gameRepository.GetByIdWithRoundsForUserAsync(command.SessionId, currentUser.UserId, ct)
             ?? throw new NotFoundException($"Không tìm thấy phiên chơi với ID '{command.SessionId}'.");
-
-        if (session.UserId != currentUser.UserId)
-            throw new ForbiddenException("Bạn không có quyền truy cập phiên chơi này.");
 
         var round = session.Rounds.FirstOrDefault(r => r.Id == command.RoundId)
             ?? throw new NotFoundException($"Không tìm thấy lượt chơi với ID '{command.RoundId}'.");

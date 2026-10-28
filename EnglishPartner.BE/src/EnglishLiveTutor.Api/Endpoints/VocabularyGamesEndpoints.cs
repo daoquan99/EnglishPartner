@@ -1,5 +1,4 @@
-using EnglishLiveTutor.Application.Common.Exceptions;
-using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.SynthesizeExerciseAudio;
 using EnglishLiveTutor.Application.Features.VocabularyGames.Commands.AbandonFallingWordSession;
 using EnglishLiveTutor.Application.Features.VocabularyGames.Commands.CreateFallingWordSession;
@@ -16,7 +15,6 @@ using EnglishLiveTutor.Application.Features.VocabularyGames.Queries.GetFallingWo
 using EnglishLiveTutor.Application.Features.VocabularyGames.Queries.ListFallingWordSessionRounds;
 using EnglishLiveTutor.Application.Features.VocabularyGames.Queries.ListFallingWordSessions;
 using EnglishLiveTutor.Domain.VocabularyGames.Enums;
-using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,11 +56,7 @@ public static class VocabularyGamesEndpoints
             }
             catch (DailyPlanNotFoundException ex)
             {
-                return Results.Json(new { error = ex.Message, code = "DailyPlanNotFound" }, statusCode: 400);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
+                return ApiProblem.BadRequest(ex.Message, customExtensions: new Dictionary<string, object?> { ["code"] = "DailyPlanNotFound" });
             }
         });
 
@@ -78,25 +72,9 @@ public static class VocabularyGamesEndpoints
                 var result = await sender.Send(new CreateFallingWordSessionCommand(req, operationKey), ct);
                 return Results.Created($"/api/vocabulary-games/falling-words/sessions/{result.Id}", result);
             }
-            catch (ValidationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Errors.FirstOrDefault()?.ErrorMessage ?? ex.Message, errors = ex.Errors.Select(e => e.ErrorMessage) });
-            }
             catch (DailyPlanNotFoundException ex)
             {
-                return Results.Json(new { error = ex.Message, code = "DailyPlanNotFound" }, statusCode: 400);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
+                return ApiProblem.BadRequest(ex.Message, customExtensions: new Dictionary<string, object?> { ["code"] = "DailyPlanNotFound" });
             }
         });
 
@@ -109,23 +87,16 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                FallingWordGameSource? parsedSource = !string.IsNullOrWhiteSpace(source) && Enum.TryParse<FallingWordGameSource>(source, true, out var s) ? s : null;
-                FallingWordGameStatus? parsedStatus = !string.IsNullOrWhiteSpace(status) && Enum.TryParse<FallingWordGameStatus>(status, true, out var st) ? st : null;
+            FallingWordGameSource? parsedSource = !string.IsNullOrWhiteSpace(source) && Enum.TryParse<FallingWordGameSource>(source, true, out var s) ? s : null;
+            FallingWordGameStatus? parsedStatus = !string.IsNullOrWhiteSpace(status) && Enum.TryParse<FallingWordGameStatus>(status, true, out var st) ? st : null;
 
-                var result = await sender.Send(new ListFallingWordSessionsQuery(
-                    Page: page <= 0 ? 1 : page,
-                    PageSize: pageSize <= 0 ? 20 : pageSize,
-                    Source: parsedSource,
-                    Status: parsedStatus), ct);
+            var result = await sender.Send(new ListFallingWordSessionsQuery(
+                Page: page <= 0 ? 1 : page,
+                PageSize: pageSize <= 0 ? 20 : pageSize,
+                Source: parsedSource,
+                Status: parsedStatus), ct);
 
-                return Results.Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
+            return Results.Ok(result);
         });
 
         // 4. GET /sessions/{id} - Get session detail / resume
@@ -134,24 +105,13 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            var result = await sender.Send(new GetFallingWordSessionQuery(id), ct);
+            if (result == null)
             {
-                var result = await sender.Send(new GetFallingWordSessionQuery(id), ct);
-                if (result == null)
-                {
-                    return Results.NotFound(new { error = "Phiên trò chơi không tồn tại." });
-                }
+                return ApiProblem.NotFound("Phiên trò chơi không tồn tại.");
+            }
 
-                return Results.Ok(result);
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
+            return Results.Ok(result);
         });
 
         // 5. POST /sessions/{id}/rounds/next - Start next round
@@ -161,36 +121,13 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            var result = await sender.Send(new StartNextFallingWordRoundCommand(id, operationKey), ct);
+            if (result == null)
             {
-                var result = await sender.Send(new StartNextFallingWordRoundCommand(id, operationKey), ct);
-                if (result == null)
-                {
-                    return Results.Ok(new { message = "Phiên chơi đã hoàn thành.", isCompleted = true });
-                }
+                return Results.Ok(new { message = "Phiên chơi đã hoàn thành.", isCompleted = true });
+            }
 
-                return Results.Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            return Results.Ok(result);
         });
 
         // 6. POST /sessions/{id}/rounds/{roundId}/answer - Submit answer
@@ -202,35 +139,8 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new SubmitFallingWordAnswerCommand(id, roundId, req, operationKey), ct);
-                return Results.Ok(result);
-            }
-            catch (ValidationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Errors.FirstOrDefault()?.ErrorMessage ?? ex.Message, errors = ex.Errors.Select(e => e.ErrorMessage) });
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new SubmitFallingWordAnswerCommand(id, roundId, req, operationKey), ct);
+            return Results.Ok(result);
         });
 
         // 7. POST /sessions/{id}/rounds/{roundId}/timeout - Finalize timeout
@@ -246,25 +156,9 @@ public static class VocabularyGamesEndpoints
                 var result = await sender.Send(new TimeoutFallingWordRoundCommand(id, roundId, operationKey), ct);
                 return Results.Ok(result);
             }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
             catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { error = ex.Message });
+                return ApiProblem.Conflict(ex.Message);
             }
         });
 
@@ -276,31 +170,8 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new SkipFallingWordRoundCommand(id, roundId, operationKey), ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var result = await sender.Send(new SkipFallingWordRoundCommand(id, roundId, operationKey), ct);
+            return Results.Ok(result);
         });
 
         // 7c. POST /sessions/{id}/rounds/{roundId}/synthesize - Synthesize hint audio
@@ -311,28 +182,9 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new SynthesizeFallingWordAudioCommand(id, roundId, req), ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        });
+            var result = await sender.Send(new SynthesizeFallingWordAudioCommand(id, roundId, req), ct);
+            return Results.Ok(result);
+        }).RequireRateLimiting("ai");
 
         // 8. POST /sessions/{id}/abandon - Abandon session
         group.MapPost("/sessions/{id:guid}/abandon", async (
@@ -341,27 +193,8 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new AbandonFallingWordSessionCommand(id, operationKey), ct);
-                return Results.Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
+            var result = await sender.Send(new AbandonFallingWordSessionCommand(id, operationKey), ct);
+            return Results.Ok(result);
         });
 
         // 9. GET /sessions/{id}/rounds - List rounds for a session
@@ -372,27 +205,12 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new ListFallingWordSessionRoundsQuery(
-                    SessionId: id,
-                    Page: page <= 0 ? 1 : page,
-                    PageSize: pageSize <= 0 ? 20 : pageSize), ct);
+            var result = await sender.Send(new ListFallingWordSessionRoundsQuery(
+                SessionId: id,
+                Page: page <= 0 ? 1 : page,
+                PageSize: pageSize <= 0 ? 20 : pageSize), ct);
 
-                return Results.Ok(result);
-            }
-            catch (NotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ForbiddenException ex)
-            {
-                return Results.Json(new { error = ex.Message }, statusCode: 403);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
+            return Results.Ok(result);
         });
 
         // 10. GET /words/history - History of rounds across user/senses
@@ -403,19 +221,12 @@ public static class VocabularyGamesEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var result = await sender.Send(new GetFallingWordHistoryQuery(
-                    SenseId: senseId,
-                    Page: page <= 0 ? 1 : page,
-                    PageSize: pageSize <= 0 ? 20 : pageSize), ct);
+            var result = await sender.Send(new GetFallingWordHistoryQuery(
+                SenseId: senseId,
+                Page: page <= 0 ? 1 : page,
+                PageSize: pageSize <= 0 ? 20 : pageSize), ct);
 
-                return Results.Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Results.Unauthorized();
-            }
+            return Results.Ok(result);
         });
 
         return app;

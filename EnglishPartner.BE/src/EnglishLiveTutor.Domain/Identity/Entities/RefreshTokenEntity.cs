@@ -1,9 +1,20 @@
+using System.Security.Cryptography;
+using System.Text;
 using EnglishLiveTutor.Domain.Common.Primitives;
 
 namespace EnglishLiveTutor.Domain.Identity.Entities;
 
 public sealed class RefreshTokenEntity : Entity<Guid>
 {
+    public static string HashToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return string.Empty;
+
+        byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token.Trim()));
+        return Convert.ToHexStringLower(bytes);
+    }
+
     public Guid UserId { get; private set; }
     public string Token { get; private set; } = string.Empty;
     public DateTimeOffset ExpiresAtUtc { get; private set; }

@@ -1,144 +1,303 @@
-//using EnglishLiveTutor.Domain.Identity;
-//using EnglishLiveTutor.Infrastructure.Identity;
-//using EnglishLiveTutor.Infrastructure.Persistence;
-//using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.Configuration;
-//using Xunit;
+using EnglishLiveTutor.Domain.Identity;
+using EnglishLiveTutor.Infrastructure.Identity;
+using EnglishLiveTutor.Infrastructure.Persistence;
+using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Xunit;
 
-//namespace EnglishLiveTutor.Domain.Tests;
+namespace EnglishLiveTutor.Domain.Tests;
 
-//public class DatabaseSeederAdminUserTests
-//{
-//    private static AppDbContext CreateInMemoryContext(string dbName)
-//    {
-//        var interceptor = new AuditingSaveChangesInterceptor(TimeProvider.System, null);
-//        var options = new DbContextOptionsBuilder<AppDbContext>()
-//            .UseInMemoryDatabase(dbName)
-//            .AddInterceptors(interceptor)
-//            .Options;
+public class DatabaseSeederAdminUserTests
+{
+    private sealed class FakeHostEnvironment : IHostEnvironment
+    {
+        public FakeHostEnvironment(string environmentName)
+        {
+            EnvironmentName = environmentName;
+        }
 
-//        return new AppDbContext(options);
-//    }
+        public string EnvironmentName { get; set; }
+        public string ApplicationName { get; set; } = "EnglishLiveTutor.Domain.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = null!;
+    }
 
-//    [Fact]
-//    public void GetAdminUserOptions_WhenConfigurationIsNull_ShouldReturnDefaults()
-//    {
-//        var options = DatabaseSeeder.GetAdminUserOptions(null);
+    private static AppDbContext CreateInMemoryContext(string dbName)
+    {
+        var interceptor = new AuditingSaveChangesInterceptor(TimeProvider.System, null);
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .AddInterceptors(interceptor)
+            .Options;
 
-//        Assert.NotNull(options);
-//        Assert.Equal("admin", options.Username);
-//        Assert.Equal("admin@lingomint.local", options.Email);
-//        Assert.Equal("Admin@123", options.Password);
-//        Assert.Equal("LingoMint Administrator", options.FullName);
-//        Assert.Equal("C1", options.PreferredCefrLevel);
-//        Assert.Equal("Aoede", options.PreferredVoiceName);
-//    }
+        return new AppDbContext(options);
+    }
 
-//    [Fact]
-//    public void GetAdminUserOptions_WhenAdminUserSectionConfigured_ShouldBindCorrectly()
-//    {
-//        var inMemorySettings = new Dictionary<string, string?>
-//        {
-//            ["AdminUser:Username"] = "superadmin",
-//            ["AdminUser:Email"] = "superadmin@domain.com",
-//            ["AdminUser:Password"] = "SuperSecret#2026",
-//            ["AdminUser:FullName"] = "Super Administrator",
-//            ["AdminUser:PreferredCefrLevel"] = "C2",
-//            ["AdminUser:PreferredVoiceName"] = "Puck"
-//        };
+    [Fact]
+    public void GetAdminUserOptions_WhenConfigurationIsNull_ShouldReturnDefaultsWithNullPassword()
+    {
+        var options = DatabaseSeeder.GetAdminUserOptions(null);
 
-//        var config = new ConfigurationBuilder()
-//            .AddInMemoryCollection(inMemorySettings)
-//            .Build();
+        Assert.NotNull(options);
+        Assert.Equal("admin", options.Username);
+        Assert.Equal("admin@lingomint.local", options.Email);
+        Assert.Null(options.Password);
+        Assert.Equal("LingoMint Administrator", options.FullName);
+        Assert.Equal("C1", options.PreferredCefrLevel);
+        Assert.Equal("Aoede", options.PreferredVoiceName);
+    }
 
-//        var options = DatabaseSeeder.GetAdminUserOptions(config);
+    [Fact]
+    public void GetAdminUserOptions_WhenAdminUserSectionConfigured_ShouldBindCorrectly()
+    {
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["AdminUser:Username"] = "superadmin",
+            ["AdminUser:Email"] = "superadmin@domain.com",
+            ["AdminUser:Password"] = "SuperSecret#2026",
+            ["AdminUser:FullName"] = "Super Administrator",
+            ["AdminUser:PreferredCefrLevel"] = "C2",
+            ["AdminUser:PreferredVoiceName"] = "Puck"
+        };
 
-//        Assert.NotNull(options);
-//        Assert.Equal("superadmin", options.Username);
-//        Assert.Equal("superadmin@domain.com", options.Email);
-//        Assert.Equal("SuperSecret#2026", options.Password);
-//        Assert.Equal("Super Administrator", options.FullName);
-//        Assert.Equal("C2", options.PreferredCefrLevel);
-//        Assert.Equal("Puck", options.PreferredVoiceName);
-//    }
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
 
-//    [Fact]
-//    public void GetAdminUserOptions_WhenSeedDataAdminUserSectionConfigured_ShouldBindCorrectly()
-//    {
-//        var inMemorySettings = new Dictionary<string, string?>
-//        {
-//            ["SeedData:AdminUser:Username"] = "rootadmin",
-//            ["SeedData:AdminUser:Email"] = "root@lingomint.local",
-//            ["SeedData:AdminUser:Password"] = "RootPass#123",
-//            ["SeedData:AdminUser:FullName"] = "Root Administrator"
-//        };
+        var options = DatabaseSeeder.GetAdminUserOptions(config);
 
-//        var config = new ConfigurationBuilder()
-//            .AddInMemoryCollection(inMemorySettings)
-//            .Build();
+        Assert.NotNull(options);
+        Assert.Equal("superadmin", options.Username);
+        Assert.Equal("superadmin@domain.com", options.Email);
+        Assert.Equal("SuperSecret#2026", options.Password);
+        Assert.Equal("Super Administrator", options.FullName);
+        Assert.Equal("C2", options.PreferredCefrLevel);
+        Assert.Equal("Puck", options.PreferredVoiceName);
+    }
 
-//        var options = DatabaseSeeder.GetAdminUserOptions(config);
+    [Fact]
+    public void GetAdminUserOptions_WhenSeedDataAdminUserConfigured_ShouldNotBindAndPasswordRemainsNull()
+    {
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["SeedData:AdminUser:Username"] = "seedadmin",
+            ["SeedData:AdminUser:Password"] = "SeedPass#2026"
+        };
 
-//        Assert.NotNull(options);
-//        Assert.Equal("rootadmin", options.Username);
-//        Assert.Equal("root@lingomint.local", options.Email);
-//        Assert.Equal("RootPass#123", options.Password);
-//        Assert.Equal("Root Administrator", options.FullName);
-//    }
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
 
-//    [Fact]
-//    public async Task SeedIdentityAsync_ShouldSeedAdminUserFromConfiguration_AndAssignAdminRole()
-//    {
-//        string dbName = Guid.NewGuid().ToString("N");
-//        await using var db = CreateInMemoryContext(dbName);
+        var options = DatabaseSeeder.GetAdminUserOptions(config);
 
-//        var inMemorySettings = new Dictionary<string, string?>
-//        {
-//            ["AdminUser:Username"] = "custom_admin",
-//            ["AdminUser:Email"] = "custom_admin@lingomint.local",
-//            ["AdminUser:Password"] = "SecureAdminPass#2026",
-//            ["AdminUser:FullName"] = "Custom Admin User",
-//            ["AdminUser:PreferredCefrLevel"] = "C1",
-//            ["AdminUser:PreferredVoiceName"] = "Kore"
-//        };
+        Assert.NotNull(options);
+        Assert.Equal("admin", options.Username);
+        Assert.Null(options.Password);
+    }
 
-//        var config = new ConfigurationBuilder()
-//            .AddInMemoryCollection(inMemorySettings)
-//            .Build();
+    [Fact]
+    public void GetDemoLearnerOptions_WhenDemoLearnerSectionConfigured_ShouldBindCorrectly()
+    {
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["DemoLearner:Username"] = "custom_learner",
+            ["DemoLearner:Password"] = "CustomPass#2026"
+        };
 
-//        // Act: Seed identity with custom configuration
-//        await DatabaseSeeder.SeedIdentityAsync(db, config);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
 
-//        // Assert: Admin user exists with correct configured data
-//        var admin = await db.Users
-//            .Include(u => u.UserRoles)
-//            .FirstOrDefaultAsync(u => u.Username == "custom_admin");
+        var options = DatabaseSeeder.GetDemoLearnerOptions(config);
 
-//        Assert.NotNull(admin);
-//        Assert.Equal("custom_admin@lingomint.local", admin.Email);
-//        Assert.Equal("CUSTOM_ADMIN@LINGOMINT.LOCAL", admin.NormalizedEmail);
-//        Assert.Equal("Custom Admin User", admin.FullName);
-//        Assert.Equal("C1", admin.PreferredCefrLevel);
-//        Assert.Equal("Kore", admin.PreferredVoiceName);
+        Assert.NotNull(options);
+        Assert.Equal("custom_learner", options.Username);
+        Assert.Equal("CustomPass#2026", options.Password);
+    }
 
-//        // Assert: Password verification succeeds
-//        var hasher = new Pbkdf2PasswordHasher();
-//        Assert.True(hasher.VerifyPassword("SecureAdminPass#2026", admin.PasswordHash));
-//        Assert.False(hasher.VerifyPassword("WrongPassword", admin.PasswordHash));
+    [Fact]
+    public void GetDemoLearnerOptions_WhenSeedDataDemoLearnerConfigured_ShouldNotBindAndPasswordRemainsNull()
+    {
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["SeedData:DemoLearner:Username"] = "seedlearner",
+            ["SeedData:DemoLearner:Password"] = "SeedPass#2026"
+        };
 
-//        // Assert: ADMIN role is assigned
-//        var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.Code == "ADMIN");
-//        Assert.NotNull(adminRole);
-//        Assert.Contains(admin.UserRoles, ur => ur.RoleId == adminRole.Id);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings)
+            .Build();
 
-//        // Assert: Default learner is also seeded
-//        var learner = await db.Users.FirstOrDefaultAsync(u => u.Username == "default-learner");
-//        Assert.NotNull(learner);
+        var options = DatabaseSeeder.GetDemoLearnerOptions(config);
 
-//        // Act 2: Idempotency check - calling again should succeed without duplicates
-//        await DatabaseSeeder.SeedIdentityAsync(db, config);
-//        var adminCount = await db.Users.CountAsync(u => u.Username == "custom_admin");
-//        Assert.Equal(1, adminCount);
-//    }
-//}
+        Assert.NotNull(options);
+        Assert.Equal("default-learner", options.Username);
+        Assert.Null(options.Password);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_WhenAdminPasswordMissing_ShouldNotSeedAdminUser()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var adminOptions = new AdminUserSeedOptions
+        {
+            Username = "admin",
+            Password = null
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, adminOptions: adminOptions);
+
+        var admin = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+        Assert.Null(admin);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_WhenAdminPasswordTooShort_ShouldNotSeedAdminUser()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var adminOptions = new AdminUserSeedOptions
+        {
+            Username = "admin",
+            Password = "short" // < 8 characters
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, adminOptions: adminOptions);
+
+        var admin = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+        Assert.Null(admin);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_WhenAdminPasswordValid_ShouldSeedAdminUserAndAssignAdminRole()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var adminOptions = new AdminUserSeedOptions
+        {
+            Username = "custom_admin",
+            Email = "custom_admin@lingomint.local",
+            Password = "SecureAdminPass#2026",
+            FullName = "Custom Admin User",
+            PreferredCefrLevel = "C1",
+            PreferredVoiceName = "Kore"
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, adminOptions: adminOptions);
+
+        var admin = await db.Users
+            .Include(u => u.UserRoles)
+            .FirstOrDefaultAsync(u => u.Username == "custom_admin");
+
+        Assert.NotNull(admin);
+        Assert.Equal("custom_admin@lingomint.local", admin.Email);
+        Assert.Equal("Custom Admin User", admin.FullName);
+
+        var hasher = new Pbkdf2PasswordHasher();
+        Assert.True(hasher.VerifyPassword("SecureAdminPass#2026", admin.PasswordHash));
+
+        var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.Code == "ADMIN");
+        Assert.NotNull(adminRole);
+        Assert.Contains(admin.UserRoles, ur => ur.RoleId == adminRole.Id);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_NonDevelopment_ShouldNotSeedDefaultLearner()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var env = new FakeHostEnvironment(Environments.Production);
+        var demoOptions = new DemoLearnerSeedOptions
+        {
+            Password = "LearnerPass#2026"
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, demoLearnerOptions: demoOptions, environment: env);
+
+        var learner = await db.Users.FirstOrDefaultAsync(u => u.Username == "default-learner");
+        Assert.Null(learner);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_DevelopmentWithoutDemoPassword_ShouldNotSeedDefaultLearner()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var env = new FakeHostEnvironment(Environments.Development);
+        var demoOptions = new DemoLearnerSeedOptions
+        {
+            Password = null
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, demoLearnerOptions: demoOptions, environment: env);
+
+        var learner = await db.Users.FirstOrDefaultAsync(u => u.Username == "default-learner");
+        Assert.Null(learner);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_DevelopmentWithDemoPassword_ShouldSeedDefaultLearner()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var env = new FakeHostEnvironment(Environments.Development);
+        var demoOptions = new DemoLearnerSeedOptions
+        {
+            Username = "default-learner",
+            Password = "LearnerPass#2026"
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, demoLearnerOptions: demoOptions, environment: env);
+
+        var learner = await db.Users
+            .Include(u => u.UserRoles)
+            .FirstOrDefaultAsync(u => u.Username == "default-learner");
+
+        Assert.NotNull(learner);
+
+        var hasher = new Pbkdf2PasswordHasher();
+        Assert.True(hasher.VerifyPassword("LearnerPass#2026", learner.PasswordHash));
+
+        var learnerRole = await db.Roles.FirstOrDefaultAsync(r => r.Code == "LEARNER");
+        Assert.NotNull(learnerRole);
+        Assert.Contains(learner.UserRoles, ur => ur.RoleId == learnerRole.Id);
+    }
+
+    [Fact]
+    public async Task SeedIdentityAsync_IsIdempotent()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        await using var db = CreateInMemoryContext(dbName);
+
+        var env = new FakeHostEnvironment(Environments.Development);
+        var adminOptions = new AdminUserSeedOptions
+        {
+            Username = "admin",
+            Password = "AdminPass#2026"
+        };
+        var demoOptions = new DemoLearnerSeedOptions
+        {
+            Username = "default-learner",
+            Password = "LearnerPass#2026"
+        };
+
+        await DatabaseSeeder.SeedIdentityAsync(db, adminOptions, demoOptions, env);
+        await DatabaseSeeder.SeedIdentityAsync(db, adminOptions, demoOptions, env);
+
+        var adminCount = await db.Users.CountAsync(u => u.Username == "admin");
+        var learnerCount = await db.Users.CountAsync(u => u.Username == "default-learner");
+
+        Assert.Equal(1, adminCount);
+        Assert.Equal(1, learnerCount);
+    }
+}

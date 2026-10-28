@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Voices.Commands.DeleteTeacherVoice;
@@ -44,7 +45,7 @@ public static class VoiceEndpoints
             CancellationToken ct) =>
         {
             var voice = await sender.Send(new GetTeacherVoiceByIdQuery(id), ct);
-            return voice is null ? Results.NotFound() : Results.Ok(voice);
+            return voice is null ? ApiProblem.NotFound("Không tìm thấy giọng đọc.") : Results.Ok(voice);
         });
 
         group.MapPost("/", async (
@@ -52,16 +53,9 @@ public static class VoiceEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                string id = string.IsNullOrWhiteSpace(req.Name) ? $"Voice_{Guid.NewGuid().ToString("N")[..6]}" : req.Name.Trim();
-                var created = await sender.Send(new UpsertTeacherVoiceCommand(id, req), ct);
-                return Results.Ok(created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            string id = string.IsNullOrWhiteSpace(req.Name) ? $"Voice_{Guid.NewGuid().ToString("N")[..6]}" : req.Name.Trim();
+            var created = await sender.Send(new UpsertTeacherVoiceCommand(id, req), ct);
+            return Results.Ok(created);
         }).RequirePermission("voices.manage");
 
         group.MapPut("/{id}", async (
@@ -70,15 +64,8 @@ public static class VoiceEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var updated = await sender.Send(new UpsertTeacherVoiceCommand(id, req), ct);
-                return Results.Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var updated = await sender.Send(new UpsertTeacherVoiceCommand(id, req), ct);
+            return Results.Ok(updated);
         }).RequirePermission("voices.manage");
 
         group.MapDelete("/{id}", async (
@@ -87,7 +74,7 @@ public static class VoiceEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteTeacherVoiceCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy giọng đọc.");
         }).RequirePermission("voices.manage");
 
         return app;

@@ -177,6 +177,17 @@ public sealed class UserEntity : AggregateRoot<Guid>
         existing.Revoke(revokedAtUtc, reason, replacedByToken);
     }
 
+    public int RevokeAllActiveRefreshTokens(DateTimeOffset revokedAtUtc, string reason = "Reuse detected")
+    {
+        int count = 0;
+        foreach (var token in _refreshTokens.Where(t => t.IsActive(revokedAtUtc)))
+        {
+            token.Revoke(revokedAtUtc, reason);
+            count++;
+        }
+        return count;
+    }
+
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
 }

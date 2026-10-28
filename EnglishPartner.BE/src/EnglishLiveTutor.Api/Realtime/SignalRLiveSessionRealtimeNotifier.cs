@@ -21,26 +21,39 @@ public sealed class SignalRLiveSessionRealtimeNotifier : ILiveSessionRealtimeNot
         _translateHub = translateHub;
     }
 
+    private static (string GroupName, string ConversationId) ResolveGroupAndConversation(string target)
+    {
+        int colonIdx = target.IndexOf(':');
+        if (colonIdx >= 0)
+        {
+            return (target, target[(colonIdx + 1)..]);
+        }
+        return (target, target);
+    }
+
     public async Task SendTutorInterruptedAsync(string conversationId, CancellationToken ct = default)
     {
-        await _tutorHub.Clients.Group(conversationId).SendAsync("TutorInterrupted", conversationId, ct);
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        await _tutorHub.Clients.Group(groupName).SendAsync("TutorInterrupted", convId, ct);
     }
 
     public async Task SendTutorAudioAsync(string conversationId, string turnId, string base64Audio24k, string interactionStatus, CancellationToken ct = default)
     {
-        await _tutorHub.Clients.Group(conversationId).SendAsync(
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        await _tutorHub.Clients.Group(groupName).SendAsync(
             "ReceiveTutorAudio",
-            new TutorAudioEventDto(conversationId, turnId, base64Audio24k, interactionStatus),
+            new TutorAudioEventDto(convId, turnId, base64Audio24k, interactionStatus),
             ct);
     }
 
     public async Task SendInteractionStatusAsync(string conversationId, string status, string model, CancellationToken ct = default)
     {
-        await _tutorHub.Clients.Group(conversationId).SendAsync(
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        await _tutorHub.Clients.Group(groupName).SendAsync(
             "ReceiveInteractionStatus",
             new
             {
-                conversationId,
+                conversationId = convId,
                 status,
                 model
             },
@@ -49,7 +62,11 @@ public sealed class SignalRLiveSessionRealtimeNotifier : ILiveSessionRealtimeNot
 
     public async Task SendLanguageCorrectionAsync(string conversationId, LanguageCorrectionDto correction, CancellationToken ct = default)
     {
-        await _tutorHub.Clients.Group(conversationId).SendAsync("ReceiveLanguageCorrection", correction, ct);
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        var payload = correction.ConversationId.Contains(':')
+            ? correction with { ConversationId = convId }
+            : correction;
+        await _tutorHub.Clients.Group(groupName).SendAsync("ReceiveLanguageCorrection", payload, ct);
     }
 
     public async Task SendTranscribeTranscriptAsync(
@@ -61,9 +78,10 @@ public sealed class SignalRLiveSessionRealtimeNotifier : ILiveSessionRealtimeNot
         bool isFinal,
         CancellationToken ct = default)
     {
-        await _transcribeHub.Clients.Group(conversationId).SendAsync(
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        await _transcribeHub.Clients.Group(groupName).SendAsync(
             "ReceiveTranscriptLine1",
-            new TranscribeEventDto(conversationId, speaker, turnId, sequenceOrder, text, isFinal, DateTimeOffset.UtcNow),
+            new TranscribeEventDto(convId, speaker, turnId, sequenceOrder, text, isFinal, DateTimeOffset.UtcNow),
             ct);
     }
 
@@ -76,9 +94,10 @@ public sealed class SignalRLiveSessionRealtimeNotifier : ILiveSessionRealtimeNot
         bool isFinal,
         CancellationToken ct = default)
     {
-        await _translateHub.Clients.Group(conversationId).SendAsync(
+        var (groupName, convId) = ResolveGroupAndConversation(conversationId);
+        await _translateHub.Clients.Group(groupName).SendAsync(
             "ReceiveTranslationLine2",
-            new TranslateEventDto(conversationId, speaker, turnId, sequenceOrder, text, isFinal, DateTimeOffset.UtcNow),
+            new TranslateEventDto(convId, speaker, turnId, sequenceOrder, text, isFinal, DateTimeOffset.UtcNow),
             ct);
     }
 }

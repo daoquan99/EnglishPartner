@@ -5,6 +5,7 @@ using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Common.Utilities;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Application.Features.Lessons.Commands.AttemptOperations;
@@ -24,7 +25,7 @@ public sealed class CompleteLessonAttemptCommandHandler : ICommandHandler<Comple
     private readonly TimeProvider _timeProvider;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IIdempotencyService _idempotency;
-    private readonly IQueryHandler<ResumeLessonAttemptQuery, LessonAttemptResumeDto?> _resumeHandler;
+    private readonly ILessonAttemptResumeBuilder _resumeBuilder;
 
     public CompleteLessonAttemptCommandHandler(
         IAppDbContext db,
@@ -32,14 +33,14 @@ public sealed class CompleteLessonAttemptCommandHandler : ICommandHandler<Comple
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IIdempotencyService idempotency,
-        IQueryHandler<ResumeLessonAttemptQuery, LessonAttemptResumeDto?> resumeHandler)
+        ILessonAttemptResumeBuilder resumeBuilder)
     {
         _db = db;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
         _unitOfWork = unitOfWork;
         _idempotency = idempotency;
-        _resumeHandler = resumeHandler;
+        _resumeBuilder = resumeBuilder;
     }
 
     public async Task<LessonAttemptResumeDto> HandleAsync(CompleteLessonAttemptCommand command, CancellationToken ct = default)
@@ -47,7 +48,7 @@ public sealed class CompleteLessonAttemptCommandHandler : ICommandHandler<Comple
         string? userId = _currentUser.UserId;
         if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new ForbiddenException("Authentication required to complete lesson attempt.");
+            throw new UnauthorizedAccessException("Authentication required to complete lesson attempt.");
         }
 
         string fingerprint = IdempotencyFingerprint.Compute(command, ("AttemptId", command.AttemptId));
@@ -72,16 +73,15 @@ public sealed class CompleteLessonAttemptCommandHandler : ICommandHandler<Comple
 
         var attempt = await _db.LessonAttempts
             .Include(a => a.Answers)
-            .FirstOrDefaultAsync(a => a.Id == command.AttemptId, ct)
-            ?? throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
+            .FirstOrDefaultAsync(a => a.Id == command.AttemptId && a.UserId == userId, ct);
 
-        if (!string.Equals(attempt.UserId, userId, StringComparison.OrdinalIgnoreCase))
+        if (attempt == null)
         {
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {
                 await _idempotency.FailOperationAsync(userId, "LessonAttempt.Complete", command.AttemptId.ToString(), command.OperationKey, CancellationToken.None);
             }
-            throw new ForbiddenException("You are not authorized to complete this attempt.");
+            throw new NotFoundException($"Attempt with ID '{command.AttemptId}' not found.");
         }
 
         attempt.Complete(_timeProvider.GetUtcNow());
@@ -90,7 +90,7 @@ public sealed class CompleteLessonAttemptCommandHandler : ICommandHandler<Comple
         {
             await _unitOfWork.CommitChangesAsync(ct);
 
-            var resumeDto = await _resumeHandler.HandleAsync(new ResumeLessonAttemptQuery(attempt.Id), ct);
+            var resumeDto = await _resumeBuilder.BuildAsync(attempt.Id, ct);
 
             if (!string.IsNullOrWhiteSpace(command.OperationKey))
             {

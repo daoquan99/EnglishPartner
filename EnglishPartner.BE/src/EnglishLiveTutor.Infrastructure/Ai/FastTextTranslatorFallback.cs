@@ -17,6 +17,11 @@ public sealed class FastTextTranslatorFallback
     private readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, List<string>> _discoveredModelsByKey = new();
 
+    public FastTextTranslatorFallback(HttpMessageHandler handler)
+        : this(new HttpClient(handler))
+    {
+    }
+
     public FastTextTranslatorFallback(HttpClient http)
     {
         _http = http;

@@ -10,6 +10,7 @@ using EnglishLiveTutor.Application.Features.Lessons.Queries.AttemptQueries;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.GetLessonById;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.ListLessons;
 using EnglishLiveTutor.Infrastructure.Lessons;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.LessonAttempts.Enums;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using EnglishLiveTutor.Infrastructure.Persistence;
@@ -43,9 +44,10 @@ public class LessonCqrsIntegrationTests
         var (db, clock, user) = CreateTestContext(dbName);
 
         var sanitizer = new LessonSanitizer();
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
-        var draftHandlers = new DraftCommandHandlers(db, user, clock, getByIdHandler);
-        var exerciseHandlers = new ExerciseCommandHandlers(db, getByIdHandler);
+        var lessonDetailBuilder = new LessonDetailBuilder(db, sanitizer);
+        var getByIdHandler = new GetLessonByIdQueryHandler(lessonDetailBuilder);
+        var draftHandlers = new DraftCommandHandlers(db, user, clock, lessonDetailBuilder);
+        var exerciseHandlers = new ExerciseCommandHandlers(db, lessonDetailBuilder);
 
         // 1. Create Draft Lesson
         var createReq = new CreateLessonDraftRequest(
@@ -136,14 +138,16 @@ public class LessonCqrsIntegrationTests
         var mediaStorage = new FakeLessonMediaStorage();
         var unitOfWork = new UnitOfWork(db);
         var idempotency = new IdempotencyService(db);
-        var resumeHandler = new AttemptQueryHandlers(db, user, sanitizer);
+        var resumeBuilder = new LessonAttemptResumeBuilder(db, user, sanitizer);
+        var resumeHandler = new AttemptQueryHandlers(db, user, resumeBuilder);
 
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
-        var draftHandlers = new DraftCommandHandlers(db, user, clock, getByIdHandler);
-        var exerciseHandlers = new ExerciseCommandHandlers(db, getByIdHandler);
-        var startAttemptHandler = new StartLessonAttemptCommandHandler(db, user, unitOfWork, idempotency, resumeHandler);
+        var lessonDetailBuilder = new LessonDetailBuilder(db, sanitizer);
+        var getByIdHandler = new GetLessonByIdQueryHandler(lessonDetailBuilder);
+        var draftHandlers = new DraftCommandHandlers(db, user, clock, lessonDetailBuilder);
+        var exerciseHandlers = new ExerciseCommandHandlers(db, lessonDetailBuilder);
+        var startAttemptHandler = new StartLessonAttemptCommandHandler(db, user, unitOfWork, idempotency, resumeBuilder);
         var submitAnswerHandler = new SubmitExerciseAnswerCommandHandler(db, user, clock, deterministicGrader, aiGrader, audioRepo, mediaStorage, unitOfWork, idempotency);
-        var completeAttemptHandler = new CompleteLessonAttemptCommandHandler(db, user, clock, unitOfWork, idempotency, resumeHandler);
+        var completeAttemptHandler = new CompleteLessonAttemptCommandHandler(db, user, clock, unitOfWork, idempotency, resumeBuilder);
 
         // 1. Create and Publish Lesson
         var draft = await draftHandlers.HandleAsync(new CreateLessonDraftCommand(new CreateLessonDraftRequest(
@@ -286,9 +290,10 @@ public class LessonCqrsIntegrationTests
         var (db, clock, user) = CreateTestContext(dbName);
 
         var sanitizer = new LessonSanitizer();
-        var getByIdHandler = new GetLessonByIdQueryHandler(db, sanitizer);
-        var draftHandlers = new DraftCommandHandlers(db, user, clock, getByIdHandler);
-        var exerciseHandlers = new ExerciseCommandHandlers(db, getByIdHandler);
+        var lessonDetailBuilder = new LessonDetailBuilder(db, sanitizer);
+        var getByIdHandler = new GetLessonByIdQueryHandler(lessonDetailBuilder);
+        var draftHandlers = new DraftCommandHandlers(db, user, clock, lessonDetailBuilder);
+        var exerciseHandlers = new ExerciseCommandHandlers(db, lessonDetailBuilder);
         var listHandler = new ListLessonsQueryHandler(db);
 
         // Create Draft 1
@@ -329,6 +334,36 @@ public class LessonCqrsIntegrationTests
         Assert.Equal(2, authorResult.Items.Count);
         Assert.Contains(authorResult.Items, l => l.Id == draft1.Id && l.Status == "Draft");
         Assert.Contains(authorResult.Items, l => l.Id == draft2.Id && l.Status == "Published");
+    }
+
+    [Fact]
+    public async Task ListLessons_WithoutPaging_KeepsDefaultPageOf20()
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        var (db, clock, user) = CreateTestContext(dbName);
+
+        var sanitizer = new LessonSanitizer();
+        var lessonDetailBuilder = new LessonDetailBuilder(db, sanitizer);
+        var getByIdHandler = new GetLessonByIdQueryHandler(lessonDetailBuilder);
+        var draftHandlers = new DraftCommandHandlers(db, user, clock, lessonDetailBuilder);
+        var listHandler = new ListLessonsQueryHandler(db);
+
+        for (int i = 0; i < 25; i++)
+        {
+            await draftHandlers.HandleAsync(new CreateLessonDraftCommand(new CreateLessonDraftRequest(
+                Title: $"Lesson {i}",
+                CefrLevel: "A1",
+                Topic: "Greetings",
+                Content: "Intro",
+                EstimatedMinutes: 10,
+                null, null, null)));
+        }
+
+        var result = await listHandler.HandleAsync(new ListLessonsQuery(IsLearner: false));
+
+        Assert.Equal(20, result.Items.Count);
+        Assert.Equal(25, result.TotalCount);
+        Assert.Equal(20, result.PageSize);
     }
 
     [Fact]

@@ -13,7 +13,7 @@ public static class VocabularyProjectionHelper
         IAppDbContext db,
         Guid vocabularyId,
         Guid? senseId,
-        string userId = "default-learner",
+        string userId,
         CancellationToken ct = default)
     {
         var vocab = await db.Vocabularies
@@ -56,7 +56,7 @@ public static class VocabularyProjectionHelper
         var plan = await db.DailyVocabularyPlans
             .AsNoTracking()
             .Include(p => p.Items)
-            .FirstAsync(p => p.Id == planId, ct);
+            .FirstAsync(p => p.Id == planId && p.UserId == userId, ct);
 
         var orderedItems = plan.Items.OrderBy(i => i.DisplayOrder).ToList();
         var vocabIds = orderedItems.Select(i => i.VocabularyId).Distinct().ToList();

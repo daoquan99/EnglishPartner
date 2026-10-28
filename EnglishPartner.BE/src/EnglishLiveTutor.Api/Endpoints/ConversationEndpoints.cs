@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Conversations.Commands.CreateConversation;
 using EnglishLiveTutor.Application.Features.Conversations.Commands.DeleteConversation;
@@ -34,7 +35,7 @@ public static class ConversationEndpoints
             CancellationToken ct) =>
         {
             var conv = await sender.Send(new GetConversationHistoryQuery(id), ct);
-            return conv is null ? Results.NotFound() : Results.Ok(conv);
+            return conv is null ? ApiProblem.NotFound("Không tìm thấy cuộc hội thoại.") : Results.Ok(conv);
         });
 
         group.MapPost("/", async (
@@ -53,7 +54,7 @@ public static class ConversationEndpoints
             CancellationToken ct) =>
         {
             var conv = await sender.Send(new UpdateConversationSettingsCommand(id, req), ct);
-            return Results.Ok(conv);
+            return conv is null ? ApiProblem.NotFound("Không tìm thấy cuộc hội thoại.") : Results.Ok(conv);
         });
 
         group.MapDelete("/{id}", async (
@@ -62,7 +63,7 @@ public static class ConversationEndpoints
             CancellationToken ct) =>
         {
             bool deleted = await sender.Send(new DeleteConversationCommand(id), ct);
-            return deleted ? Results.NoContent() : Results.NotFound();
+            return deleted ? Results.NoContent() : ApiProblem.NotFound("Không tìm thấy cuộc hội thoại.");
         });
 
         return app;

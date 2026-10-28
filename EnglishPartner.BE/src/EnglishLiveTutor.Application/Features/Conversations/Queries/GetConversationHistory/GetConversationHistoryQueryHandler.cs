@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
 
 namespace EnglishLiveTutor.Application.Features.Conversations.Queries.GetConversationHistory;
@@ -6,15 +6,18 @@ namespace EnglishLiveTutor.Application.Features.Conversations.Queries.GetConvers
 public sealed class GetConversationHistoryQueryHandler : IQueryHandler<GetConversationHistoryQuery, ConversationDetailDto?>
 {
     private readonly IConversationRepository _repo;
+    private readonly ICurrentUser _currentUser;
 
-    public GetConversationHistoryQueryHandler(IConversationRepository repo)
+    public GetConversationHistoryQueryHandler(IConversationRepository repo, ICurrentUser currentUser)
     {
         _repo = repo;
+        _currentUser = currentUser;
     }
 
     public async Task<ConversationDetailDto?> HandleAsync(GetConversationHistoryQuery query, CancellationToken ct = default)
     {
-        var conv = await _repo.GetConversationWithHistoryAsync(query.Id, ct);
+        string userId = _currentUser.UserId ?? throw new UnauthorizedAccessException("Vui lòng đăng nhập.");
+        var conv = await _repo.GetConversationWithHistoryAsync(userId, query.Id, ct);
         if (conv is null)
         {
             return null;

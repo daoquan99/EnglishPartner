@@ -10,6 +10,10 @@ public sealed record PagedResultDto<T>(
     int TotalPages
 )
 {
+    public const int DefaultPageSize = 20;
+    public const int MaxPageSize = 100;
+    public const int MaxUnpagedItems = 1000;
+
     public static PagedResultDto<T> FromPage(
         IReadOnlyList<T> items,
         int totalCount,
@@ -19,10 +23,15 @@ public sealed record PagedResultDto<T>(
         bool hasPaging = page.HasValue || pageSize.HasValue;
         int effPage = Math.Max(1, page ?? 1);
         int effSize = hasPaging
-            ? Math.Clamp(pageSize ?? 20, 1, 500)
-            : Math.Max(1, totalCount);
-        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)effSize));
-        return new PagedResultDto<T>(items, totalCount, effPage, effSize, totalPages);
+            ? Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize)
+            : Math.Clamp(totalCount, 1, MaxUnpagedItems);
+
+        IReadOnlyList<T> boundedItems = (!hasPaging && items.Count > MaxUnpagedItems)
+            ? items.Take(MaxUnpagedItems).ToList()
+            : items;
+
+        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(1, effSize)));
+        return new PagedResultDto<T>(boundedItems, totalCount, effPage, effSize, totalPages);
     }
 
     public static async Task<PagedResultDto<T>> CreateAsync(
@@ -35,14 +44,14 @@ public sealed record PagedResultDto<T>(
         bool hasPaging = page.HasValue || pageSize.HasValue;
         int effPage = Math.Max(1, page ?? 1);
         int effSize = hasPaging
-            ? Math.Clamp(pageSize ?? 20, 1, 500)
-            : Math.Max(1, totalCount);
+            ? Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize)
+            : Math.Clamp(totalCount, 1, MaxUnpagedItems);
 
         List<T> items = hasPaging
             ? await query.Skip((effPage - 1) * effSize).Take(effSize).ToListAsync(ct)
-            : await query.ToListAsync(ct);
+            : await query.Take(MaxUnpagedItems).ToListAsync(ct);
 
-        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)effSize));
+        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(1, effSize)));
         return new PagedResultDto<T>(items, totalCount, effPage, effSize, totalPages);
     }
 
@@ -57,15 +66,15 @@ public sealed record PagedResultDto<T>(
         bool hasPaging = page.HasValue || pageSize.HasValue;
         int effPage = Math.Max(1, page ?? 1);
         int effSize = hasPaging
-            ? Math.Clamp(pageSize ?? 20, 1, 500)
-            : Math.Max(1, totalCount);
+            ? Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize)
+            : Math.Clamp(totalCount, 1, MaxUnpagedItems);
 
         List<TSource> pageSources = hasPaging
             ? await query.Skip((effPage - 1) * effSize).Take(effSize).ToListAsync(ct)
-            : await query.ToListAsync(ct);
+            : await query.Take(MaxUnpagedItems).ToListAsync(ct);
 
         List<TResult> projected = await pageProjectorAsync(pageSources, ct);
-        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)effSize));
+        int totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(1, effSize)));
         return new PagedResultDto<TResult>(projected, totalCount, effPage, effSize, totalPages);
     }
 }

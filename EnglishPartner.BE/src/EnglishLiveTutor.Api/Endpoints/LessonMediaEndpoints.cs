@@ -1,3 +1,4 @@
+using EnglishLiveTutor.Api.Common;
 using EnglishLiveTutor.Api.Security;
 using EnglishLiveTutor.Application.Common.Exceptions;
 using EnglishLiveTutor.Application.Features.Lessons.Commands.MediaOperations;
@@ -21,7 +22,7 @@ public static class LessonMediaEndpoints
             CancellationToken ct) =>
         {
             if (file == null || file.Length == 0)
-                return Results.BadRequest(new { error = "No file uploaded or file is empty." });
+                return ApiProblem.BadRequest("No file uploaded or file is empty.");
 
             try
             {
@@ -46,15 +47,7 @@ public static class LessonMediaEndpoints
             }
             catch (ForbiddenException)
             {
-                return Results.Forbid();
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
+                return ApiProblem.Forbidden();
             }
         }).RequireAuthorization().DisableAntiforgery();
 
@@ -78,11 +71,11 @@ public static class LessonMediaEndpoints
             }
             catch (NotFoundException)
             {
-                return Results.NotFound(new { error = "Media asset not found." });
+                return ApiProblem.NotFound("Media asset not found.");
             }
             catch (ForbiddenException)
             {
-                return Results.NotFound(new { error = "Media asset not found." });
+                return ApiProblem.NotFound("Media asset not found.");
             }
         }).RequireAuthorization();
 
@@ -103,11 +96,11 @@ public static class LessonMediaEndpoints
             }
             catch (NotFoundException)
             {
-                return Results.NotFound(new { error = "Media asset not found." });
+                return ApiProblem.NotFound("Media asset not found.");
             }
             catch (ForbiddenException)
             {
-                return Results.NotFound(new { error = "Media asset not found." });
+                return ApiProblem.NotFound("Media asset not found.");
             }
         }).RequireAuthorization();
 
@@ -118,34 +111,23 @@ public static class LessonMediaEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
-            {
-                var session = await sender.Send(new StartRolePlaySessionCommand(
-                    Scenario: req.Scenario,
-                    AiRole: req.AiRole,
-                    InitialGreeting: req.InitialGreeting,
-                    MaxTurns: req.MaxTurns,
-                    OperationKey: operationKey), ct);
+            var session = await sender.Send(new StartRolePlaySessionCommand(
+                Scenario: req.Scenario,
+                AiRole: req.AiRole,
+                InitialGreeting: req.InitialGreeting,
+                MaxTurns: req.MaxTurns,
+                OperationKey: operationKey), ct);
 
-                return Results.Created($"/api/lesson-roleplay/sessions/{session.SessionId}", new
-                {
-                    sessionId = session.SessionId,
-                    status = session.Status,
-                    currentTurnIndex = session.CurrentTurnIndex,
-                    aiRole = session.AiRole,
-                    initialMessage = session.InitialMessage,
-                    maxTurns = session.MaxTurns
-                });
-            }
-            catch (ConflictException ex)
+            return Results.Created($"/api/lesson-roleplay/sessions/{session.SessionId}", new
             {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
+                sessionId = session.SessionId,
+                status = session.Status,
+                currentTurnIndex = session.CurrentTurnIndex,
+                aiRole = session.AiRole,
+                initialMessage = session.InitialMessage,
+                maxTurns = session.MaxTurns
+            });
+        }).RequireAuthorization().RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // 5. Role-Play: Get Session Details (Resume after restart)
         app.MapGet("/api/lesson-roleplay/sessions/{sessionId:guid}", async (
@@ -153,24 +135,17 @@ public static class LessonMediaEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            var session = await sender.Send(new GetRolePlaySessionQuery(sessionId), ct);
+            return Results.Ok(new
             {
-                var session = await sender.Send(new GetRolePlaySessionQuery(sessionId), ct);
-                return Results.Ok(new
-                {
-                    sessionId = session.SessionId,
-                    status = session.Status,
-                    currentTurnIndex = session.CurrentTurnIndex,
-                    aiRole = session.AiRole,
-                    scenario = session.Scenario,
-                    maxTurns = session.MaxTurns,
-                    transcript = session.Transcript.Select(t => new { role = t.Role, message = t.Message })
-                });
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound(new { error = "Role-play session not found." });
-            }
+                sessionId = session.SessionId,
+                status = session.Status,
+                currentTurnIndex = session.CurrentTurnIndex,
+                aiRole = session.AiRole,
+                scenario = session.Scenario,
+                maxTurns = session.MaxTurns,
+                transcript = session.Transcript.Select(t => new { role = t.Role, message = t.Message })
+            });
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
         // 6. Role-Play: Send Turn
@@ -200,23 +175,11 @@ public static class LessonMediaEndpoints
                     remainingTurns = result.RemainingTurns
                 });
             }
-            catch (NotFoundException)
-            {
-                return Results.NotFound(new { error = "Role-play session not found." });
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
             catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { error = ex.Message });
+                return ApiProblem.Conflict(ex.Message);
             }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-        }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
+        }).RequireAuthorization().RequireRateLimiting("ai").RequirePermission("lesson-exercises.attempt");
 
         // 7. Role-Play: End Session
         app.MapPost("/api/lesson-roleplay/sessions/{sessionId:guid}/end", async (
@@ -225,26 +188,15 @@ public static class LessonMediaEndpoints
             ISender sender,
             CancellationToken ct) =>
         {
-            try
+            var result = await sender.Send(new EndRolePlaySessionCommand(sessionId, operationKey), ct);
+            return Results.Ok(new
             {
-                var result = await sender.Send(new EndRolePlaySessionCommand(sessionId, operationKey), ct);
-                return Results.Ok(new
-                {
-                    sessionId = result.SessionId,
-                    status = result.Status,
-                    totalTurnsCompleted = result.TotalTurnsCompleted,
-                    transcript = result.Transcript.Select(h => new { role = h.Role, message = h.Message }),
-                    message = result.Message
-                });
-            }
-            catch (NotFoundException)
-            {
-                return Results.NotFound(new { error = "Role-play session not found." });
-            }
-            catch (ConflictException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
+                sessionId = result.SessionId,
+                status = result.Status,
+                totalTurnsCompleted = result.TotalTurnsCompleted,
+                transcript = result.Transcript.Select(h => new { role = h.Role, message = h.Message }),
+                message = result.Message
+            });
         }).RequireAuthorization().RequirePermission("lesson-exercises.attempt");
 
         return app;

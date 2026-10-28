@@ -33,12 +33,20 @@ public sealed record StartTutorSessionRequest(
     string ConversationMode = "daily_conversation",
     string Topic = "",
     string? CustomSystemPrompt = null
-);
+)
+{
+    public override string ToString() =>
+        $"StartTutorSessionRequest {{ ConversationId = {ConversationId}, ApiKey = [REDACTED], CefrLevel = {CefrLevel}, ExtendedThinking = {ExtendedThinking}, ThinkingLevel = {ThinkingLevel}, VoiceName = {VoiceName}, SpeechSpeed = {SpeechSpeed}, ConversationMode = {ConversationMode}, Topic = {Topic}, CustomSystemPrompt = {CustomSystemPrompt} }}";
+}
 
 public sealed record StartSubHubSessionRequest(
     string ConversationId,
     string ApiKey
-);
+)
+{
+    public override string ToString() =>
+        $"StartSubHubSessionRequest {{ ConversationId = {ConversationId}, ApiKey = [REDACTED] }}";
+}
 
 public sealed record AudioChunkPayload(
     string ConversationId,
@@ -84,4 +92,17 @@ public sealed record TutorAudioEventDto(
     string TurnId,
     string Base64Pcm24k,
     string InteractionStatus
+);
+
+public enum LiveHubType
+{
+    Tutor,
+    Transcribe,
+    Translate
+}
+
+public sealed record LiveConnectionInfo(
+    string UserId,
+    string ConversationId,
+    LiveHubType HubType
 );

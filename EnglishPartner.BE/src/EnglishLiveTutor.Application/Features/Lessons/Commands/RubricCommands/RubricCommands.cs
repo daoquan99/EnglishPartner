@@ -2,6 +2,7 @@ using EnglishLiveTutor.Application.Common.Exceptions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Features.Lessons.Queries.RubricQueries;
+using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Domain.Lessons.Enums;
 using EnglishLiveTutor.Domain.Pronunciation;
 using Microsoft.EntityFrameworkCore;
@@ -20,14 +21,21 @@ public sealed class RubricCommandHandlers :
     ICommandHandler<DeactivateLessonRubricCommand>
 {
     private readonly IAppDbContext _db;
-    private readonly IQueryHandler<GetLessonRubricByIdQuery, LessonRubricDetailDto?> _getRubricByIdHandler;
+    private readonly ILessonRubricDetailBuilder _rubricDetailBuilder;
+
+    public RubricCommandHandlers(
+        IAppDbContext db,
+        ILessonRubricDetailBuilder rubricDetailBuilder)
+    {
+        _db = db;
+        _rubricDetailBuilder = rubricDetailBuilder;
+    }
 
     public RubricCommandHandlers(
         IAppDbContext db,
         IQueryHandler<GetLessonRubricByIdQuery, LessonRubricDetailDto?> getRubricByIdHandler)
+        : this(db, new LessonRubricDetailBuilder(db))
     {
-        _db = db;
-        _getRubricByIdHandler = getRubricByIdHandler;
     }
 
     public async Task<LessonRubricDetailDto> HandleAsync(CreateLessonRubricCommand command, CancellationToken ct = default)
@@ -75,7 +83,7 @@ public sealed class RubricCommandHandlers :
         _db.ScoringRubrics.Add(rubric);
         await _db.SaveChangesAsync(ct);
 
-        var dto = await _getRubricByIdHandler.HandleAsync(new GetLessonRubricByIdQuery(rubric.Id), ct);
+        var dto = await _rubricDetailBuilder.BuildDetailAsync(rubric.Id, ct);
         return dto!;
     }
 

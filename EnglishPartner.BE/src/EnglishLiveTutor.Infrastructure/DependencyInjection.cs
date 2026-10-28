@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.AiCatalog.Repositories;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
@@ -19,10 +19,13 @@ using EnglishLiveTutor.Infrastructure.Persistence;
 using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
 using EnglishLiveTutor.Infrastructure.Realtime;
 using EnglishLiveTutor.Infrastructure.Repositories;
+using EnglishLiveTutor.Infrastructure.VocabularyGames;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EnglishLiveTutor.Infrastructure;
@@ -35,10 +38,9 @@ public static class DependencyInjection
     {
         string connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? configuration.GetConnectionString("SqlServer")
-            ?? "Server=localhost;Database=LingoMint;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;";
+            ?? throw new InvalidOperationException("Connection string is not configured. Please configure ConnectionStrings:DefaultConnection or ConnectionStrings:SqlServer.");
 
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<IPermissionChecker>(EnglishLiveTutor.Infrastructure.Security.AllowAllPermissionChecker.Instance);
         services.TryAddSingleton<ILiveSessionRealtimeNotifier>(NullLiveSessionRealtimeNotifier.Instance);
         services.AddSingleton<AuditingSaveChangesInterceptor>();
 
@@ -58,7 +60,24 @@ public static class DependencyInjection
 
         // Security & Token Services
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-        services.AddSingleton<IJwtTokenService, HmacJwtTokenService>();
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateOnStart();
+        services.TryAddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
+
+        services.AddOptions<AdminUserSeedOptions>()
+            .Bind(configuration.GetSection(AdminUserSeedOptions.SectionName));
+        services.AddOptions<DemoLearnerSeedOptions>()
+            .Bind(configuration.GetSection(DemoLearnerSeedOptions.SectionName));
+
+        services.AddSingleton<IJwtTokenService>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<JwtOptions>>();
+            var env = sp.GetService<IHostEnvironment>();
+            var logger = sp.GetService<ILogger<HmacJwtTokenService>>();
+            var timeProvider = sp.GetService<TimeProvider>();
+            return new HmacJwtTokenService(options, env, logger, timeProvider);
+        });
 
         // Aggregate Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -81,10 +100,21 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped<EnglishLiveTutor.Domain.VocabularyGames.Repositories.IFallingWordGameRepository, EnglishLiveTutor.Infrastructure.Repositories.FallingWordGameRepository>();
         services.AddScoped<EnglishLiveTutor.Application.Features.VocabularyGames.Ports.IFallingWordPoolReader, EnglishLiveTutor.Infrastructure.VocabularyGames.Queries.FallingWordPoolReader>();
+
+        services.AddOptions<VocabularyGamesOptions>()
+            .Bind(configuration.GetSection(VocabularyGamesOptions.SectionName))
+            .Validate(options => options.ExpirationPollSeconds >= VocabularyGamesOptions.MinExpirationPollSeconds &&
+                                 options.ExpirationPollSeconds <= VocabularyGamesOptions.MaxExpirationPollSeconds,
+                $"VocabularyGames:ExpirationPollSeconds must be between {VocabularyGamesOptions.MinExpirationPollSeconds} and {VocabularyGamesOptions.MaxExpirationPollSeconds}.")
+            .ValidateOnStart();
+
         services.AddHostedService<EnglishLiveTutor.Infrastructure.VocabularyGames.FallingWordRoundExpirationWorker>();
 
         services.AddOptions<LessonMediaStorageOptions>()
-            .Bind(configuration.GetSection(LessonMediaStorageOptions.SectionName));
+            .Bind(configuration.GetSection(LessonMediaStorageOptions.SectionName))
+            .Validate(options => options.MaxFileSizeBytes > 0,
+                "Storage:LessonMedia:MaxFileSizeBytes must be greater than 0.")
+            .ValidateOnStart();
         services.AddSingleton<ILessonMediaStorage, FileLessonMediaStorage>();
 
         services.AddSingleton<ILessonPromptTemplateProvider, LessonPromptTemplateProvider>();
@@ -97,7 +127,12 @@ public static class DependencyInjection
         services.AddSingleton<GrammarCorrectionAnalyzerService>();
         services.AddSingleton<IVocabularyGenerationContent, VocabularyGenerationContent>();
         services.AddOptions<AntigravityCliOptions>()
-            .Bind(configuration.GetSection(AntigravityCliOptions.SectionName));
+            .Bind(configuration.GetSection(AntigravityCliOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds > 0,
+                "Ai:AntigravityCli:TimeoutSeconds must be greater than 0.")
+            .Validate(options => options.AllowedModels != null && options.AllowedModels.Count > 0,
+                "Ai:AntigravityCli:AllowedModels must not be empty.")
+            .ValidateOnStart();
         services.AddSingleton<IAgyCliRunner, AgyCliRunner>();
 
         services.AddOptions<VocabularyGenerationOptions>()
@@ -114,6 +149,8 @@ public static class DependencyInjection
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();
         services.AddScoped<ILivePronunciationTtsSynthesizer, GeminiLivePronunciationTtsSynthesizer>();
         services.AddSingleton<IPronunciationSynthesisLock, PronunciationSynthesisLock>();
+        services.AddOptions<LiveSessionOptions>()
+            .Bind(configuration.GetSection(LiveSessionOptions.SectionName));
         services.AddSingleton<GeminiLiveConnectionManager>();
         services.AddSingleton<ILiveSessionService>(sp => sp.GetRequiredService<GeminiLiveConnectionManager>());
 
@@ -122,11 +159,26 @@ public static class DependencyInjection
         services.AddSingleton<IDeterministicExerciseGrader, Lessons.DeterministicExerciseGrader>();
         services.AddSingleton<ILessonSanitizer, Lessons.LessonSanitizer>();
         services.AddOptions<LessonGenerationOptions>()
-            .Bind(configuration.GetSection(LessonGenerationOptions.SectionName));
+            .Bind(configuration.GetSection(LessonGenerationOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds is >= 1 and <= 600,
+                "Ai:LessonGeneration:TimeoutSeconds must be between 1 and 600.")
+            .Validate(options => options.MaxRetries is >= 0 and <= 5,
+                "Ai:LessonGeneration:MaxRetries must be between 0 and 5.")
+            .ValidateOnStart();
         services.AddOptions<LessonAssessmentOptions>()
-            .Bind(configuration.GetSection(LessonAssessmentOptions.SectionName));
+            .Bind(configuration.GetSection(LessonAssessmentOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds is >= 1 and <= 600,
+                "Ai:LessonAssessment:TimeoutSeconds must be between 1 and 600.")
+            .Validate(options => options.MaxRetries is >= 0 and <= 5,
+                "Ai:LessonAssessment:MaxRetries must be between 0 and 5.")
+            .ValidateOnStart();
         services.AddOptions<LessonRolePlayOptions>()
-            .Bind(configuration.GetSection(LessonRolePlayOptions.SectionName));
+            .Bind(configuration.GetSection(LessonRolePlayOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds is >= 1 and <= 600,
+                "Ai:LessonRolePlay:TimeoutSeconds must be between 1 and 600.")
+            .Validate(options => options.MaxRetries is >= 0 and <= 5,
+                "Ai:LessonRolePlay:MaxRetries must be between 0 and 5.")
+            .ValidateOnStart();
 
         services.AddHttpClient<ILessonAiGenerator, GeminiLessonAiGenerator>((sp, client) =>
         {

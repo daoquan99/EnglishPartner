@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using EnglishLiveTutor.Api.Common;
 
 namespace EnglishLiveTutor.Api.Security;
 
@@ -19,24 +19,18 @@ public static class PermissionAuthorizationExtensions
 
             if (user?.Identity?.IsAuthenticated != true)
             {
-                return Results.Json(
-                    new { error = "Bạn cần đăng nhập để thực hiện thao tác này.", requiredPermission },
-                    statusCode: StatusCodes.Status401Unauthorized);
+                return ApiProblem.Unauthorized(
+                    "Bạn cần đăng nhập để thực hiện thao tác này.",
+                    httpContext,
+                    new Dictionary<string, object?> { ["requiredPermission"] = requiredPermission });
             }
 
-            bool isAdmin = user.IsInRole("ADMIN") || user.IsInRole("Admin") || user.Claims.Any(c =>
-                (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "roles") &&
-                string.Equals(c.Value, "ADMIN", StringComparison.OrdinalIgnoreCase));
-
-            bool hasPerm = isAdmin || user.Claims.Any(c =>
-                c.Type == "permission" &&
-                string.Equals(c.Value, requiredPermission, StringComparison.OrdinalIgnoreCase));
-
-            if (!hasPerm)
+            if (!user.HasPermission(requiredPermission))
             {
-                return Results.Json(
-                    new { error = $"Bạn không có quyền '{requiredPermission}' để thực hiện thao tác này.", requiredPermission },
-                    statusCode: StatusCodes.Status403Forbidden);
+                return ApiProblem.Forbidden(
+                    $"Bạn không có quyền '{requiredPermission}' để thực hiện thao tác này.",
+                    httpContext,
+                    new Dictionary<string, object?> { ["requiredPermission"] = requiredPermission });
             }
 
             return await next(invocationContext);
