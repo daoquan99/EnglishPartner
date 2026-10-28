@@ -72,3 +72,8 @@ EnglishPartner.FE/node_modules/
 # AI worker logs
 docs/tasks/*/runs/
 .claude/settings.local.json
+dist/
+# FE local env (never commit; run `git rm --cached EnglishPartner.FE/.env` once)
+EnglishPartner.FE/.env
+EnglishPartner.FE/.env.*.local
+*.tsbuildinfo
