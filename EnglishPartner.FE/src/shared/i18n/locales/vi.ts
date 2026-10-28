@@ -48,6 +48,8 @@ export const vi = {
     apiKey: 'Google AI Studio API Key',
     apiKeyMissing: 'Chưa nhập',
     apiKeySaved: 'Đã lưu',
+    apiKeyRemember: 'Ghi nhớ trên thiết bị này',
+    apiKeyRememberWarning: 'Key có thể bị đọc nếu trang bị chèn mã độc (XSS).',
     role: 'Vai trò',
     back: 'Quay lại',
     next: 'Tiếp theo',

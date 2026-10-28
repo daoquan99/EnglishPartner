@@ -15,6 +15,8 @@ import type {
   UpsertSpeechSpeedRequestDto,
   UpsertTopicRequestDto,
   UserProfileDto,
+  PagedResultDto,
+  PaginationQueryParams,
 } from '@/shared/api/openapi.types';
 import {
   DEFAULT_AI_MODELS,
@@ -25,7 +27,7 @@ import {
   DEFAULT_TEACHER_VOICES,
   DEFAULT_TOPICS,
 } from '@/features/catalog';
-import { FALLBACK_VOCABULARY_CARDS, type VocabularyFlashcardDto } from '@/features/vocabulary';
+import type { VocabularyFlashcardDto } from '@/features/vocabulary';
 
 export interface UpsertVocabularyAdminPayload {
   word: string;
@@ -47,98 +49,6 @@ export interface UpsertVocabularyAdminPayload {
   grammarPatterns: Array<{ pattern: string; explanationVi: string; sampleSentence?: string }>;
 }
 
-const FALLBACK_PERMISSIONS: PermissionDto[] = [
-  { id: '60000000-0000-0000-0000-000000000001', code: 'conversations.access', name: 'Access Live Tutor Conversations', module: 'Conversations', description: 'Create, view, and stream live AI tutor conversations' },
-  { id: '60000000-0000-0000-0000-000000000002', code: 'vocabularies.read', name: 'View Vocabulary & Flashcards', module: 'Vocabulary', description: 'Access vocabulary catalog and daily flashcards' },
-  { id: '60000000-0000-0000-0000-000000000003', code: 'vocabularies.generate', name: 'Generate Vocabulary with AI', module: 'Vocabulary', description: 'Generate new structured vocabulary items via Gemini/Gemma' },
-  { id: '60000000-0000-0000-0000-000000000004', code: 'pronunciation.assess', name: 'Submit Pronunciation Assessments', module: 'Pronunciation', description: 'Record and score spoken English pronunciation' },
-  { id: '60000000-0000-0000-0000-000000000005', code: 'rubrics.manage', name: 'Manage Pronunciation Scoring Rubrics & AI Models', module: 'Pronunciation', description: 'Update scoring rubric criteria, weights, and AI model catalog' },
-  { id: '60000000-0000-0000-0000-000000000006', code: 'prompts.manage', name: 'Manage CEFR, Session Modes & Speech Speeds', module: 'Prompts', description: 'Create and update CEFR level guidance, coaching modes, and speech speeds' },
-  { id: '60000000-0000-0000-0000-000000000007', code: 'voices.manage', name: 'Manage Teacher Voices Catalog', module: 'Voices', description: 'Update and configure prebuilt teacher voices' },
-  { id: '60000000-0000-0000-0000-000000000008', code: 'users.read', name: 'View Users', module: 'Identity', description: 'List and inspect user profiles' },
-  { id: '60000000-0000-0000-0000-000000000009', code: 'users.manage', name: 'Manage Users & Role Assignments', module: 'Identity', description: 'Create, update, assign roles, and delete users' },
-  { id: '60000000-0000-0000-0000-000000000010', code: 'roles.manage', name: 'Manage Roles & Permissions', module: 'Identity', description: 'Create roles and configure role-permission mappings' },
-  { id: '60000000-0000-0000-0000-000000000011', code: 'topics.manage', name: 'Manage Topics Catalog', module: 'Topics', description: 'Create, update, and curate conversation & vocabulary topics' },
-  { id: '60000000-0000-0000-0000-000000000012', code: 'vocabularies.manage', name: 'Manage Vocabulary & Flashcards Catalog', module: 'Vocabulary', description: 'Create, update, and delete vocabulary flashcards in database' },
-];
-
-const FALLBACK_USERS: UserProfileDto[] = [
-  {
-    id: '80000000-0000-0000-0000-000000000001',
-    username: 'admin',
-    email: 'admin@lingomint.local',
-    fullName: 'LingoMint Administrator',
-    preferredCefrLevel: 'C1',
-    preferredVoiceName: 'Aoede',
-    timeZoneId: 'Asia/Ho_Chi_Minh',
-    isActive: true,
-    roles: ['ADMIN', 'TEACHER'],
-    permissions: FALLBACK_PERMISSIONS.map((p) => p.code),
-  },
-  {
-    id: '80000000-0000-0000-0000-000000000002',
-    username: 'default-learner',
-    email: 'learner@lingomint.local',
-    fullName: 'Học viên Mặc định',
-    preferredCefrLevel: 'B1',
-    preferredVoiceName: 'Aoede',
-    timeZoneId: 'Asia/Ho_Chi_Minh',
-    isActive: true,
-    roles: ['LEARNER'],
-    permissions: [
-      'conversations.access',
-      'vocabularies.read',
-      'vocabularies.generate',
-      'pronunciation.assess',
-    ],
-  },
-];
-
-const FALLBACK_ROLES: RoleDto[] = [
-  {
-    id: '70000000-0000-0000-0000-000000000001',
-    code: 'ADMIN',
-    name: 'System Administrator',
-    description: 'Toàn quyền quản trị hệ thống, người dùng, từ vựng, prompt, giọng đọc, chủ đề và rubric.',
-    isSystemRole: true,
-    isActive: true,
-    permissions: FALLBACK_PERMISSIONS.map((p) => p.code),
-  },
-  {
-    id: '70000000-0000-0000-0000-000000000002',
-    code: 'TEACHER',
-    name: 'Curriculum & Coaching Teacher',
-    description: 'Quản lý từ vựng, chủ đề, tiêu chí chấm phát âm, cấu hình CEFR prompt và giọng đọc giáo viên.',
-    isSystemRole: true,
-    isActive: true,
-    permissions: [
-      'conversations.access',
-      'vocabularies.read',
-      'vocabularies.generate',
-      'vocabularies.manage',
-      'pronunciation.assess',
-      'rubrics.manage',
-      'prompts.manage',
-      'voices.manage',
-      'topics.manage',
-    ],
-  },
-  {
-    id: '70000000-0000-0000-0000-000000000003',
-    code: 'LEARNER',
-    name: 'English Learner',
-    description: 'Học viên luyện hội thoại trực tiếp, học flashcard từ vựng hằng ngày và chấm phát âm.',
-    isSystemRole: true,
-    isActive: true,
-    permissions: [
-      'conversations.access',
-      'vocabularies.read',
-      'vocabularies.generate',
-      'pronunciation.assess',
-    ],
-  },
-];
-
 export const adminApi = {
   // ---------------------------------------------------------------------------
   // 1. Vocabularies / Flashcards CRUD (/api/vocabularies)
@@ -147,15 +57,23 @@ export const adminApi = {
     search?: string;
     cefrLevel?: string;
     topicCategory?: string;
-  }): Promise<VocabularyFlashcardDto[]> {
-    try {
-      const { data } = await httpClient.get<VocabularyFlashcardDto[]>('/api/vocabularies', {
-        params,
-      });
-      return Array.isArray(data) && data.length > 0 ? data : FALLBACK_VOCABULARY_CARDS;
-    } catch {
-      return FALLBACK_VOCABULARY_CARDS;
+    page?: number;
+    pageSize?: number;
+    paged?: boolean;
+  }): Promise<PagedResultDto<VocabularyFlashcardDto>> {
+    const { data } = await httpClient.get<any>('/api/vocabularies', {
+      params,
+    });
+    if (Array.isArray(data)) {
+      return {
+        items: data,
+        totalCount: data.length,
+        page: 1,
+        pageSize: data.length,
+        totalPages: 1,
+      };
     }
+    return data;
   },
 
   async createVocabulary(payload: UpsertVocabularyAdminPayload): Promise<VocabularyFlashcardDto> {
@@ -400,13 +318,20 @@ export const adminApi = {
   // ---------------------------------------------------------------------------
   // 6. Users, Roles & Permissions CRUD (/api/users, /api/roles, /api/permissions)
   // ---------------------------------------------------------------------------
-  async listUsers(): Promise<UserProfileDto[]> {
-    try {
-      const { data } = await httpClient.get<UserProfileDto[]>('/api/users');
-      return Array.isArray(data) && data.length > 0 ? data : FALLBACK_USERS;
-    } catch {
-      return FALLBACK_USERS;
+  async listUsers(params?: PaginationQueryParams): Promise<PagedResultDto<UserProfileDto>> {
+    const { data } = await httpClient.get<any>('/api/users', {
+      params,
+    });
+    if (Array.isArray(data)) {
+      return {
+        items: data,
+        totalCount: data.length,
+        page: 1,
+        pageSize: data.length,
+        totalPages: 1,
+      };
     }
+    return data;
   },
 
   async createUser(payload: AdminCreateUserRequestDto): Promise<UserProfileDto> {
@@ -431,12 +356,8 @@ export const adminApi = {
   },
 
   async listRoles(): Promise<RoleDto[]> {
-    try {
-      const { data } = await httpClient.get<RoleDto[]>('/api/roles');
-      return Array.isArray(data) && data.length > 0 ? data : FALLBACK_ROLES;
-    } catch {
-      return FALLBACK_ROLES;
-    }
+    const { data } = await httpClient.get<RoleDto[]>('/api/roles');
+    return Array.isArray(data) ? data : [];
   },
 
   async createRole(payload: {
@@ -461,12 +382,8 @@ export const adminApi = {
   },
 
   async listPermissions(): Promise<PermissionDto[]> {
-    try {
-      const { data } = await httpClient.get<PermissionDto[]>('/api/permissions');
-      return Array.isArray(data) && data.length > 0 ? data : FALLBACK_PERMISSIONS;
-    } catch {
-      return FALLBACK_PERMISSIONS;
-    }
+    const { data } = await httpClient.get<PermissionDto[]>('/api/permissions');
+    return Array.isArray(data) ? data : [];
   },
 
   async createPermission(payload: {

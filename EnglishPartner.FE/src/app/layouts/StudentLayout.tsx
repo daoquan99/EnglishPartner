@@ -75,11 +75,13 @@ export const StudentLayout: React.FC = () => {
   const {
     apiKey,
     showApiKey,
+    rememberApiKey,
     apiKeyFocusTrigger,
     aiProvider,
     agyModelCode,
     isStudentSidebarCollapsed,
     setApiKey,
+    setRememberApiKey,
     toggleShowApiKey,
     setAiProvider,
     setAgyModelCode,
@@ -356,23 +358,41 @@ export const StudentLayout: React.FC = () => {
               </div>
 
               {aiProvider === 'gemini' ? (
-                <div className="relative flex items-center">
-                  <input
-                    ref={leftMenuApiKeyRef}
-                    type={showApiKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full pl-2.5 pr-9 py-1.5 text-xs font-mono rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={toggleShowApiKey}
-                    title={showApiKey ? 'Ẩn API Key' : 'Hiện API Key'}
-                    className="absolute right-2 text-slate-400 hover:text-slate-700 cursor-pointer"
-                  >
-                    {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
+                <div className="space-y-1.5">
+                  <div className="relative flex items-center">
+                    <input
+                      ref={leftMenuApiKeyRef}
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full pl-2.5 pr-9 py-1.5 text-xs font-mono rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleShowApiKey}
+                      title={showApiKey ? 'Ẩn API Key' : 'Hiện API Key'}
+                      className="absolute right-2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                    >
+                      {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <label className="flex items-center gap-2 pt-0.5 text-[11px] text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberApiKey}
+                      onChange={(e) => setRememberApiKey(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30 w-3.5 h-3.5 cursor-pointer"
+                    />
+                    <span>{t('common.apiKeyRemember')}</span>
+                  </label>
+
+                  {rememberApiKey && (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/80 rounded-lg p-1.5 leading-tight">
+                      {t('common.apiKeyRememberWarning')}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-1">

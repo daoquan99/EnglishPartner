@@ -314,7 +314,7 @@ export const lessonApi = {
     return data;
   },
 
-  listAttempts: async (params?: { userId?: string }): Promise<LessonAttemptSummaryDto[]> => {
+  listAttempts: async (params?: { page?: number; pageSize?: number }): Promise<LessonAttemptSummaryDto[]> => {
     const { data } = await httpClient.get<LessonAttemptSummaryDto[]>('/api/lesson-attempts', { params });
     return data;
   },

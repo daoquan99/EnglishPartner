@@ -36,8 +36,8 @@ export const LoginPage: React.FC = () => {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      usernameOrEmail: 'default-learner',
-      password: 'Learner@123',
+      usernameOrEmail: '',
+      password: '',
     },
   });
 
@@ -61,10 +61,10 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickDemoLogin = async (usernameOrEmail: string, password: string) => {
+  // Dev-only shortcut: fills the seeded username; passwords come from user-secrets and are never shipped in the bundle.
+  const handleQuickDemoAccount = (usernameOrEmail: string) => {
     setValue('usernameOrEmail', usernameOrEmail);
-    setValue('password', password);
-    await onSubmit({ usernameOrEmail, password });
+    setValue('password', '');
   };
 
   const toggleLanguage = () => {
@@ -132,11 +132,12 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* One-click Seeder Account Switchers */}
+          {/* Seeded account shortcuts (development builds only) */}
+          {import.meta.env.DEV && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => handleQuickDemoLogin('default-learner', 'Learner@123')}
+              onClick={() => handleQuickDemoAccount('default-learner')}
               className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/70 text-left transition-all cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -145,12 +146,12 @@ export const LoginPage: React.FC = () => {
                   LEARNER
                 </span>
               </div>
-              <p className="text-xs text-slate-600 mt-1 font-mono">default-learner / Learner@123</p>
+              <p className="text-xs text-slate-600 mt-1 font-mono">default-learner</p>
             </button>
 
             <button
               type="button"
-              onClick={() => handleQuickDemoLogin('admin', 'Admin@123')}
+              onClick={() => handleQuickDemoAccount('admin')}
               className="p-3 rounded-2xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/70 text-left transition-all cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -159,9 +160,10 @@ export const LoginPage: React.FC = () => {
                   ADMIN
                 </span>
               </div>
-              <p className="text-xs text-slate-600 mt-1 font-mono">admin / Admin@123</p>
+              <p className="text-xs text-slate-600 mt-1 font-mono">admin</p>
             </button>
           </div>
+          )}
 
           {loginMutation.isError && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700">

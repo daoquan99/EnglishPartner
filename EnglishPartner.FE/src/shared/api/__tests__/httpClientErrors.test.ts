@@ -37,6 +37,88 @@ describe('extractApiErrorMessage Helper', () => {
     expect(extractApiErrorMessage(error)).toBe('Email đã tồn tại trên hệ thống.');
   });
 
+  it('extracts error from legacy { error: ... } body', () => {
+    const error = {
+      response: {
+        status: 400,
+        data: {
+          error: 'Tên người dùng đã được sử dụng.',
+        },
+      },
+    } as AxiosError;
+
+    expect(extractApiErrorMessage(error)).toBe('Tên người dùng đã được sử dụng.');
+  });
+
+  it('extracts error from ProblemDetails body having both detail and error matching RFC 9457 extension', () => {
+    const error = {
+      response: {
+        status: 400,
+        data: {
+          type: 'https://tools.ietf.org/html/rfc9110#section-15.5.1',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'Dữ liệu không hợp lệ.',
+          error: 'Dữ liệu không hợp lệ.',
+          traceId: '0HN1234567890',
+        },
+      },
+    } as AxiosError;
+
+    expect(extractApiErrorMessage(error)).toBe('Dữ liệu không hợp lệ.');
+  });
+
+  it('respects precedence order: detail > error > message > errors > title', () => {
+    // 1. detail takes precedence over error
+    const errDetailOverError = {
+      response: {
+        status: 400,
+        data: {
+          detail: 'Detail message',
+          error: 'Error message',
+          message: 'Generic message',
+        },
+      },
+    } as AxiosError;
+    expect(extractApiErrorMessage(errDetailOverError)).toBe('Detail message');
+
+    // 2. error takes precedence over message
+    const errErrorOverMessage = {
+      response: {
+        status: 400,
+        data: {
+          error: 'Error message',
+          message: 'Generic message',
+        },
+      },
+    } as AxiosError;
+    expect(extractApiErrorMessage(errErrorOverMessage)).toBe('Error message');
+
+    // 3. message takes precedence over errors dictionary
+    const errMessageOverErrors = {
+      response: {
+        status: 400,
+        data: {
+          message: 'Generic message',
+          errors: { Field: ['Field error'] },
+        },
+      },
+    } as AxiosError;
+    expect(extractApiErrorMessage(errMessageOverErrors)).toBe('Generic message');
+
+    // 4. errors dictionary takes precedence over title
+    const errErrorsOverTitle = {
+      response: {
+        status: 400,
+        data: {
+          title: 'Validation Failed',
+          errors: { Email: ['Email is invalid'] },
+        },
+      },
+    } as AxiosError;
+    expect(extractApiErrorMessage(errErrorsOverTitle)).toBe('Email is invalid');
+  });
+
   it('extracts validation errors dictionary from ASP.NET ProblemDetails', () => {
     const error = {
       response: {

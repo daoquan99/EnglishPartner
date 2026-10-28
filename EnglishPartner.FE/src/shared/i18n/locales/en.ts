@@ -48,6 +48,8 @@ export const en = {
     apiKey: 'Google AI Studio API Key',
     apiKeyMissing: 'Missing Key',
     apiKeySaved: 'Saved',
+    apiKeyRemember: 'Remember on this device',
+    apiKeyRememberWarning: 'Key may be exposed if malicious scripts are injected (XSS).',
     role: 'Role',
     back: 'Back',
     next: 'Next',

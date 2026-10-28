@@ -12,14 +12,12 @@ export const VOCAB_QUERY_KEYS = {
   settings: () => ['vocabulary', 'settings'] as const,
   todayPlan: () => ['vocabulary', 'today-plan'] as const,
   pronunciationHistory: (params: {
-    userId?: string;
     vocabularyId?: string;
     senseId?: string;
     targetType?: string;
     targetId?: string;
   }) => ['vocabulary', 'pronunciation-history', params] as const,
   learningHistory: (params: {
-    userId?: string;
     vocabularyId?: string;
     senseId?: string;
   }) => ['vocabulary', 'learning-history', params] as const,

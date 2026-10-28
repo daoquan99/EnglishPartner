@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Save, Search } from 'lucide-react';
 import {
   useAdminRolesQuery,
@@ -20,7 +20,39 @@ import { FeedbackBanner } from '@/shared/components/ui/FeedbackBanner';
 import type { CefrLevel, UserProfileDto } from '@/shared/api/openapi.types';
 
 export const AdminUsersPage: React.FC = () => {
-  const { data: users = [], isLoading } = useAdminUsersQuery();
+  // Toolbar & Server Pagination State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const queryParams = useMemo(() => ({
+    page,
+    pageSize,
+    search: debouncedSearch.trim() || undefined,
+    paged: true,
+  }), [page, pageSize, debouncedSearch]);
+
+  const {
+    data: pagedUsers,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAdminUsersQuery(queryParams);
+
+  const users = pagedUsers?.items ?? [];
+  const totalCount = pagedUsers?.totalCount ?? 0;
+
   const { data: roles = [] } = useAdminRolesQuery();
   const { data: voices = [] } = useTeacherVoicesQuery();
 
@@ -28,14 +60,11 @@ export const AdminUsersPage: React.FC = () => {
   const updateUserMutation = useUpdateUserAdminMutation();
   const deleteUserMutation = useDeleteUserAdminMutation();
 
-  const [localUsers, setLocalUsers] = useState<UserProfileDto[] | null>(null);
-  const displayedUsers = localUsers ?? users;
+  const displayedUsers = useMemo(() => {
+    if (roleFilter === 'ALL') return users;
+    return users.filter((u: UserProfileDto) => u.roles.includes(roleFilter));
+  }, [users, roleFilter]);
 
-  // Toolbar & Pagination State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -55,21 +84,6 @@ export const AdminUsersPage: React.FC = () => {
   const [preferredVoiceName, setPreferredVoiceName] = useState('Aoede');
   const [isActive, setIsActive] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['LEARNER']);
-
-  const filteredUsers = useMemo(() => {
-    return displayedUsers.filter((u) => {
-      if (roleFilter !== 'ALL' && !u.roles.includes(roleFilter)) return false;
-      if (searchTerm.trim()) {
-        const q = searchTerm.trim().toLowerCase();
-        return (
-          u.username.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.fullName.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [displayedUsers, roleFilter, searchTerm]);
 
   const openCreateDialog = () => {
     setEditingUserId(null);
@@ -112,11 +126,16 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
 
+    if (!editingUserId && !password.trim()) {
+      setFormError('Vui lòng nhập mật khẩu khởi tạo cho tài khoản mới.');
+      return;
+    }
+
     const roleCodes = selectedRoles.length > 0 ? selectedRoles : ['LEARNER'];
 
     try {
       if (editingUserId) {
-        const updated = await updateUserMutation.mutateAsync({
+        await updateUserMutation.mutateAsync({
           id: editingUserId,
           payload: {
             email: email.trim(),
@@ -128,63 +147,46 @@ export const AdminUsersPage: React.FC = () => {
             roleCodes,
           },
         });
-        setLocalUsers(displayedUsers.map((u) => (u.id === editingUserId ? updated : u)));
       } else {
-        const created = await createUserMutation.mutateAsync({
+        await createUserMutation.mutateAsync({
           username: username.trim(),
           email: email.trim(),
-          password: password.trim() || 'Learner@123',
+          password: password.trim(),
           fullName: fullName.trim() || username.trim(),
           preferredCefrLevel,
           preferredVoiceName,
           isActive,
           roleCodes,
         });
-        setLocalUsers([created, ...displayedUsers]);
       }
-    } catch {
-      const fallback: UserProfileDto = {
-        id: editingUserId ?? crypto.randomUUID(),
-        username: username.trim(),
-        email: email.trim(),
-        fullName: fullName.trim() || username.trim(),
-        preferredCefrLevel,
-        preferredVoiceName,
-        timeZoneId: 'Asia/Ho_Chi_Minh',
-        isActive,
-        roles: roleCodes,
-        permissions: [],
-      };
-      if (editingUserId) {
-        setLocalUsers(displayedUsers.map((u) => (u.id === editingUserId ? fallback : u)));
-      } else {
-        setLocalUsers([fallback, ...displayedUsers]);
-      }
+      setFeedback({
+        type: 'success',
+        message: editingUserId
+          ? `Đã cập nhật tài khoản "@${username.trim()}" thành công.`
+          : `Đã tạo tài khoản "@${username.trim()}" thành công.`,
+      });
+      setIsDialogOpen(false);
+      setEditingUserId(null);
+    } catch (err: any) {
+      setFormError(err?.message || 'Không thể lưu người dùng. Vui lòng thử lại.');
     }
-
-    setFeedback({
-      type: 'success',
-      message: editingUserId
-        ? `Đã cập nhật tài khoản "@${username.trim()}" thành công.`
-        : `Đã tạo tài khoản "@${username.trim()}" thành công.`,
-    });
-    setIsDialogOpen(false);
-    setEditingUserId(null);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteUserMutation.mutateAsync(deleteTarget.id);
-    } catch {
-      // ignore offline
+      setFeedback({
+        type: 'success',
+        message: `Đã xóa người dùng "@${deleteTarget.username}".`,
+      });
+      setDeleteTarget(null);
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'Không thể xóa người dùng.',
+      });
     }
-    setLocalUsers(displayedUsers.filter((u) => u.id !== deleteTarget.id));
-    setFeedback({
-      type: 'success',
-      message: `Đã xóa người dùng "@${deleteTarget.username}".`,
-    });
-    setDeleteTarget(null);
   };
 
   const columns: DataTableColumn<UserProfileDto>[] = [
@@ -275,7 +277,7 @@ export const AdminUsersPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
-              Quản lý Người dùng & Phân quyền ({filteredUsers.length})
+              Quản lý Người dùng & Phân quyền ({totalCount})
             </h1>
             <p className="text-xs text-slate-500">
               Tạo tài khoản mới, chỉnh sửa thông tin hồ sơ, gán Roles và quản lý trạng thái hoạt động
@@ -301,10 +303,7 @@ export const AdminUsersPage: React.FC = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm theo username, email hoặc họ tên..."
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs"
             />
@@ -334,16 +333,27 @@ export const AdminUsersPage: React.FC = () => {
         </CanAccess>
       </div>
 
+      {isError && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between shadow-2xs">
+          <span className="text-xs text-rose-700 font-semibold">
+            {(error as Error)?.message || 'Không thể tải danh sách người dùng. Vui lòng thử lại.'}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Thử lại
+          </Button>
+        </div>
+      )}
+
       {/* 3. DataTable + 4. Pagination */}
       <DataTable
         columns={columns}
-        data={filteredUsers}
+        data={displayedUsers}
         rowKey={(row) => row.id}
         isLoading={isLoading}
         page={page}
         pageSize={pageSize}
+        totalCount={totalCount}
         onPageChange={setPage}
-        onPageSizeChange={setPageSize}
       />
 
       {/* Create / Edit User Dialog */}
@@ -413,7 +423,7 @@ export const AdminUsersPage: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={editingUserId ? 'Để trống nếu giữ nguyên' : 'Learner@123'}
+                placeholder={editingUserId ? 'Để trống nếu giữ nguyên' : 'Nhập mật khẩu khởi tạo'}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200"
               />
             </FormField>

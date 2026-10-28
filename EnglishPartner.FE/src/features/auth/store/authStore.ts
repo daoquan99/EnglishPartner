@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { AuthResponseDto, UserProfileDto } from '@/shared/api/openapi.types';
 import { registerAuthSyncCallback, setInMemoryTokens } from '@/shared/api/httpClient';
+import { useTutorSessionStore } from '@/features/tutor/store/tutorSessionStore';
 
 /**
  * Zustand store strictly for Client Authentication UI status & In-Memory Token reference.
@@ -31,7 +32,7 @@ function loadInitialUserHint(): UserProfileDto | null {
 const initialHint = loadInitialUserHint();
 
 export const useAuthStore = create<AuthUiState>((set) => ({
-  isAuthenticated: Boolean(initialHint),
+  isAuthenticated: false,
   isInitialized: false,
   accessToken: null,
   currentUser: initialHint,
@@ -65,6 +66,8 @@ export const useAuthStore = create<AuthUiState>((set) => ({
 
   clearSession: () => {
     setInMemoryTokens(null, null);
+    // BYO API key belongs to the signed-in learner (ADR-0003): never hand it to the next user on this browser.
+    useTutorSessionStore.getState().clearApiKey();
     try {
       sessionStorage.removeItem(SESSION_USER_HINT_KEY);
     } catch {
@@ -80,6 +83,9 @@ export const useAuthStore = create<AuthUiState>((set) => ({
 
   markInitialized: () => set({ isInitialized: true }),
 }));
+
+// Ensure SSR and test static rendering always observe the dynamic state snapshot
+(useAuthStore as any).getServerSnapshot = useAuthStore.getState;
 
 // Synchronize Axios single-flight 401 refresh results with Zustand store
 registerAuthSyncCallback((auth) => {

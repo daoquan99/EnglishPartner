@@ -109,7 +109,6 @@ export interface GenerateVocabularyRequestDto {
   topic: string;
   count: number;
   modelCode: string;
-  userId?: string;
   provider?: string;
 }
 
@@ -138,7 +137,6 @@ export interface ImportVocabularyJsonRequestDto {
 }
 
 export interface SubmitVocabularyReviewRequestDto {
-  userId?: string;
   vocabularyId?: string;
   senseId?: string;
   rating: ReviewRating;

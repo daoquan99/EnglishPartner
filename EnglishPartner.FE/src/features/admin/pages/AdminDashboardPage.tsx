@@ -23,19 +23,19 @@ import {
 
 export const AdminDashboardPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: vocabularies = [] } = useAdminVocabulariesQuery();
+  const { data: vocabularies } = useAdminVocabulariesQuery();
   const { data: topics = [] } = useAdminTopicsQuery();
   const { data: modes = [] } = useConversationModesQuery();
   const { data: speeds = [] } = useAdminSpeechSpeedsQuery();
   const { data: voices = [] } = useAdminVoicesQuery();
-  const { data: users = [] } = useAdminUsersQuery();
+  const { data: users } = useAdminUsersQuery();
   const { data: roles = [] } = useAdminRolesQuery();
   const { data: aiModels = [] } = useAdminAiModelsQuery();
 
   const cards = [
     {
       title: t('nav.adminVocabularies'),
-      value: `${vocabularies.length} ${t('vocab.wordsUnit')}`,
+      value: `${vocabularies?.totalCount ?? (Array.isArray(vocabularies) ? vocabularies.length : 0)} ${t('vocab.wordsUnit')}`,
       sub: t('nav.adminVocabulariesSub'),
       to: '/admin/vocabularies',
       icon: <img src="/assets/icons/navigation/nav-reviews.svg" alt="" className="w-5 h-5 object-contain" />,
@@ -70,7 +70,7 @@ export const AdminDashboardPage: React.FC = () => {
     },
     {
       title: t('nav.adminUsers'),
-      value: `${users.length} users`,
+      value: `${users?.totalCount ?? (Array.isArray(users) ? users.length : 0)} users`,
       sub: t('nav.adminUsersSub'),
       to: '/admin/users',
       icon: <img src="/assets/icons/navigation/nav-account.svg" alt="" className="w-5 h-5 object-contain" />,

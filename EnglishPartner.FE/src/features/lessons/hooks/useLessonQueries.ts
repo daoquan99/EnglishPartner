@@ -21,7 +21,7 @@ export const LESSON_QUERY_KEYS = {
   learnerList: (params?: ListLessonsParams) => [...LESSON_QUERY_KEYS.all, 'learner-list', params] as const,
   learnerDetail: (id: string) => [...LESSON_QUERY_KEYS.all, 'learner-detail', id] as const,
   attempt: (attemptId: string) => [...LESSON_QUERY_KEYS.all, 'attempt', attemptId] as const,
-  attemptsList: (userId?: string) => [...LESSON_QUERY_KEYS.all, 'attempts-list', userId] as const,
+  attemptsList: (params?: { page?: number; pageSize?: number }) => [...LESSON_QUERY_KEYS.all, 'attempts-list', params] as const,
   rubrics: (params?: ListLessonRubricsParams) => [...LESSON_QUERY_KEYS.all, 'rubrics', params] as const,
   rubricDetail: (id: string) => [...LESSON_QUERY_KEYS.all, 'rubric-detail', id] as const,
 };
@@ -72,10 +72,10 @@ export function useLessonAttemptQuery(attemptId?: string) {
   });
 }
 
-export function useLearnerAttemptsQuery(userId?: string) {
+export function useLearnerAttemptsQuery(params?: { page?: number; pageSize?: number }) {
   return useQuery({
-    queryKey: LESSON_QUERY_KEYS.attemptsList(userId),
-    queryFn: () => lessonApi.listAttempts({ userId }),
+    queryKey: LESSON_QUERY_KEYS.attemptsList(params),
+    queryFn: () => lessonApi.listAttempts(params),
   });
 }
 

@@ -94,6 +94,7 @@ export function extractApiErrorMessage(error: AxiosError): string {
   } else if (rawData && typeof rawData === 'object') {
     const data = rawData as {
       detail?: unknown;
+      error?: unknown;
       message?: unknown;
       title?: unknown;
       errors?: Record<string, unknown>;
@@ -101,6 +102,9 @@ export function extractApiErrorMessage(error: AxiosError): string {
 
     if (typeof data.detail === 'string' && data.detail.trim()) {
       return data.detail.trim();
+    }
+    if (typeof data.error === 'string' && data.error.trim()) {
+      return data.error.trim();
     }
     if (typeof data.message === 'string' && data.message.trim()) {
       return data.message.trim();

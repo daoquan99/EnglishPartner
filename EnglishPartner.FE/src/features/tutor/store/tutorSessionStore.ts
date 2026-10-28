@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CefrLevel, ConversationModeCode, TeacherVoiceName } from '@/shared/api/openapi.types';
 
-const API_KEY_STORAGE_KEY = 'lingomint_api_key';
+export const API_KEY_STORAGE_KEY = 'lingomint_api_key';
 const TTS_MODEL_STORAGE_KEY = 'lingomint_tts_model';
 const TTS_ACCENT_STORAGE_KEY = 'lingomint_tts_accent';
 const ASSESSMENT_MODEL_STORAGE_KEY = 'lingomint_assessment_model';
@@ -11,13 +11,62 @@ const AGY_MODEL_STORAGE_KEY = 'lingomint_agy_model';
 export type AiProvider = 'gemini' | 'agy';
 export type AgyModelCode = 'gemini-3.8-flash-medium' | 'gemini-3.8-flash-low' | 'gemini-3.8-flash-high';
 
-function loadInitialApiKey(): string {
+let customStorage: { local?: Storage; session?: Storage } | null = null;
+
+export function setTestStorage(storage: { local?: Storage; session?: Storage } | null) {
+  customStorage = storage;
+}
+
+function getStorage(type: 'local' | 'session'): Storage | null {
+  if (customStorage) {
+    return customStorage[type] ?? null;
+  }
   try {
-    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+    if (typeof window !== 'undefined') {
+      return type === 'local' ? window.localStorage : window.sessionStorage;
+    }
+    if (typeof globalThis !== 'undefined' && (globalThis as any)[type === 'local' ? 'localStorage' : 'sessionStorage']) {
+      return (globalThis as any)[type === 'local' ? 'localStorage' : 'sessionStorage'];
+    }
   } catch {
-    return '';
+    return null;
+  }
+  return null;
+}
+
+export const API_KEY_REMEMBER_STORAGE_KEY = 'lingomint_api_key_remember';
+
+export function initApiKeyStorage(): { apiKey: string; rememberApiKey: boolean } {
+  try {
+    const localStore = getStorage('local');
+    const sessionStore = getStorage('session');
+
+    const remember = localStore?.getItem(API_KEY_REMEMBER_STORAGE_KEY) === 'true';
+    const localKey = localStore?.getItem(API_KEY_STORAGE_KEY) || '';
+    const sessionKey = sessionStore?.getItem(API_KEY_STORAGE_KEY) || '';
+
+    if (remember) {
+      const activeKey = localKey || sessionKey;
+      if (activeKey && !localKey) {
+        localStore?.setItem(API_KEY_STORAGE_KEY, activeKey);
+      }
+      return { apiKey: activeKey, rememberApiKey: true };
+    }
+
+    // Migration: If old key in localStorage exists and user hasn't checked remember,
+    // move key to sessionStorage and remove from localStorage
+    if (localKey) {
+      sessionStore?.setItem(API_KEY_STORAGE_KEY, localKey);
+      localStore?.removeItem(API_KEY_STORAGE_KEY);
+      return { apiKey: localKey, rememberApiKey: false };
+    }
+
+    return { apiKey: sessionKey, rememberApiKey: false };
+  } catch {
+    return { apiKey: '', rememberApiKey: false };
   }
 }
+
 
 function loadInitialAiProvider(): AiProvider {
   try {
@@ -73,13 +122,14 @@ function loadInitialAssessmentModel(): string {
 /**
  * Zustand Store strictly for Client UI State:
  * - AI Provider ('gemini' Cloud or 'agy' Antigravity CLI Local)
- * - Google AI Studio API Key (persisted in localStorage)
+ * - Google AI Studio API Key (sessionStorage by default; localStorage only when "remember" is on)
  * - Antigravity Local Model Code (gemini-3.8-flash-medium, gemini-3.8-flash-low, gemini-3.8-flash-high)
  * - Left Menu collapse toggle (Student Portal & Admin Portal)
  * - Live Tutor Setup Modal state & session setup parameters
  */
 interface TutorSessionUiState {
   apiKey: string;
+  rememberApiKey: boolean;
   showApiKey: boolean;
   apiKeyFocusTrigger: number;
   aiProvider: AiProvider;
@@ -103,6 +153,8 @@ interface TutorSessionUiState {
   assessmentModelCode: string;
 
   setApiKey: (key: string) => void;
+  setRememberApiKey: (remember: boolean) => void;
+  clearApiKey: () => void;
   toggleShowApiKey: () => void;
   setAiProvider: (provider: AiProvider) => void;
   setAgyModelCode: (model: AgyModelCode) => void;
@@ -138,9 +190,12 @@ interface TutorSessionUiState {
   }) => void;
 }
 
-export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
-  apiKey: loadInitialApiKey(),
-  showApiKey: false,
+export const useTutorSessionStore = create<TutorSessionUiState>((set, get) => {
+  const initialKeyConfig = initApiKeyStorage();
+  return {
+    apiKey: initialKeyConfig.apiKey,
+    rememberApiKey: initialKeyConfig.rememberApiKey,
+    showApiKey: false,
   apiKeyFocusTrigger: 0,
   aiProvider: loadInitialAiProvider(),
   agyModelCode: loadInitialAgyModel(),
@@ -164,11 +219,54 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
 
   setApiKey: (apiKey) => {
     try {
-      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+      const localStore = getStorage('local');
+      const sessionStore = getStorage('session');
+      if (get().rememberApiKey) {
+        localStore?.setItem(API_KEY_STORAGE_KEY, apiKey);
+        sessionStore?.removeItem(API_KEY_STORAGE_KEY);
+      } else {
+        sessionStore?.setItem(API_KEY_STORAGE_KEY, apiKey);
+        localStore?.removeItem(API_KEY_STORAGE_KEY);
+      }
     } catch {
       // ignore
     }
     set({ apiKey });
+  },
+  setRememberApiKey: (rememberApiKey) => {
+    try {
+      const localStore = getStorage('local');
+      const sessionStore = getStorage('session');
+      const currentKey = get().apiKey;
+      if (rememberApiKey) {
+        localStore?.setItem(API_KEY_REMEMBER_STORAGE_KEY, 'true');
+        if (currentKey) {
+          localStore?.setItem(API_KEY_STORAGE_KEY, currentKey);
+          sessionStore?.removeItem(API_KEY_STORAGE_KEY);
+        }
+      } else {
+        localStore?.removeItem(API_KEY_REMEMBER_STORAGE_KEY);
+        if (currentKey) {
+          sessionStore?.setItem(API_KEY_STORAGE_KEY, currentKey);
+          localStore?.removeItem(API_KEY_STORAGE_KEY);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    set({ rememberApiKey });
+  },
+  clearApiKey: () => {
+    try {
+      const localStore = getStorage('local');
+      const sessionStore = getStorage('session');
+      localStore?.removeItem(API_KEY_STORAGE_KEY);
+      localStore?.removeItem(API_KEY_REMEMBER_STORAGE_KEY);
+      sessionStore?.removeItem(API_KEY_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    set({ apiKey: '', rememberApiKey: false, showApiKey: false });
   },
   toggleShowApiKey: () => set((s) => ({ showApiKey: !s.showApiKey })),
   setAiProvider: (aiProvider) => {
@@ -245,4 +343,5 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set) => ({
       customSystemPrompt: s.customSystemPrompt ?? '',
       extendedThinking: Boolean(s.extendedThinking),
     }),
-}));
+};
+});

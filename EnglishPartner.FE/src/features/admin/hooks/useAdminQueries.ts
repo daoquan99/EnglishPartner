@@ -4,6 +4,7 @@ import { CATALOG_QUERY_KEYS } from '@/features/catalog';
 import type {
   AdminCreateUserRequestDto,
   AdminUpdateUserRequestDto,
+  PaginationQueryParams,
   TeacherVoiceDto,
   UpsertAiModelConfigRequestDto,
   UpsertSpeechSpeedRequestDto,
@@ -11,8 +12,8 @@ import type {
 } from '@/shared/api/openapi.types';
 
 export const ADMIN_QUERY_KEYS = {
-  vocabularies: ['admin', 'vocabularies'] as const,
-  users: ['admin', 'users'] as const,
+  vocabularies: (params?: Record<string, any>) => ['admin', 'vocabularies', params] as const,
+  users: (params?: Record<string, any>) => ['admin', 'users', params] as const,
   roles: ['admin', 'roles'] as const,
   permissions: ['admin', 'permissions'] as const,
   allVoices: ['admin', 'voices', 'all'] as const,
@@ -23,10 +24,17 @@ export const ADMIN_QUERY_KEYS = {
 };
 
 // --- Vocabularies / Flashcards CRUD ---
-export function useAdminVocabulariesQuery() {
+export function useAdminVocabulariesQuery(params?: {
+  search?: string;
+  cefrLevel?: string;
+  topicCategory?: string;
+  page?: number;
+  pageSize?: number;
+  paged?: boolean;
+}) {
   return useQuery({
-    queryKey: ADMIN_QUERY_KEYS.vocabularies,
-    queryFn: () => adminApi.listVocabularies(),
+    queryKey: ADMIN_QUERY_KEYS.vocabularies(params),
+    queryFn: () => adminApi.listVocabularies(params),
   });
 }
 
@@ -35,7 +43,7 @@ export function useCreateVocabularyAdminMutation() {
   return useMutation({
     mutationFn: (payload: UpsertVocabularyAdminPayload) => adminApi.createVocabulary(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.vocabularies });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'vocabularies'] });
       void queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
     },
   });
@@ -47,7 +55,7 @@ export function useUpdateVocabularyAdminMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: UpsertVocabularyAdminPayload }) =>
       adminApi.updateVocabulary(id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.vocabularies });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'vocabularies'] });
       void queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
     },
   });
@@ -58,7 +66,7 @@ export function useDeleteVocabularyAdminMutation() {
   return useMutation({
     mutationFn: (id: string) => adminApi.deleteVocabulary(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.vocabularies });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'vocabularies'] });
       void queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
     },
   });
@@ -303,10 +311,10 @@ export function useDeleteAiModelMutation() {
 }
 
 // --- Users, Roles & Permissions CRUD ---
-export function useAdminUsersQuery() {
+export function useAdminUsersQuery(params?: PaginationQueryParams) {
   return useQuery({
-    queryKey: ADMIN_QUERY_KEYS.users,
-    queryFn: () => adminApi.listUsers(),
+    queryKey: ADMIN_QUERY_KEYS.users(params),
+    queryFn: () => adminApi.listUsers(params),
   });
 }
 
@@ -315,7 +323,7 @@ export function useCreateUserAdminMutation() {
   return useMutation({
     mutationFn: (payload: AdminCreateUserRequestDto) => adminApi.createUser(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.users });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 }
@@ -326,7 +334,7 @@ export function useUpdateUserAdminMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: AdminUpdateUserRequestDto }) =>
       adminApi.updateUser(id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.users });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 }
@@ -337,7 +345,7 @@ export function useAssignUserRolesMutation() {
     mutationFn: ({ userId, roleCodes }: { userId: string; roleCodes: string[] }) =>
       adminApi.assignUserRoles(userId, roleCodes),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.users });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 }
@@ -347,7 +355,7 @@ export function useDeleteUserAdminMutation() {
   return useMutation({
     mutationFn: (id: string) => adminApi.deleteUser(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.users });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
 }

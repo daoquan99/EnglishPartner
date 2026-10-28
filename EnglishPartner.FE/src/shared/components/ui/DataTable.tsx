@@ -53,7 +53,7 @@ export function DataTable<T>({
 
   // If caller passes un-sliced data without totalCount override, slice client-side automatically
   const rows =
-    totalCount !== undefined && totalCount > data.length
+    totalCount !== undefined
       ? data
       : data.slice((safePage - 1) * pageSize, safePage * pageSize);
 

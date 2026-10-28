@@ -12,7 +12,7 @@ export const AUTH_QUERY_KEYS = {
  * Bootstraps authentication session on app startup using silent Refresh Token cookie check.
  */
 export function useBootstrapAuth() {
-  const { isInitialized, accessToken, currentUser, setSession, clearSession, markInitialized } =
+  const { isInitialized, accessToken, setSession, clearSession, markInitialized } =
     useAuthStore();
 
   useEffect(() => {
@@ -28,11 +28,6 @@ export function useBootstrapAuth() {
           return;
         }
       } catch {
-        // If we have a demo user hint in sessionStorage, keep it usable in offline mode
-        if (mounted && currentUser) {
-          markInitialized();
-          return;
-        }
         if (mounted) clearSession();
       } finally {
         if (mounted) markInitialized();
@@ -42,7 +37,7 @@ export function useBootstrapAuth() {
     return () => {
       mounted = false;
     };
-  }, [isInitialized, accessToken, currentUser, setSession, clearSession, markInitialized]);
+  }, [isInitialized, accessToken, setSession, clearSession, markInitialized]);
 }
 
 export function useCurrentUser() {
@@ -55,7 +50,7 @@ export function useCurrentUser() {
       setUserProfile(profile);
       return profile;
     },
-    enabled: Boolean(isAuthenticated && accessToken && !accessToken.startsWith('demo-jwt-')),
+    enabled: Boolean(isAuthenticated && accessToken),
     initialData: currentUser ?? undefined,
     staleTime: 5 * 60_000,
     retry: false,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Save, Search } from 'lucide-react';
 import {
   useAdminVocabulariesQuery,
@@ -19,19 +19,44 @@ import { toast } from '@/shared/lib/toast';
 import type { CefrLevel } from '@/shared/api/openapi.types';
 
 export const AdminVocabulariesPage: React.FC = () => {
-  const { data: vocabList = [], isLoading } = useAdminVocabulariesQuery();
+  // Toolbar & Server Pagination State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterCefr, setFilterCefr] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const queryParams = useMemo(() => ({
+    page,
+    pageSize,
+    search: debouncedSearch.trim() || undefined,
+    cefrLevel: filterCefr !== 'ALL' ? filterCefr : undefined,
+    paged: true,
+  }), [page, pageSize, debouncedSearch, filterCefr]);
+
+  const {
+    data: pagedData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAdminVocabulariesQuery(queryParams);
+
+  const items = pagedData?.items ?? [];
+  const totalCount = pagedData?.totalCount ?? 0;
+
   const createMutation = useCreateVocabularyAdminMutation();
   const updateMutation = useUpdateVocabularyAdminMutation();
   const deleteMutation = useDeleteVocabularyAdminMutation();
 
-  const [localItems, setLocalItems] = useState<VocabularyFlashcardDto[] | null>(null);
-  const items = localItems ?? vocabList;
-
-  // Toolbar & Pagination State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCefr, setFilterCefr] = useState<string>('ALL');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -61,22 +86,6 @@ export const AdminVocabulariesPage: React.FC = () => {
   const [grammarPattern, setGrammarPattern] = useState('');
   const [grammarExplanationVi, setGrammarExplanationVi] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-
-  const filteredItems = useMemo(() => {
-    return items.filter((c) => {
-      if (filterCefr !== 'ALL' && c.cefrLevel !== filterCefr) return false;
-      if (searchTerm.trim()) {
-        const q = searchTerm.trim().toLowerCase();
-        return (
-          c.word.toLowerCase().includes(q) ||
-          c.meaningVi.toLowerCase().includes(q) ||
-          c.definitionEn.toLowerCase().includes(q) ||
-          (c.topicCategory ?? '').toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [items, filterCefr, searchTerm]);
 
   const openCreateDialog = () => {
     setEditingId(null);
@@ -168,84 +177,42 @@ export const AdminVocabulariesPage: React.FC = () => {
 
     try {
       if (editingId) {
-        const saved = await updateMutation.mutateAsync({ id: editingId, payload });
-        setLocalItems(items.map((x) => (x.vocabularyId === editingId ? saved : x)));
+        await updateMutation.mutateAsync({ id: editingId, payload });
       } else {
-        const created = await createMutation.mutateAsync(payload);
-        setLocalItems([created, ...items]);
-      }
-      setFeedback({
-        type: 'success',
-        message: editingId
-          ? `Đã cập nhật từ vựng "${payload.word}" thành công.`
-          : `Đã thêm từ vựng "${payload.word}" vào Database.`,
-      });
-    } catch {
-      const localCard: VocabularyFlashcardDto = {
-        vocabularyId: editingId ?? crypto.randomUUID(),
-        senseId: crypto.randomUUID(),
-        word: payload.word,
-        partOfSpeech: payload.partOfSpeech,
-        cefrLevel: payload.cefrLevel as CefrLevel,
-        definitionEn: payload.definitionEn,
-        meaningVi: payload.meaningVi,
-        descriptionEn: payload.descriptionEn,
-        topicCategory: payload.topicCategory,
-        pronunciations: [
-          { id: crypto.randomUUID(), accent: 'UK', ipa: payload.ukIpa || `/${payload.word}/` },
-          { id: crypto.randomUUID(), accent: 'US', ipa: payload.usIpa || `/${payload.word}/` },
-        ],
-        synonyms: payload.synonyms,
-        antonyms: payload.antonyms,
-        wordFamilies: [],
-        collocations: payload.collocations.map((c) => ({ id: crypto.randomUUID(), ...c })),
-        examples: payload.examples.map((ex) => ({
-          id: crypto.randomUUID(),
-          sentenceEn: ex.sentenceEn,
-          translationVi: ex.translationVi,
-          cefrLevel: payload.cefrLevel as CefrLevel,
-        })),
-        grammarPatterns: payload.grammarPatterns.map((g) => ({ id: crypto.randomUUID(), ...g })),
-        learningStatus: 'New',
-        repetitionCount: 0,
-        intervalDays: 0,
-        easeFactor: 2.5,
-        isCompletedToday: false,
-      };
-      if (editingId) {
-        setLocalItems(items.map((x) => (x.vocabularyId === editingId ? localCard : x)));
-      } else {
-        setLocalItems([localCard, ...items]);
+        await createMutation.mutateAsync(payload);
       }
       const successMsg = editingId
-        ? `Đã cập nhật từ vựng "${payload.word}".`
-        : `Đã tạo mới từ vựng "${payload.word}".`;
+        ? `Đã cập nhật từ vựng "${payload.word}" thành công.`
+        : `Đã tạo mới từ vựng "${payload.word}" vào Database.`;
       setFeedback({
         type: 'success',
         message: successMsg,
       });
       toast.success(successMsg);
+      setIsDialogOpen(false);
+      setEditingId(null);
+    } catch (err: any) {
+      setFormError(err?.message || 'Không thể lưu từ vựng. Vui lòng thử lại.');
     }
-
-    setIsDialogOpen(false);
-    setEditingId(null);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.vocabularyId);
-    } catch {
-      // ignore offline
+      const deleteMsg = `Đã xóa từ vựng "${deleteTarget.word}" khỏi danh sách.`;
+      setFeedback({
+        type: 'success',
+        message: deleteMsg,
+      });
+      toast.success(deleteMsg);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err?.message || 'Không thể xóa từ vựng.',
+      });
     }
-    setLocalItems(items.filter((x) => x.vocabularyId !== deleteTarget.vocabularyId));
-    const deleteMsg = `Đã xóa từ vựng "${deleteTarget.word}" khỏi danh sách.`;
-    setFeedback({
-      type: 'success',
-      message: deleteMsg,
-    });
-    toast.success(deleteMsg);
-    setDeleteTarget(null);
   };
 
   const columns: DataTableColumn<VocabularyFlashcardDto>[] = [
@@ -337,7 +304,7 @@ export const AdminVocabulariesPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-slate-900">
-              Quản lý Từ vựng / Flashcards ({filteredItems.length})
+              Quản lý Từ vựng / Flashcards ({totalCount})
             </h1>
             <p className="text-xs text-slate-500">
               Quản lý Sense Flashcards, phiên âm UK/US IPA, Synonyms, Collocations và câu ví dụ song ngữ
@@ -396,16 +363,27 @@ export const AdminVocabulariesPage: React.FC = () => {
         </Button>
       </div>
 
+      {isError && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between shadow-2xs">
+          <span className="text-xs text-rose-700 font-semibold">
+            {(error as Error)?.message || 'Không thể tải danh sách từ vựng. Vui lòng thử lại.'}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Thử lại
+          </Button>
+        </div>
+      )}
+
       {/* 3. Data Table + 4. Pagination */}
       <DataTable
         columns={columns}
-        data={filteredItems}
+        data={items}
         rowKey={(row) => `${row.vocabularyId}-${row.senseId}`}
         isLoading={isLoading}
         page={page}
         pageSize={pageSize}
+        totalCount={totalCount}
         onPageChange={setPage}
-        onPageSizeChange={setPageSize}
         emptyTitle="Không tìm thấy thẻ từ vựng nào"
         emptyAction={
           <Button variant="primary" size="sm" onClick={openCreateDialog}>
