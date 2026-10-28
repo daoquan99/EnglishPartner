@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
@@ -10,20 +11,23 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
 {
     private readonly IUserRepository _userRepo;
     private readonly IRoleRepository _roleRepo;
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtService;
 
     public RegisterUserCommandHandler(
         IUserRepository userRepo,
         IRoleRepository roleRepo,
-        IAppDbContextFactory dbFactory,
+        IAppDbContext db,
+        IUnitOfWork uow,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtService)
     {
         _userRepo = userRepo;
         _roleRepo = roleRepo;
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
     }
@@ -66,10 +70,9 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
         user.IssueRefreshToken(tokenHash, refreshExpires, command.IpAddress, "Registration");
 
         await _userRepo.AddAsync(user, ct);
-        await _userRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, user.Id, ct);
+        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(_db, user.Id, ct);
         var accessToken = _jwtService.GenerateAccessToken(user, roleCodes, permissionCodes);
 
         return new AuthResponseDto(

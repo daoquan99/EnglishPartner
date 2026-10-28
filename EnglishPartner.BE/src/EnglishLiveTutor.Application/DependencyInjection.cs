@@ -41,7 +41,7 @@ public static class DependencyInjection
         });
 
         // Non-CQRS domain/application services
-        services.AddTransient<VocabularyGenerationWriter>();
+        services.AddScoped<VocabularyGenerationWriter>();
         services.AddScoped<IPronunciationTargetResolver, PronunciationTargetResolver>();
         services.AddScoped<ILessonCandidateValidator, LessonCandidateValidator>();
 

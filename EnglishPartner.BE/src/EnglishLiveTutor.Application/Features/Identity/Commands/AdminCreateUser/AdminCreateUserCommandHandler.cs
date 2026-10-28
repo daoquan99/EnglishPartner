@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,12 +8,14 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.AdminCreateUse
 
 public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateUserCommand, UserProfileDto>
 {
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _hasher;
 
-    public AdminCreateUserCommandHandler(IAppDbContextFactory dbFactory, IPasswordHasher hasher)
+    public AdminCreateUserCommandHandler(IAppDbContext db, IUnitOfWork uow, IPasswordHasher hasher)
     {
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
         _hasher = hasher;
     }
 
@@ -25,11 +28,10 @@ public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateU
         if (req.Password.Length < 8)
             throw new InvalidOperationException("Mật khẩu phải có ít nhất 8 ký tự.");
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
         string cleanUsername = req.Username.Trim();
         string normEmail = UserEntity.NormalizeEmail(req.Email);
 
-        if (await db.Users.AnyAsync(u => u.Username == cleanUsername || u.NormalizedEmail == normEmail, ct))
+        if (await _db.Users.AnyAsync(u => u.Username == cleanUsername || u.NormalizedEmail == normEmail, ct))
             throw new InvalidOperationException("Username hoặc Email đã tồn tại.");
 
         var user = UserEntity.Create(
@@ -49,17 +51,17 @@ public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateU
             ? req.RoleCodes.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim().ToUpperInvariant()).Distinct().ToList()
             : new List<string> { "LEARNER" };
 
-        var roles = await db.Roles
+        var roles = await _db.Roles
             .AsNoTracking()
             .Where(r => roleCodes.Contains(r.Code) && r.IsActive)
             .ToListAsync(ct);
 
         user.SetRoles(roles.Select(r => r.Id));
 
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
+        _db.Users.Add(user);
+        await _uow.CommitChangesAsync(ct);
 
-        var (assignedRoleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, user.Id, ct);
+        var (assignedRoleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(_db, user.Id, ct);
         return IdentityProjectionHelper.MapToProfileDto(user, assignedRoleCodes, permissionCodes);
     }
 }

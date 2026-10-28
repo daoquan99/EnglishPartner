@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,19 +8,20 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.AdminUpdateUse
 
 public sealed class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserCommand, UserProfileDto?>
 {
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _hasher;
 
-    public AdminUpdateUserCommandHandler(IAppDbContextFactory dbFactory, IPasswordHasher hasher)
+    public AdminUpdateUserCommandHandler(IAppDbContext db, IUnitOfWork uow, IPasswordHasher hasher)
     {
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
         _hasher = hasher;
     }
 
     public async Task<UserProfileDto?> HandleAsync(AdminUpdateUserCommand command, CancellationToken ct = default)
     {
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var user = await db.Users
+        var user = await _db.Users
             .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
 
@@ -50,7 +52,7 @@ public sealed class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateU
                 .Distinct()
                 .ToList();
 
-            var roleIds = await db.Roles
+            var roleIds = await _db.Roles
                 .AsNoTracking()
                 .Where(r => normalizedCodes.Contains(r.Code) && r.IsActive)
                 .Select(r => r.Id)
@@ -59,9 +61,9 @@ public sealed class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateU
             user.SetRoles(roleIds);
         }
 
-        await db.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
-        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, user.Id, ct);
+        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(_db, user.Id, ct);
         return IdentityProjectionHelper.MapToProfileDto(user, roleCodes, permissionCodes);
     }
 }

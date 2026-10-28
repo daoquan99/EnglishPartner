@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
@@ -8,20 +9,23 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.RefreshToken;
 public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCommand, AuthResponseDto>
 {
     private readonly IUserRepository _userRepo;
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IJwtTokenService _jwtService;
     private readonly RefreshTokenOptions _options;
     private readonly TimeProvider _timeProvider;
 
     public RefreshTokenCommandHandler(
         IUserRepository userRepo,
-        IAppDbContextFactory dbFactory,
+        IAppDbContext db,
+        IUnitOfWork uow,
         IJwtTokenService jwtService,
         RefreshTokenOptions? options = null,
         TimeProvider? timeProvider = null)
     {
         _userRepo = userRepo;
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
         _jwtService = jwtService;
         _options = options ?? new RefreshTokenOptions();
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -61,7 +65,7 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
 
             // Quá khoảng ân hạn: revoke toàn bộ phiên
             await _userRepo.RevokeAllActiveRefreshTokensAsync(user.Id, now, "Reuse detected", ct);
-            await _userRepo.SaveChangesAsync(ct);
+            await _uow.CommitChangesAsync(ct);
             throw new InvalidOperationException("RefreshToken không hợp lệ.");
         }
 
@@ -99,7 +103,7 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
                 if (elapsed > TimeSpan.FromSeconds(graceSeconds))
                 {
                     await _userRepo.RevokeAllActiveRefreshTokensAsync(user.Id, now, "Reuse detected", ct);
-                    await _userRepo.SaveChangesAsync(ct);
+                    await _uow.CommitChangesAsync(ct);
                 }
             }
 
@@ -107,10 +111,9 @@ public sealed class RefreshTokenCommandHandler : ICommandHandler<RefreshTokenCom
         }
 
         await _userRepo.PurgeExpiredOrRevokedRefreshTokensAsync(user.Id, now, ct);
-        await _userRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
-        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(db, user.Id, ct);
+        var (roleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(_db, user.Id, ct);
         var accessToken = _jwtService.GenerateAccessToken(user, roleCodes, permissionCodes);
 
         return new AuthResponseDto(

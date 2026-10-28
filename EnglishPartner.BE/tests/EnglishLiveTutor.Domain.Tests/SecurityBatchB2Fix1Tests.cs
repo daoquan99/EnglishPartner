@@ -152,11 +152,11 @@ public class SecurityBatchB2Fix1Tests
         var jwtService = new HmacJwtTokenService(new JwtOptions { SecretKey = "TestSecretKeyAtLeast32BytesLongForTesting!" });
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
 
-        var loginHandler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var loginHandler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var loginRes = await loginHandler.HandleAsync(new LoginCommand(new LoginRequest("racer", "Pass#123456"), "127.0.0.1"));
         string rawToken1 = loginRes.RefreshToken;
 
-        var refreshHandler = new RefreshTokenCommandHandler(userRepo, dbFactory, jwtService, new RefreshTokenOptions(10), clock);
+        var refreshHandler = new RefreshTokenCommandHandler(userRepo, db, new UnitOfWork(db), jwtService, new RefreshTokenOptions(10), clock);
 
         // Lần 1: Thành công và cấp token 2
         var res1 = await refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1"));
@@ -194,13 +194,13 @@ public class SecurityBatchB2Fix1Tests
         var t0 = new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
         var clock = new FakeTimeProvider(t0);
 
-        var loginHandler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var loginHandler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var loginRes = await loginHandler.HandleAsync(new LoginCommand(new LoginRequest("multitab", "Pass#123456"), "127.0.0.1"));
         string rawToken1 = loginRes.RefreshToken;
 
         // Cấu hình khoảng ân hạn 10 giây
         var refreshOptions = new RefreshTokenOptions(10);
-        var refreshHandler = new RefreshTokenCommandHandler(userRepo, dbFactory, jwtService, refreshOptions, clock);
+        var refreshHandler = new RefreshTokenCommandHandler(userRepo, db, new UnitOfWork(db), jwtService, refreshOptions, clock);
 
         // Tab 1 refresh token 1 -> nhận token 2
         var res1 = await refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1"));
@@ -241,12 +241,12 @@ public class SecurityBatchB2Fix1Tests
         var t0 = new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
         var clock = new FakeTimeProvider(t0);
 
-        var loginHandler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var loginHandler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var loginRes = await loginHandler.HandleAsync(new LoginCommand(new LoginRequest("attacker", "Pass#123456"), "127.0.0.1"));
         string rawToken1 = loginRes.RefreshToken;
 
         var refreshOptions = new RefreshTokenOptions(10);
-        var refreshHandler = new RefreshTokenCommandHandler(userRepo, dbFactory, jwtService, refreshOptions, clock);
+        var refreshHandler = new RefreshTokenCommandHandler(userRepo, db, new UnitOfWork(db), jwtService, refreshOptions, clock);
 
         // Rotate token 1 -> token 2 tại t0
         var res1 = await refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1"));
@@ -284,15 +284,18 @@ public class SecurityBatchB2Fix1Tests
         var jwtService = new HmacJwtTokenService(new JwtOptions { SecretKey = "TestSecretKeyAtLeast32BytesLongForTesting!" });
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
 
-        var loginHandler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var loginHandler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var loginRes = await loginHandler.HandleAsync(new LoginCommand(new LoginRequest("concurrent", "Pass#123456"), "127.0.0.1"));
         string rawToken1 = loginRes.RefreshToken;
 
-        var refreshHandler = new RefreshTokenCommandHandler(userRepo, dbFactory, jwtService, new RefreshTokenOptions(10), clock);
+        using var db1 = new AppDbContext(options);
+        using var db2 = new AppDbContext(options);
+        var refreshHandler1 = new RefreshTokenCommandHandler(new UserRepository(db1), db1, new UnitOfWork(db1), jwtService, new RefreshTokenOptions(10), clock);
+        var refreshHandler2 = new RefreshTokenCommandHandler(new UserRepository(db2), db2, new UnitOfWork(db2), jwtService, new RefreshTokenOptions(10), clock);
 
         // Gửi 2 request refresh đồng thời với cùng 1 token
-        var task1 = Task.Run(() => refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1")));
-        var task2 = Task.Run(() => refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1")));
+        var task1 = Task.Run(() => refreshHandler1.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1")));
+        var task2 = Task.Run(() => refreshHandler2.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1")));
 
         var results = await Task.WhenAll(
             task1.ContinueWith(t => (Success: t.Status == TaskStatus.RanToCompletion, Result: t.IsCompletedSuccessfully ? t.Result : null)),

@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Domain.Vocabulary.Enums;
@@ -10,12 +12,15 @@ namespace EnglishLiveTutor.Application.Features.Vocabulary;
 
 public sealed record VocabularyGenerationContext(string UserId, string ModelCode, int RequestedCount, string CefrLevel, string Topic, bool AssignToTodayPlan);
 
-public sealed class VocabularyGenerationWriter(IAppDbContextFactory dbFactory, ILogger<VocabularyGenerationWriter> logger)
+public sealed class VocabularyGenerationWriter(
+    IAppDbContext db,
+    IUnitOfWork uow,
+    IAppDbContextFactory dbFactory,
+    ILogger<VocabularyGenerationWriter> logger)
 {
     public async Task<List<VocabularyFlashcardDto>> SaveAsync(VocabularyGenerationContext context,
         List<GeneratedVocabularyRawSense> generatedSenses, CancellationToken ct = default)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
         string userId = context.UserId;
         string cefr = context.CefrLevel;
         string topic = context.Topic;
@@ -204,8 +209,9 @@ public sealed class VocabularyGenerationWriter(IAppDbContextFactory dbFactory, I
 
         audit.MarkCompleted(accepted, rejected);
         db.VocabularyGenerationAudits.Add(audit);
-        // Vocabulary graphs, today's plan and the audit are committed together.
-        await db.SaveChangesAsync(ct);
+
+        // Vocabulary graphs, today's plan and the audit are committed together via IUnitOfWork.
+        await uow.CommitChangesAsync(ct);
 
         var resultDtos = new List<VocabularyFlashcardDto>();
         foreach (var (vId, sId) in resultSenseIds)
@@ -221,17 +227,44 @@ public sealed class VocabularyGenerationWriter(IAppDbContextFactory dbFactory, I
     {
         try
         {
-            // A separate context cannot accidentally save partially processed vocabulary entities.
-            await using var db = await dbFactory.CreateDbContextAsync(CancellationToken.None);
+            // A separate context ensures that saving an audit failure never commits any partially tracked vocabulary entities on failure.
+            await using var isolatedDb = await dbFactory.CreateDbContextAsync(CancellationToken.None);
             var audit = new VocabularyGenerationAuditEntity(context.UserId, context.ModelCode,
                 VocabularyGenerationDefaults.PromptVersion, context.RequestedCount);
-            audit.MarkFailed(error.Message);
-            db.VocabularyGenerationAudits.Add(audit);
-            await db.SaveChangesAsync(CancellationToken.None);
+            audit.MarkFailed(SanitizeErrorMessage(error));
+            isolatedDb.VocabularyGenerationAudits.Add(audit);
+            await isolatedDb.SaveChangesAsync(CancellationToken.None);
         }
         catch (Exception auditError)
         {
             logger.LogWarning(auditError, "Unable to save the failed vocabulary generation audit.");
         }
+    }
+
+    public static string SanitizeErrorMessage(Exception? error)
+    {
+        if (error is null) return "Unknown error";
+
+        string exType = error.GetType().Name;
+        string rawMsg = error.Message ?? string.Empty;
+
+        // Strip API keys: query string (?key=, %3D-encoded), x-goog-api-key header, JSON "key" fields,
+        // bearer tokens and bare Google keys.
+        string cleaned = Regex.Replace(
+            rawMsg,
+            @"(?i)(?<=[?&]|\b)(?:api[-_]?key|key)(?:=|%3D)[^&\s]+",
+            "key=[REDACTED]");
+        cleaned = Regex.Replace(cleaned, @"(?i)x-goog-api-key\s*:\s*\S+", "x-goog-api-key: [REDACTED]");
+        cleaned = Regex.Replace(cleaned, @"(?i)""(?:api[-_]?key|key)""\s*:\s*""[^""]*""", "\"key\":\"[REDACTED]\"");
+        cleaned = Regex.Replace(cleaned, @"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*", "Bearer [REDACTED]");
+        cleaned = Regex.Replace(cleaned, @"AIza[0-9A-Za-z_\-]{30,}", "[REDACTED]");
+
+        string combined = $"{exType}: {cleaned}";
+        if (combined.Length > 500)
+        {
+            combined = combined[..500];
+        }
+
+        return combined;
     }
 }

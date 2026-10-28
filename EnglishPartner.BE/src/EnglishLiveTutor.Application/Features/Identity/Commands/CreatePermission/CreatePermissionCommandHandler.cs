@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
@@ -8,10 +9,12 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.CreatePermissi
 public sealed class CreatePermissionCommandHandler : ICommandHandler<CreatePermissionCommand, PermissionDto>
 {
     private readonly IPermissionRepository _permRepo;
+    private readonly IUnitOfWork _uow;
 
-    public CreatePermissionCommandHandler(IPermissionRepository permRepo)
+    public CreatePermissionCommandHandler(IPermissionRepository permRepo, IUnitOfWork uow)
     {
         _permRepo = permRepo;
+        _uow = uow;
     }
 
     public async Task<PermissionDto> HandleAsync(CreatePermissionCommand command, CancellationToken ct = default)
@@ -23,7 +26,7 @@ public sealed class CreatePermissionCommandHandler : ICommandHandler<CreatePermi
 
         var perm = new PermissionEntity(req.Code, req.Name, req.Module, req.Description);
         await _permRepo.AddAsync(perm, ct);
-        await _permRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
         return new PermissionDto(perm.Id, perm.Code, perm.Name, perm.Module, perm.Description);
     }

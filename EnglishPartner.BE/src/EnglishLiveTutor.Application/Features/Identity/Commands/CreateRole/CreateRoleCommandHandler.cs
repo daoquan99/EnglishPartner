@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +10,14 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.CreateRole;
 public sealed class CreateRoleCommandHandler : ICommandHandler<CreateRoleCommand, RoleDto>
 {
     private readonly IRoleRepository _roleRepo;
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
 
-    public CreateRoleCommandHandler(IRoleRepository roleRepo, IAppDbContextFactory dbFactory)
+    public CreateRoleCommandHandler(IRoleRepository roleRepo, IAppDbContext db, IUnitOfWork uow)
     {
         _roleRepo = roleRepo;
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
     }
 
     public async Task<RoleDto> HandleAsync(CreateRoleCommand command, CancellationToken ct = default)
@@ -26,14 +29,13 @@ public sealed class CreateRoleCommandHandler : ICommandHandler<CreateRoleCommand
 
         var role = new RoleEntity(req.Code, req.Name, req.Description, isSystemRole: false);
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var permCodes = (req.PermissionCodes ?? new List<string>())
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Select(c => c.Trim().ToLowerInvariant())
             .Distinct()
             .ToList();
 
-        var perms = await db.Permissions
+        var perms = await _db.Permissions
             .AsNoTracking()
             .Where(p => permCodes.Contains(p.Code))
             .ToListAsync(ct);
@@ -44,7 +46,7 @@ public sealed class CreateRoleCommandHandler : ICommandHandler<CreateRoleCommand
         }
 
         await _roleRepo.AddAsync(role, ct);
-        await _roleRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
         return new RoleDto(
             role.Id,

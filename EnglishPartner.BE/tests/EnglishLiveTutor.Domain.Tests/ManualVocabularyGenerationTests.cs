@@ -2,12 +2,14 @@ using System.Net;
 using System.Text.Json;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Features.Vocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
 using EnglishLiveTutor.Application.Features.Vocabulary.Queries.BuildVocabularyGenerationPrompt;
 using EnglishLiveTutor.Application.Features.Vocabulary.Services;
 using EnglishLiveTutor.Domain.AiCatalog;
+using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Infrastructure.Ai;
 using EnglishLiveTutor.Infrastructure.Persistence;
@@ -38,8 +40,12 @@ public class ManualVocabularyGenerationTests
         public Task<IAppDbContext> CreateDbContextAsync(CancellationToken ct = default) => Task.FromResult<IAppDbContext>(Create());
     }
 
-    private static ImportVocabularyJsonCommandHandler Importer(TestDbFactory factory) => new(
-        new VocabularyGenerationContent(), new VocabularyGenerationWriter(factory, NullLogger<VocabularyGenerationWriter>.Instance));
+    private static ImportVocabularyJsonCommandHandler Importer(TestDbFactory factory)
+    {
+        var db = factory.Create();
+        var uow = new UnitOfWork(db);
+        return new(new VocabularyGenerationContent(), new VocabularyGenerationWriter(db, uow, factory, NullLogger<VocabularyGenerationWriter>.Instance));
+    }
 
     [Theory]
     [InlineData(false)]
@@ -93,9 +99,10 @@ public class ManualVocabularyGenerationTests
     }
 
     [Fact]
-    public async Task Import_ShouldSaveFullGraphAndCreateTodaysPlan_WithoutAnApiKeyOrCatalogModel()
+    public async Task Import_ShouldSaveFullGraphAndAssignToExistingTodaysPlan_WithoutAnApiKeyOrCatalogModel()
     {
         var factory = new TestDbFactory();
+        await SeedTodaysPlanAsync(factory, "learner-a");
         var result = await Importer(factory).HandleAsync(new("learner-a",
             new("```json\n" + Sample + "\n```", ModelCode: "my-web-model", CefrLevel: "B2", Topic: "Work")));
         var card = Assert.Single(result);
@@ -123,6 +130,7 @@ public class ManualVocabularyGenerationTests
     public async Task Reimport_ShouldReuseSenseAndPlanItem_IncludingDuplicatesWithinOneResponse()
     {
         var factory = new TestDbFactory();
+        await SeedTodaysPlanAsync(factory, "learner-a");
         var importer = Importer(factory);
         string duplicates = "[" + Sample.Trim()[1..^1] + "," + Sample.Trim()[1..^1] + "]";
         var request = new ImportVocabularyJsonRequest(duplicates, CefrLevel: "B2");
@@ -139,6 +147,26 @@ public class ManualVocabularyGenerationTests
         var audits = await db.VocabularyGenerationAudits.OrderBy(a => a.AcceptedCount).ToListAsync();
         Assert.Equal(0, audits[0].AcceptedCount);
         Assert.Equal(1, audits[1].AcceptedCount);
+    }
+
+    [Fact]
+    public async Task Import_WithoutTodaysPlan_DoesNotCreateOne()
+    {
+        // Since 2556ae4 the plan is built only by InitializeDailyVocabularyPlan (settings, carry-over, due reviews);
+        // generation/import just fills free quota of an existing plan.
+        var factory = new TestDbFactory();
+        Assert.Single(await Importer(factory).HandleAsync(new("learner-a", new(Sample, CefrLevel: "B2"))));
+        await using var db = factory.Create();
+        Assert.Single(await db.Vocabularies.ToListAsync());
+        Assert.Empty(await db.DailyVocabularyPlans.ToListAsync());
+    }
+
+    private static async Task SeedTodaysPlanAsync(TestDbFactory factory, string userId)
+    {
+        await using var db = factory.Create();
+        string today = DailyVocabularyPlanEntity.ResolveLocalLearningDate("Asia/Ho_Chi_Minh");
+        db.DailyVocabularyPlans.Add(new DailyVocabularyPlanEntity(userId, today, timeZoneId: "Asia/Ho_Chi_Minh", newVocabularyTarget: 10));
+        await db.SaveChangesAsync();
     }
 
     [Fact]
@@ -200,9 +228,11 @@ public class ManualVocabularyGenerationTests
             await db.SaveChangesAsync();
         }
         var generator = new FakeGenerator();
-        var handler = new GenerateVocabularyCommandHandler(factory, generator,
+        var dbInstance = factory.Create();
+        var uow = new UnitOfWork(dbInstance);
+        var handler = new GenerateVocabularyCommandHandler(dbInstance, generator,
             new VocabularyPromptBuilder(factory, new VocabularyGenerationContent()),
-            new VocabularyGenerationWriter(factory, NullLogger<VocabularyGenerationWriter>.Instance));
+            new VocabularyGenerationWriter(dbInstance, uow, factory, NullLogger<VocabularyGenerationWriter>.Instance));
         var result = await handler.HandleAsync(new("learner-a", new("test-key", "test-model", CefrLevel: "B2")));
         Assert.Single(result);
         Assert.Equal(1, generator.Calls);

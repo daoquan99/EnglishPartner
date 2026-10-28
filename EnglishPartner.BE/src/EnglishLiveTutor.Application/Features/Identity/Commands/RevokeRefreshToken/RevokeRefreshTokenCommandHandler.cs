@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 
@@ -8,10 +9,12 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.RevokeRefreshT
 public sealed class RevokeRefreshTokenCommandHandler : ICommandHandler<RevokeRefreshTokenCommand, bool>
 {
     private readonly IUserRepository _userRepo;
+    private readonly IUnitOfWork _uow;
 
-    public RevokeRefreshTokenCommandHandler(IUserRepository userRepo)
+    public RevokeRefreshTokenCommandHandler(IUserRepository userRepo, IUnitOfWork uow)
     {
         _userRepo = userRepo;
+        _uow = uow;
     }
 
     public async Task<bool> HandleAsync(RevokeRefreshTokenCommand command, CancellationToken ct = default)
@@ -26,7 +29,7 @@ public sealed class RevokeRefreshTokenCommandHandler : ICommandHandler<RevokeRef
             return false;
 
         user.RevokeRefreshToken(tokenHash, DateTimeOffset.UtcNow, command.Request.Reason ?? "Revoked by user");
-        await _userRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
         return true;
     }
 }

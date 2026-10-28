@@ -1,5 +1,6 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Identity.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,12 +9,14 @@ namespace EnglishLiveTutor.Application.Features.Identity.Commands.UpdateRolePerm
 public sealed class UpdateRolePermissionsCommandHandler : ICommandHandler<UpdateRolePermissionsCommand, RoleDto>
 {
     private readonly IRoleRepository _roleRepo;
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
 
-    public UpdateRolePermissionsCommandHandler(IRoleRepository roleRepo, IAppDbContextFactory dbFactory)
+    public UpdateRolePermissionsCommandHandler(IRoleRepository roleRepo, IAppDbContext db, IUnitOfWork uow)
     {
         _roleRepo = roleRepo;
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
     }
 
     public async Task<RoleDto> HandleAsync(UpdateRolePermissionsCommand command, CancellationToken ct = default)
@@ -24,20 +27,19 @@ public sealed class UpdateRolePermissionsCommandHandler : ICommandHandler<Update
         var req = command.Request;
         role.UpdateDetails(req.Name ?? role.Name, req.Description ?? role.Description);
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
         var permCodes = (req.PermissionCodes ?? new List<string>())
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Select(c => c.Trim().ToLowerInvariant())
             .Distinct()
             .ToList();
 
-        var perms = await db.Permissions
+        var perms = await _db.Permissions
             .AsNoTracking()
             .Where(p => permCodes.Contains(p.Code))
             .ToListAsync(ct);
 
         role.SetPermissions(perms.Select(p => p.Id));
-        await _roleRepo.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
         return new RoleDto(
             role.Id,

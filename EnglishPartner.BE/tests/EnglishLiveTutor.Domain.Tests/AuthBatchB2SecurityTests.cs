@@ -71,7 +71,7 @@ public class AuthBatchB2SecurityTests
         var dbFactory = new TestDbContextFactory(options);
         var jwtService = new HmacJwtTokenService(new JwtOptions { SecretKey = "TestSecretKeyAtLeast32BytesLongForTesting!" });
 
-        var handler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var handler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var response = await handler.HandleAsync(new LoginCommand(new LoginRequest("bob", password), "127.0.0.1"));
 
         Assert.NotNull(response.RefreshToken);
@@ -102,13 +102,13 @@ public class AuthBatchB2SecurityTests
         var jwtService = new HmacJwtTokenService(new JwtOptions { SecretKey = "TestSecretKeyAtLeast32BytesLongForTesting!" });
 
         // 1. Cấp token 1
-        var loginHandler = new LoginCommandHandler(userRepo, dbFactory, hasher, jwtService);
+        var loginHandler = new LoginCommandHandler(userRepo, db, new UnitOfWork(db), hasher, jwtService);
         var loginRes = await loginHandler.HandleAsync(new LoginCommand(new LoginRequest("carol", "Pass123456"), "127.0.0.1"));
         string rawToken1 = loginRes.RefreshToken;
 
         // 2. Rotate token 1 -> token 2 thành công
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
-        var refreshHandler = new RefreshTokenCommandHandler(userRepo, dbFactory, jwtService, timeProvider: clock);
+        var refreshHandler = new RefreshTokenCommandHandler(userRepo, db, new UnitOfWork(db), jwtService, timeProvider: clock);
         var refreshRes1 = await refreshHandler.HandleAsync(new RefreshTokenCommand(new RefreshTokenRequest(rawToken1), "127.0.0.1"));
         string rawToken2 = refreshRes1.RefreshToken;
         Assert.NotEqual(rawToken1, rawToken2);

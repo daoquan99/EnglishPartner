@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.Pronunciation;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,14 +9,17 @@ namespace EnglishLiveTutor.Application.Features.Pronunciation.Commands.AssessPro
 
 public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPronunciationCommand, PronunciationAssessmentResultDto>
 {
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
     private readonly IPronunciationAiAssessor _aiAssessor;
 
     public AssessPronunciationCommandHandler(
-        IAppDbContextFactory dbFactory,
+        IAppDbContext db,
+        IUnitOfWork uow,
         IPronunciationAiAssessor aiAssessor)
     {
-        _dbFactory = dbFactory;
+        _db = db;
+        _uow = uow;
         _aiAssessor = aiAssessor;
     }
 
@@ -43,10 +47,8 @@ public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPr
         if (req.DurationMilliseconds < 250 || req.DurationMilliseconds > 60000)
             throw new InvalidOperationException("Thời lượng bản ghi âm phải từ 0.25 giây đến 60 giây.");
 
-        await using var db = await _dbFactory.CreateDbContextAsync(ct);
-
         // 1. Validate selected model capabilities
-        var modelMeta = await db.AiModelCatalog
+        var modelMeta = await _db.AiModelCatalog
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.ModelCode == req.AssessmentModelCode, ct);
 
@@ -63,7 +65,7 @@ public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPr
         string effectiveModelCode = modelMeta.GetEffectiveModelCode();
 
         // 2. Resolve authoritative expected reference text server-side
-        var vocab = await db.Vocabularies
+        var vocab = await _db.Vocabularies
             .AsNoTracking()
             .Include(v => v.Pronunciations)
             .Include(v => v.Senses).ThenInclude(s => s.Examples)
@@ -95,7 +97,7 @@ public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPr
         string accent = string.Equals(req.Accent, "UK", StringComparison.OrdinalIgnoreCase) ? "UK" : "US";
 
         // 3. Load active Scoring Rubric
-        var rubric = await db.ScoringRubrics
+        var rubric = await _db.ScoringRubrics
             .AsNoTracking()
             .Include(r => r.Criteria.OrderBy(c => c.DisplayOrder))
             .Where(r => r.IsActive && r.AssessmentType == "Pronunciation")
@@ -107,28 +109,30 @@ public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPr
 
         var enabledCriteria = rubric.Criteria.Where(c => c.IsEnabled).OrderBy(c => c.DisplayOrder).ToList();
 
-        // 4. Persist AudioRecording metadata
-        var now = DateTimeOffset.UtcNow;
-        var recording = new AudioRecordingEntity(
-            userId: userId,
-            storageKey: $"mem://recordings/{userId}/{Guid.NewGuid():N}",
-            contentType: string.IsNullOrWhiteSpace(req.ContentType) ? "audio/webm" : req.ContentType,
-            fileSizeBytes: audioBytes.Length,
-            durationMilliseconds: req.DurationMilliseconds,
-            expiresAt: now.AddDays(30),
-            deletionStatus: "Retained");
-        db.AudioRecordings.Add(recording);
+        string contentType = string.IsNullOrWhiteSpace(req.ContentType) ? "audio/webm" : req.ContentType;
 
-        // 5. Call AI Assessor
+        // 4. Call AI Assessor (provider called before any database writes)
         var rawResult = await _aiAssessor.AssessAudioAsync(
             req.ApiKey.Trim(),
             effectiveModelCode,
             req.Base64Audio,
-            recording.ContentType,
+            contentType,
             expectedText,
             accent,
             rubric,
             ct);
+
+        // 5. Persist AudioRecording metadata
+        var now = DateTimeOffset.UtcNow;
+        var recording = new AudioRecordingEntity(
+            userId: userId,
+            storageKey: $"mem://recordings/{userId}/{Guid.NewGuid():N}",
+            contentType: contentType,
+            fileSizeBytes: audioBytes.Length,
+            durationMilliseconds: req.DurationMilliseconds,
+            expiresAt: now.AddDays(30),
+            deletionStatus: "Retained");
+        _db.AudioRecordings.Add(recording);
 
         var criterionDtos = new List<CriterionScoreResultDto>();
         var computedScores = new List<(string Code, string Name, string Description, decimal Weight, decimal RawScore, decimal WeightedScore, string Feedback)>();
@@ -203,17 +207,17 @@ public sealed class AssessPronunciationCommandHandler : ICommandHandler<AssessPr
                 cs.Feedback);
         }
 
-        db.PronunciationAssessments.Add(assessmentEntity);
+        _db.PronunciationAssessments.Add(assessmentEntity);
 
         // Update User progress with latest pronunciation score
-        var progress = await db.UserVocabularyProgresses
+        var progress = await _db.UserVocabularyProgresses
             .FirstOrDefaultAsync(p => p.UserId == userId && p.SenseId == req.SenseId, ct);
         if (progress is not null && overallScore.HasValue)
         {
             progress.UpdateLatestPronunciationScore(overallScore.Value);
         }
 
-        await db.SaveChangesAsync(ct);
+        await _uow.CommitChangesAsync(ct);
 
         return new PronunciationAssessmentResultDto(
             AssessmentId: assessmentEntity.Id,

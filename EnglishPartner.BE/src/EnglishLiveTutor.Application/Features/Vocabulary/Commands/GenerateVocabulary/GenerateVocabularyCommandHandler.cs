@@ -11,18 +11,18 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
 {
     public const string PromptVersion = VocabularyGenerationDefaults.PromptVersion;
 
-    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IAppDbContext _db;
     private readonly IVocabularyAiGenerator _aiGenerator;
     private readonly IVocabularyPromptBuilder _promptBuilder;
     private readonly VocabularyGenerationWriter _writer;
 
     public GenerateVocabularyCommandHandler(
-        IAppDbContextFactory dbFactory,
+        IAppDbContext db,
         IVocabularyAiGenerator aiGenerator,
         IVocabularyPromptBuilder promptBuilder,
         VocabularyGenerationWriter writer)
     {
-        _dbFactory = dbFactory;
+        _db = db;
         _aiGenerator = aiGenerator;
         _promptBuilder = promptBuilder;
         _writer = writer;
@@ -42,8 +42,7 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
         if (!isAgy && string.IsNullOrWhiteSpace(req.ApiKey))
             throw new InvalidOperationException("Cần cung cấp API Key của Google Gemini hoặc chọn Antigravity CLI Local để sinh từ vựng AI.");
 
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var model = await db.AiModelCatalog.AsNoTracking().FirstOrDefaultAsync(m => m.ModelCode == requestedModelCode, ct);
+        var model = await _db.AiModelCatalog.AsNoTracking().FirstOrDefaultAsync(m => m.ModelCode == requestedModelCode, ct);
 
         if (!isAgy)
         {
@@ -78,6 +77,4 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
             throw;
         }
     }
-
-    private IAppDbContextFactory dbFactory => _dbFactory;
 }
