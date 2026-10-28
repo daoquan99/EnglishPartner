@@ -42,6 +42,8 @@ Không được sửa: backend, `package.json`/lockfile (không cài package), `
 
 ## Lệnh kiểm chứng
 
+**Chính sách test để tiết kiệm thời gian:** chỉ chạy `npx vitest run <đường-dẫn-test liên quan>` và `npm run build` một lần ở cuối. **Không** chạy toàn bộ `npx vitest run` nhiều lần — orchestrator sẽ chạy toàn bộ khi nghiệm thu.
+
 ```bash
 cd EnglishPartner.FE
 npm run build

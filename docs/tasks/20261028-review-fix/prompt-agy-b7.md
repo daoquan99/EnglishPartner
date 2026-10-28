@@ -34,6 +34,8 @@ Không được sửa: route/JSON, migration, FE, hub method/event.
 
 ## Lệnh kiểm chứng
 
+**Chính sách test để tiết kiệm thời gian:** chỉ chạy `dotnet build` và `dotnet test EnglishLiveTutor.sln --no-build --filter "<tên lớp test mới hoặc liên quan>"` (có thể nhiều điều kiện nối bằng `|`). **Không** chạy toàn bộ suite nhiều lần — orchestrator sẽ chạy toàn bộ một lần khi nghiệm thu. Chạy toàn bộ suite tối đa một lần ở cuối nếu cần.
+
 ```bash
 cd EnglishPartner.BE
 dotnet build EnglishLiveTutor.sln

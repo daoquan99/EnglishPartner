@@ -4,7 +4,7 @@
 - Ngày: 2026-10-28
 - Liên quan: [docs/reviews/2026-10-28-security-performance-architecture.md](../../reviews/2026-10-28-security-performance-architecture.md), ADR-0001…0005
 - **Cần người dùng duyệt:** Đã duyệt — người dùng yêu cầu "fix hết" và chọn AGY làm worker. ADR-0005 được coi là Accepted theo yêu cầu này. Migration xóa hội thoại (ADR-0002) chỉ được **tạo**, không chạy trên DB thật.
-- Worker: AGY, model `gemini-3.8-flash-high`, `--allow-shell` (được chạy `dotnet`/`npm` trong worktree).
+- Worker: AGY, `--allow-shell` (được chạy `dotnet`/`npm` trong worktree). Model: `gemini-3.8-flash-high` cho B1–B5, B4 fix, B7; `gemini-3.8-flash-medium` cho B6, B8, B9 (người dùng chọn để tăng tốc). AGY chỉ chạy test liên quan; orchestrator chạy toàn bộ suite khi nghiệm thu.
 - Worktree: `D:/Projects/EnglishPartner.worktrees/20261028-review-fix-agy`, branch `ai/20261028-review-fix-agy`. Mỗi batch kiểm chứng xong được `git add` (stage, không commit) để batch sau có diff riêng.
 
 ## Baseline (đo trước khi sửa)

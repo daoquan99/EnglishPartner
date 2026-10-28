@@ -30,7 +30,7 @@ Không được sửa: route, tên field JSON, header phân trang hiện có, mi
 2. **P6.** Với `ListVocabularyFlashcardsQueryHandler`: sau P1 số vocabulary nạp mỗi lần đã có giới hạn. Kiểm tra `VocabularyProjectionHelper.MapToFlashcardDto` dùng những navigation nào; bỏ `Include` không được dùng. Không đổi shape DTO.
 3. **P4.** Bỏ `ToLower()`/`ToUpper()` trên cột đã chuẩn hóa (`NormalizedWord`, `NormalizedEmail`, `Code` đã upper/lower khi lưu) và các so sánh bằng; giữ nguyên `Contains` có hàm chuẩn hóa trên cột tự do (`Title`, `FullName`, `MeaningVi`…) vì EF InMemory phân biệt hoa thường. Không đổi kết quả tìm kiếm.
 4. **P3 — worker.** `FallingWordRoundExpirationWorker` đọc chu kỳ từ `VocabularyGames:ExpirationPollSeconds` (mặc định 10, validate 1..300). Kiểm tra trước rằng client tự gọi timeout round (`TimeoutFallingWordRoundCommand`) nên worker chỉ là cơ chế dự phòng — ghi kết luận trong report; nếu worker là cơ chế chính để kết thúc round đúng giờ, giữ mặc định 2 và ghi lý do.
-5. **P3 — log.** `LoggingBehavior`: "Handling"/"Handled" xuống `Debug`; lỗi vẫn `Warning` kèm exception.
+5. **P3 — log.** `LoggingBehavior`: "Handling"/"Handled" xuống `Debug`; lỗi vẫn `Warning` nhưng chỉ log tên request và `ex.GetType().Name` (không truyền `ex` — message có thể chứa URL kèm API key).
 6. **Test.** Request không phân trang trên tập > 1000 trả đúng 1000 và `TotalCount` thật; `pageSize=500` bị clamp còn 100; worker đọc cấu hình chu kỳ.
 
 ## Tiêu chí hoàn thành
@@ -39,6 +39,8 @@ Không được sửa: route, tên field JSON, header phân trang hiện có, mi
 - [ ] Build pass; test mới pass; không test fail mới ngoài 9 test fail sẵn (`D:/Projects/EnglishPartner/docs/tasks/20261028-review-fix/plan.md`).
 
 ## Lệnh kiểm chứng
+
+**Chính sách test để tiết kiệm thời gian:** chỉ chạy `dotnet build` và `dotnet test EnglishLiveTutor.sln --no-build --filter "<tên lớp test mới hoặc liên quan>"` (có thể nhiều điều kiện nối bằng `|`). **Không** chạy toàn bộ suite nhiều lần — orchestrator sẽ chạy toàn bộ một lần khi nghiệm thu. Chạy toàn bộ suite tối đa một lần ở cuối nếu cần.
 
 ```bash
 cd EnglishPartner.BE
