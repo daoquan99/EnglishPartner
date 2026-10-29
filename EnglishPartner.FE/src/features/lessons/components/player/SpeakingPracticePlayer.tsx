@@ -277,7 +277,7 @@ export const SpeakingPracticePlayer: React.FC<SpeakingPracticePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={handleSubmit}
+            data-exercise-submit onClick={handleSubmit}
             disabled={(!recordedBlob && !uploadedAssetId && !spokenNotes.trim()) || isRecording || busy}
             className="w-full gap-2 py-3 rounded-2xl"
           >

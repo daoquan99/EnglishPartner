@@ -84,7 +84,7 @@ export const FillInTheBlanksPlayer: React.FC<FillInTheBlanksPlayerProps> = ({
 
     const parts = text.split(/(\[[a-zA-Z0-9_\-]+\])/g);
     return (
-      <div className="select-text leading-loose text-slate-800 text-base font-normal">
+      <div className="select-text leading-loose text-slate-800 text-base font-normal whitespace-pre-line">
         {parts.map((part, index) => {
           const match = part.match(/^\[([a-zA-Z0-9_\-]+)\]$/);
           if (match) {
@@ -142,7 +142,7 @@ export const FillInTheBlanksPlayer: React.FC<FillInTheBlanksPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ answers })}
+            data-exercise-submit onClick={() => onSubmit({ answers })}
             disabled={!hasAnyAnswer || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

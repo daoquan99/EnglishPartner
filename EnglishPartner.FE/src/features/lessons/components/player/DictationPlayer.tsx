@@ -182,7 +182,7 @@ export const DictationPlayer: React.FC<DictationPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ transcribedText: transcribedText.trim() })}
+            data-exercise-submit onClick={() => onSubmit({ transcribedText: transcribedText.trim() })}
             disabled={transcribedText.trim().length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

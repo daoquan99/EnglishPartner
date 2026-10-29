@@ -1,4 +1,6 @@
+using EnglishLiveTutor.Application.Features.Grammar.ContentPacks;
 using EnglishLiveTutor.Domain.AiCatalog;
+using EnglishLiveTutor.Infrastructure.Grammar;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Prompts;
 using EnglishLiveTutor.Domain.Topics;
@@ -23,7 +25,8 @@ public static class DatabaseSeeder
         IHostEnvironment? environment = null,
         ILogger? logger = null,
         bool migrate = true,
-        bool seed = true)
+        bool seed = true,
+        GrammarContentPackImporter? grammarImporter = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
@@ -364,6 +367,25 @@ public static class DatabaseSeeder
 
         // 7. Seed Default Permissions, Roles (ADMIN, TEACHER, LEARNER), and Starter Accounts
         await SeedIdentityAsync(db, adminOptions, demoLearnerOptions, environment, logger);
+
+        // 8. Seed Grammar Content Packs
+        try
+        {
+            var importer = grammarImporter ?? new GrammarContentPackImporter(db, new UnitOfWork(db), new EmbeddedGrammarContentPackSource());
+            var result = await importer.ImportAsync();
+            logger?.LogInformation(
+                "Grammar content packs seeded: {StepsCreated} steps created, {StepsUpdated} steps updated, {StepsSkipped} steps skipped, {ExercisesCreated} exercises created, {ExercisesSkipped} exercises skipped, {ErrorCount} errors.",
+                result.StepsCreated,
+                result.StepsUpdated,
+                result.StepsSkipped,
+                result.ExercisesCreated,
+                result.ExercisesSkipped,
+                result.Errors.Count);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Failed to import grammar content packs during database seeding.");
+        }
     }
 
     private static List<VocabularyEntity> BuildStarterVocabularyCatalog()
@@ -1043,7 +1065,12 @@ public static class DatabaseSeeder
                 new("lessons.publish", "Publish & Archive Lessons", "Lessons", "Publish validated draft lessons and archive deprecated lessons", id: Guid.Parse("60000000-0000-0000-0000-000000000015")),
                 new("lessons.generate", "AI Lesson Generation & Prompt Builder", "Lessons", "Generate candidate lessons with AI and build prompts", id: Guid.Parse("60000000-0000-0000-0000-000000000016")),
                 new("lesson-exercises.attempt", "Submit Lesson Attempts & Role Play", "Lessons", "Start attempts, submit answers, and participate in role play", id: Guid.Parse("60000000-0000-0000-0000-000000000017")),
-                new("lesson-rubrics.manage", "Manage Lesson Scoring Rubrics", "Lessons", "Create and version rubrics for lesson exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000018"))
+                new("lesson-rubrics.manage", "Manage Lesson Scoring Rubrics", "Lessons", "Create and version rubrics for lesson exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000018")),
+                new("grammar.read", "View Grammar Roadmap & Theory", "Grammar", "Access grammar levels, step theory, and exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000019")),
+                new("grammar.attempt", "Submit Grammar Exercises & Tests", "Grammar", "Start grammar attempts, submit answers, and take level tests", id: Guid.Parse("60000000-0000-0000-0000-000000000020")),
+                new("grammar.generate", "Generate Grammar Exercises with AI", "Grammar", "Generate AI grammar exercises and build prompt templates", id: Guid.Parse("60000000-0000-0000-0000-000000000021")),
+                new("grammar.manage", "Manage Grammar Roadmap & Content", "Grammar", "Create, update, and manage grammar steps, theory, and official exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000022")),
+                new("grammar.moderate", "Moderate Community Grammar Exercises", "Grammar", "Review, approve, or reject user-submitted public grammar exercises", id: Guid.Parse("60000000-0000-0000-0000-000000000023"))
             };
             db.Permissions.AddRange(permissions);
             await db.SaveChangesAsync();
@@ -1063,6 +1090,11 @@ public static class DatabaseSeeder
             EnsurePerm("lessons.generate", "AI Lesson Generation & Prompt Builder", "Lessons", "Generate candidate lessons with AI and build prompts", Guid.Parse("60000000-0000-0000-0000-000000000016"));
             EnsurePerm("lesson-exercises.attempt", "Submit Lesson Attempts & Role Play", "Lessons", "Start attempts, submit answers, and participate in role play", Guid.Parse("60000000-0000-0000-0000-000000000017"));
             EnsurePerm("lesson-rubrics.manage", "Manage Lesson Scoring Rubrics", "Lessons", "Create and version rubrics for lesson exercises", Guid.Parse("60000000-0000-0000-0000-000000000018"));
+            EnsurePerm("grammar.read", "View Grammar Roadmap & Theory", "Grammar", "Access grammar levels, step theory, and exercises", Guid.Parse("60000000-0000-0000-0000-000000000019"));
+            EnsurePerm("grammar.attempt", "Submit Grammar Exercises & Tests", "Grammar", "Start grammar attempts, submit answers, and take level tests", Guid.Parse("60000000-0000-0000-0000-000000000020"));
+            EnsurePerm("grammar.generate", "Generate Grammar Exercises with AI", "Grammar", "Generate AI grammar exercises and build prompt templates", Guid.Parse("60000000-0000-0000-0000-000000000021"));
+            EnsurePerm("grammar.manage", "Manage Grammar Roadmap & Content", "Grammar", "Create, update, and manage grammar steps, theory, and official exercises", Guid.Parse("60000000-0000-0000-0000-000000000022"));
+            EnsurePerm("grammar.moderate", "Moderate Community Grammar Exercises", "Grammar", "Review, approve, or reject user-submitted public grammar exercises", Guid.Parse("60000000-0000-0000-0000-000000000023"));
 
             if (missingPermissions.Count > 0)
             {
@@ -1104,7 +1136,7 @@ public static class DatabaseSeeder
                 isSystemRole: true,
                 id: Guid.Parse("70000000-0000-0000-0000-000000000003"));
             foreach (var p in allPermissions.Where(x =>
-                x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt"))
+                x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt" or "grammar.read" or "grammar.attempt" or "grammar.generate"))
             {
                 learnerRole.GrantPermission(p.Id);
             }
@@ -1139,7 +1171,7 @@ public static class DatabaseSeeder
             if (learnerRole != null)
             {
                 foreach (var p in allPermissions.Where(x =>
-                    x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt"))
+                    x.Code is "conversations.access" or "vocabularies.read" or "vocabularies.generate" or "pronunciation.assess" or "lessons.read" or "lesson-exercises.attempt" or "grammar.read" or "grammar.attempt" or "grammar.generate"))
                 {
                     learnerRole.GrantPermission(p.Id);
                 }

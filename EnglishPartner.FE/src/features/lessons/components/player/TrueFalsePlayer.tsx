@@ -111,7 +111,7 @@ export const TrueFalsePlayer: React.FC<TrueFalsePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ answers })}
+            data-exercise-submit onClick={() => onSubmit({ answers })}
             disabled={!isAllAnswered || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

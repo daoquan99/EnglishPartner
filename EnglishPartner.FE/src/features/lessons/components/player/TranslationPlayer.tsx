@@ -71,7 +71,7 @@ export const TranslationPlayer: React.FC<TranslationPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ translatedText: translated.trim() })}
+            data-exercise-submit onClick={() => onSubmit({ translatedText: translated.trim() })}
             disabled={translated.trim().length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

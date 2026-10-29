@@ -372,3 +372,456 @@ export interface ImportVocabularyJsonRequestDto {
   examplesPerSense?: number;
 }
 
+
+// --- Grammar Roadmap & Exercise Contracts ---
+export type GrammarAttemptKind = 'StepCore' | 'Practice' | 'LevelTest';
+export type GrammarExerciseSource = 'Official' | 'UserAi' | 'UserImport';
+export type GrammarExerciseVisibility = 'Private' | 'Public';
+export type GrammarModerationStatus = 'None' | 'Pending' | 'Approved' | 'Rejected';
+export type GrammarStepProgressStatus = 'Locked' | 'Unlocked' | 'Passed';
+export type GrammarStepPassedBy = 'Steps' | 'LevelTest';
+
+export interface GrammarRoadmapDto {
+  levels: GrammarLevelDto[];
+}
+
+export interface GrammarLevelDto {
+  level: string;
+  isUnlocked: boolean;
+  isPassed: boolean;
+  canTakeLevelTest: boolean;
+  steps: GrammarStepRoadmapItemDto[];
+}
+
+export interface GrammarStepRoadmapItemDto {
+  code: string;
+  order: number;
+  titleVi: string;
+  titleEn: string;
+  summaryVi: string;
+  isLevelReview: boolean;
+  status: string;
+  bestScore100?: number | null;
+  passedBy?: string | null;
+}
+
+export interface GrammarTheoryFormulaDto {
+  label?: string;
+  pattern: string;
+}
+
+export interface GrammarTheoryExampleDto {
+  en: string;
+  vi: string;
+  highlight?: string;
+}
+
+export interface GrammarTheorySectionDto {
+  heading: string;
+  explanationVi: string;
+  formulas?: (string | GrammarTheoryFormulaDto)[];
+  examples?: GrammarTheoryExampleDto[];
+  notes?: string[];
+}
+
+export interface GrammarTheoryMistakeDto {
+  wrong: string;
+  right: string;
+  explanationVi: string;
+}
+
+export interface GrammarTheoryDto {
+  objectives: string[];
+  sections: GrammarTheorySectionDto[];
+  commonMistakes?: GrammarTheoryMistakeDto[];
+  tips?: string[];
+  summary: string[];
+}
+
+export interface GrammarStepDetailDto {
+  code: string;
+  cefrLevel: string;
+  order: number;
+  titleVi: string;
+  titleEn: string;
+  summaryVi: string;
+  isLevelReview: boolean;
+  theory: GrammarTheoryDto;
+  status: string;
+  bestScore100?: number | null;
+  coreExerciseCount: number;
+  communityExerciseCount: number;
+  myExerciseCount: number;
+  prevCode?: string | null;
+  nextCode?: string | null;
+}
+
+export interface GrammarExerciseLearnerDto {
+  id: string;
+  key?: string | null;
+  type: string;
+  title?: string | null;
+  instructions?: string | null;
+  order: number;
+  maxPoints: number;
+  gradingMode: string;
+  content?: Record<string, unknown> | null;
+  difficulty?: number;
+  focus?: string | null;
+  source: GrammarExerciseSource;
+  visibility: GrammarExerciseVisibility;
+  moderation: GrammarModerationStatus;
+  authorName?: string | null;
+  unavailable?: boolean;
+}
+
+export interface StartGrammarAttemptRequestDto {
+  kind: GrammarAttemptKind;
+  stepCode?: string | null;
+  cefrLevel?: string | null;
+  /** Start a fresh attempt instead of resuming the unfinished one; the old attempt keeps its answers. */
+  forceNew?: boolean;
+}
+
+export interface LessonAiExecutionConfigDto {
+  apiKey?: string | null;
+  assessmentModelCode?: string | null;
+  provider?: string | null;
+}
+
+export interface GrammarAiExecutionConfigDto {
+  provider?: string | null;
+  modelCode?: string | null;
+  apiKey?: string | null;
+}
+
+export interface SubmitGrammarAnswerRequestDto {
+  exerciseId: string;
+  answerPayload: Record<string, unknown>;
+  aiConfig?: LessonAiExecutionConfigDto | null;
+}
+
+export interface GrammarAttemptAnswerDto {
+  exerciseId: string;
+  status: string;
+  score100?: number | null;
+  pointsEarned?: number | null;
+  maxPoints: number;
+  feedback?: Record<string, unknown> | null;
+  answerPayload?: Record<string, unknown> | null;
+  suggestedAnswer?: string | null;
+}
+
+export interface GrammarAttemptDto {
+  id: string;
+  kind: GrammarAttemptKind;
+  stepCode?: string | null;
+  cefrLevel: string;
+  startedAtUtc: string;
+  completedAtUtc?: string | null;
+  score100?: number | null;
+  exercises: GrammarExerciseLearnerDto[];
+  answers: GrammarAttemptAnswerDto[];
+}
+
+export interface GrammarAnswerResultDto {
+  attemptId: string;
+  exerciseId: string;
+  status: string;
+  score100?: number | null;
+  pointsEarned?: number | null;
+  maxPoints: number;
+  feedback?: Record<string, unknown> | null;
+  answerPayload?: Record<string, unknown> | null;
+  suggestedAnswer?: string | null;
+}
+
+export interface GrammarAttemptResultDto {
+  score100: number;
+  passed: boolean;
+  unlockedStepCodes: string[];
+  levelPassed?: boolean | null;
+}
+
+export interface GrammarExercisePromptRequestedItemDto {
+  type: string;
+  count: number;
+  difficulty: number;
+}
+
+export interface GenerateGrammarExercisesRequestDto {
+  items: GrammarExercisePromptRequestedItemDto[];
+  learnerNote?: string | null;
+  visibility?: GrammarExerciseVisibility;
+  aiConfig?: GrammarAiExecutionConfigDto | null;
+}
+
+export interface BuildGrammarExercisePromptRequestDto {
+  items: GrammarExercisePromptRequestedItemDto[];
+  learnerNote?: string | null;
+}
+
+export interface BuildGrammarExercisePromptResponseDto {
+  prompt: string;
+}
+
+export interface ImportGrammarExercisesJsonRequestDto {
+  jsonText: string;
+  visibility?: GrammarExerciseVisibility;
+  expectedItems?: GrammarExercisePromptRequestedItemDto[] | null;
+}
+
+export interface GrammarExerciseRejectionDto {
+  index: number;
+  issues: string[];
+}
+
+export interface GrammarMyExerciseDto {
+  id: string;
+  stepId: string;
+  stepCode: string;
+  key?: string | null;
+  type: string;
+  difficulty: number;
+  title: string;
+  instructions: string;
+  focus?: string | null;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  maxPoints: number;
+  gradingMode: string;
+  source: GrammarExerciseSource;
+  ownerUserId?: string | null;
+  authorUserId?: string | null;
+  visibility: GrammarExerciseVisibility;
+  moderation: GrammarModerationStatus;
+  rejectReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAtUtc?: string | null;
+  isCore: boolean;
+  contentHash: string;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface GenerateGrammarExercisesResponseDto {
+  created: GrammarMyExerciseDto[];
+  rejected: GrammarExerciseRejectionDto[];
+}
+
+export interface UpdateMyGrammarExerciseRequestDto {
+  title: string;
+  instructions: string;
+  difficulty: number;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  focus?: string | null;
+}
+
+export interface ChangeMyGrammarExerciseVisibilityRequestDto {
+  visibility: GrammarExerciseVisibility;
+}
+
+// --- Admin Grammar Contracts ---
+
+export interface GrammarStepAdminDto {
+  id: string;
+  code: string;
+  cefrLevel: string;
+  order: number;
+  titleVi: string;
+  titleEn: string;
+  summaryVi: string;
+  isLevelReview: boolean;
+  isPublished: boolean;
+  theoryEditedByAdmin: boolean;
+  theoryVersion: number;
+  coreExerciseCount: number;
+  officialExerciseCount: number;
+  pendingExerciseCount: number;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface GrammarExerciseAdminDto {
+  id: string;
+  stepId: string;
+  key?: string | null;
+  type: string;
+  difficulty: number;
+  title: string;
+  instructions: string;
+  focus?: string | null;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  maxPoints: number;
+  gradingMode: string;
+  source: GrammarExerciseSource;
+  ownerUserId?: string | null;
+  authorUserId?: string | null;
+  visibility: GrammarExerciseVisibility;
+  moderation: GrammarModerationStatus;
+  rejectReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAtUtc?: string | null;
+  isCore: boolean;
+  contentHash: string;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface GrammarStepAdminDetailDto {
+  id: string;
+  code: string;
+  cefrLevel: string;
+  order: number;
+  titleVi: string;
+  titleEn: string;
+  summaryVi: string;
+  isLevelReview: boolean;
+  isPublished: boolean;
+  theoryEditedByAdmin: boolean;
+  theoryVersion: number;
+  theory: GrammarTheoryDto;
+  officialExercises: GrammarExerciseAdminDto[];
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface UpdateGrammarStepRequestDto {
+  titleVi: string;
+  titleEn: string;
+  summaryVi: string;
+  isPublished: boolean;
+}
+
+export interface UpdateGrammarStepTheoryRequestDto {
+  theory: GrammarTheoryDto | Record<string, unknown>;
+}
+
+export interface CreateOfficialGrammarExerciseRequestDto {
+  key?: string | null;
+  type: string;
+  difficulty: number;
+  title: string;
+  instructions: string;
+  maxPoints: number;
+  gradingMode: string;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  isCore: boolean;
+  focus?: string | null;
+}
+
+export interface UpdateOfficialGrammarExerciseRequestDto {
+  type: string;
+  difficulty: number;
+  title: string;
+  instructions: string;
+  maxPoints: number;
+  gradingMode: string;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  isCore: boolean;
+  focus?: string | null;
+}
+
+export interface ImportGrammarContentPackRequestDto {
+  overwriteExistingTheory?: boolean;
+}
+
+export interface GrammarImportIssueDto {
+  code?: string | null;
+  key?: string | null;
+  message: string;
+}
+
+export interface GrammarContentPackImportResultDto {
+  stepsCreated: number;
+  stepsUpdated: number;
+  stepsSkipped: number;
+  exercisesCreated: number;
+  exercisesSkipped: number;
+  errors: GrammarImportIssueDto[];
+}
+
+export interface GrammarModerationItemDto {
+  id: string;
+  stepId: string;
+  stepCode: string;
+  cefrLevel: string;
+  authorUserId?: string | null;
+  authorName?: string | null;
+  type: string;
+  difficulty: number;
+  title: string;
+  instructions: string;
+  focus?: string | null;
+  content: Record<string, unknown>;
+  grading?: Record<string, unknown> | null;
+  maxPoints: number;
+  gradingMode: string;
+  visibility: GrammarExerciseVisibility;
+  moderation: GrammarModerationStatus;
+  rejectReason?: string | null;
+  createdAtUtc: string;
+}
+
+export interface RejectGrammarExerciseRequestDto {
+  reason: string;
+}
+
+export interface PromoteGrammarExerciseRequestDto {
+  isCore: boolean;
+}
+
+export interface GenerateOfficialGrammarExercisesRequestDto {
+  items: GrammarExercisePromptRequestedItemDto[];
+  isCore?: boolean;
+  aiConfig?: GrammarAiExecutionConfigDto | null;
+}
+
+export interface ImportOfficialGrammarExercisesJsonRequestDto {
+  jsonText: string;
+  isCore?: boolean;
+  expectedItems?: GrammarExercisePromptRequestedItemDto[] | null;
+}
+
+export interface DraftGrammarTheoryWithAiRequestDto {
+  aiConfig?: GrammarAiExecutionConfigDto | null;
+}
+
+export interface ValidationIssueDto {
+  path: string;
+  severity: string;
+  message: string;
+}
+
+export interface DraftGrammarTheoryWithAiResponseDto {
+  theory: GrammarTheoryDto;
+  issues: ValidationIssueDto[];
+}
+
+export interface GenerateOfficialGrammarExercisesResponseDto {
+  created: GrammarExerciseAdminDto[];
+  rejected: GrammarExerciseRejectionDto[];
+}
+
+export type GrammarExerciseType =
+  | 'MultipleChoice'
+  | 'TrueFalse'
+  | 'FillInTheBlanks'
+  | 'Matching'
+  | 'SentenceUnscramble'
+  | 'ErrorCorrection'
+  | 'Translation'
+  | 'WritingPractice'
+  | 'ReadingComprehension';
+
+export type GrammarGradingMode =
+  | 'Deterministic'
+  | 'SelfAssessment'
+  | 'AiRubric'
+  | 'Composite';
+
+

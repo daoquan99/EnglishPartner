@@ -103,7 +103,7 @@ export const MultipleChoicePlayer: React.FC<MultipleChoicePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ selectedOptionIds: selectedIds })}
+            data-exercise-submit onClick={() => onSubmit({ selectedOptionIds: selectedIds })}
             disabled={selectedIds.length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

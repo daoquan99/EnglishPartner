@@ -139,7 +139,7 @@ export const SpellingPracticePlayer: React.FC<SpellingPracticePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ spelledWord: word.trim() })}
+            data-exercise-submit onClick={() => onSubmit({ spelledWord: word.trim() })}
             disabled={word.trim().length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

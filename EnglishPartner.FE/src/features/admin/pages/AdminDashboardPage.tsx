@@ -11,6 +11,8 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useConversationModesQuery } from '@/features/catalog';
+import { useCurrentUser, hasPermission } from '@/features/auth';
+import { useAdminGrammarStepsQuery, useAdminGrammarModerationQuery } from '@/features/grammar';
 import {
   useAdminAiModelsQuery,
   useAdminRolesQuery,
@@ -34,8 +36,35 @@ export const AdminDashboardPage: React.FC = () => {
   const { data: users } = useAdminUsersQuery(COUNT_ONLY_PARAMS);
   const { data: roles = [] } = useAdminRolesQuery();
   const { data: aiModels = [] } = useAdminAiModelsQuery();
+  const { user } = useCurrentUser();
+  const canManageGrammar = hasPermission(user, 'grammar.manage');
+  const canModerateGrammar = hasPermission(user, 'grammar.moderate');
+
+  const { data: grammarSteps } = useAdminGrammarStepsQuery(COUNT_ONLY_PARAMS, canManageGrammar);
+  const { data: moderationQueue } = useAdminGrammarModerationQuery(COUNT_ONLY_PARAMS, canModerateGrammar);
+
+  let grammarCard = null;
+  if (canManageGrammar || canModerateGrammar) {
+    let value = '';
+    if (canManageGrammar && canModerateGrammar) {
+      value = `${grammarSteps?.totalCount ?? 0} ${t('admin.grammar.stepsUnit')} · ${moderationQueue?.totalCount ?? 0} ${t('admin.grammar.pending')}`;
+    } else if (canManageGrammar) {
+      value = `${grammarSteps?.totalCount ?? 0} ${t('admin.grammar.stepsUnit')}`;
+    } else {
+      value = `${moderationQueue?.totalCount ?? 0} ${t('admin.grammar.pending')}`;
+    }
+
+    grammarCard = {
+      title: canManageGrammar ? t('nav.adminGrammarSteps') : t('nav.adminGrammarModeration'),
+      value,
+      sub: canManageGrammar ? t('nav.adminGrammarStepsSub') : t('nav.adminGrammarModerationSub'),
+      to: canManageGrammar ? '/admin/grammar' : '/admin/grammar/moderation',
+      icon: <img src="/assets/icons/navigation/nav-study.svg" alt="" className="w-5 h-5 object-contain" />,
+    };
+  }
 
   const cards = [
+    ...(grammarCard ? [grammarCard] : []),
     {
       title: t('nav.adminVocabularies'),
       value: `${vocabularies?.totalCount ?? 0} ${t('vocab.wordsUnit')}`,

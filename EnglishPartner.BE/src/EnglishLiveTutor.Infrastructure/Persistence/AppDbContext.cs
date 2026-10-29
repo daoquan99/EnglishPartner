@@ -3,6 +3,8 @@ using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Common.Abstractions;
 using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Domain.Conversations.Entities;
+using EnglishLiveTutor.Domain.Grammar;
+using EnglishLiveTutor.Domain.Grammar.Entities;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Learning;
@@ -99,6 +101,13 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     // Vocabulary Games Aggregate
     public DbSet<FallingWordGameSessionEntity> FallingWordGameSessions => Set<FallingWordGameSessionEntity>();
     public DbSet<FallingWordGameRoundEntity> FallingWordGameRounds => Set<FallingWordGameRoundEntity>();
+
+    // Grammar Roadmap Aggregate
+    public DbSet<GrammarStepEntity> GrammarSteps => Set<GrammarStepEntity>();
+    public DbSet<GrammarExerciseEntity> GrammarExercises => Set<GrammarExerciseEntity>();
+    public DbSet<UserGrammarStepProgressEntity> UserGrammarStepProgress => Set<UserGrammarStepProgressEntity>();
+    public DbSet<GrammarAttemptEntity> GrammarAttempts => Set<GrammarAttemptEntity>();
+    public DbSet<GrammarAttemptAnswerEntity> GrammarAttemptAnswers => Set<GrammarAttemptAnswerEntity>();
 
     // Idempotency Records
     public DbSet<IdempotencyRecordEntity> IdempotencyRecords => Set<IdempotencyRecordEntity>();

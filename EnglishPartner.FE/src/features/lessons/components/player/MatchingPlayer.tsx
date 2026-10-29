@@ -205,7 +205,7 @@ export const MatchingPlayer: React.FC<MatchingPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ pairs })}
+            data-exercise-submit onClick={() => onSubmit({ pairs })}
             disabled={pairs.length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

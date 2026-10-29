@@ -32,11 +32,11 @@ export function useLessonPlayerShortcuts({
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         const container = containerRef.current;
         if (container) {
-          const submitBtn = Array.from(
-            container.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')
-          ).find((btn) =>
-            /xác nhận nộp|nộp bài|nộp các câu/i.test(btn.textContent || '')
-          );
+          const submitBtn =
+            container.querySelector<HTMLButtonElement>('button[data-exercise-submit]:not(:disabled)') ??
+            Array.from(container.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')).find((btn) =>
+              /xác nhận nộp|nộp bài|nộp các câu/i.test(btn.textContent || '')
+            );
           if (submitBtn) {
             e.preventDefault();
             submitBtn.click();

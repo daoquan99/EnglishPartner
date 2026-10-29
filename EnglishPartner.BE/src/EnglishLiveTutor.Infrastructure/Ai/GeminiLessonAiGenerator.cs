@@ -15,14 +15,7 @@ public sealed class GeminiLessonAiGenerator : ILessonAiGenerator
     private readonly IOptions<LessonGenerationOptions> _options;
     private readonly ILogger<GeminiLessonAiGenerator> _logger;
 
-    public GeminiLessonAiGenerator(
-        HttpClient http,
-        IOptions<LessonGenerationOptions> options,
-        ILogger<GeminiLessonAiGenerator> logger)
-        : this(http, null, options, logger)
-    {
-    }
-
+    // Single constructor: typed HttpClient activation fails when several public constructors are satisfiable.
     public GeminiLessonAiGenerator(
         HttpClient http,
         IAgyCliRunner? agyRunner,

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { RequireAuth, RequirePermission } from '@/features/auth';
 import { StudentLayout } from './layouts/StudentLayout';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -64,6 +64,27 @@ const StudentLessonPlayerPage = lazy(() =>
 const StudentLessonHistoryPage = lazy(() =>
   import('@/features/lessons').then((m) => ({ default: m.StudentLessonHistoryPage }))
 );
+const GrammarRoadmapPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.GrammarRoadmapPage }))
+);
+const GrammarStepPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.GrammarStepPage }))
+);
+const GrammarAttemptPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.GrammarAttemptPage }))
+);
+const AdminGrammarStepsPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.AdminGrammarStepsPage }))
+);
+const AdminGrammarStepEditorPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.AdminGrammarStepEditorPage }))
+);
+const AdminGrammarModerationPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.AdminGrammarModerationPage }))
+);
+const MyGrammarExercisesPage = lazy(() =>
+  import('@/features/grammar').then((m) => ({ default: m.MyGrammarExercisesPage }))
+);
 const FallingWordsSetupPage = lazy(() =>
   import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsSetupPage }))
 );
@@ -74,15 +95,29 @@ const FallingWordsHistoryPage = lazy(() =>
   import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsHistoryPage }))
 );
 
+export const GrammarStepRoute: React.FC = () => {
+  const { code } = useParams<{ code: string }>();
+  return <GrammarStepPage key={code} />;
+};
+
+export const GrammarAttemptRoute: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <GrammarAttemptPage key={id} />;
+};
+
+export const AdminGrammarStepRoute: React.FC = () => {
+  const { code } = useParams<{ code: string }>();
+  return <AdminGrammarStepEditorPage key={code} />;
+};
+
 const PageLoader: React.FC = () => (
   <div className="min-h-[45vh] flex items-center justify-center text-xs font-semibold text-slate-500">
     Đang tải trang...
   </div>
 );
 
-export const AppRouter: React.FC = () => {
+export const AppRoutes: React.FC = () => {
   return (
-    <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public Auth Routes */}
@@ -149,6 +184,38 @@ export const AppRouter: React.FC = () => {
                 path="lesson-history"
                 element={<StudentLessonHistoryPage />}
               />
+              <Route
+                path="grammar"
+                element={
+                  <RequirePermission permission="grammar.read">
+                    <GrammarRoadmapPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar/my-exercises"
+                element={
+                  <RequirePermission permission="grammar.generate">
+                    <MyGrammarExercisesPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar/attempts/:id"
+                element={
+                  <RequirePermission permission="grammar.attempt">
+                    <GrammarAttemptRoute />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar/:code"
+                element={
+                  <RequirePermission permission="grammar.read">
+                    <GrammarStepRoute />
+                  </RequirePermission>
+                }
+              />
             </Route>
 
             {/* Protected Admin Portal */}
@@ -167,6 +234,8 @@ export const AppRouter: React.FC = () => {
                     'lessons.manage',
                     'lessons.read',
                     'lessons.publish',
+                    'grammar.manage',
+                    'grammar.moderate',
                   ]}
                 >
                   <AdminLayout />
@@ -197,6 +266,30 @@ export const AppRouter: React.FC = () => {
                 element={
                   <RequirePermission anyPermissions={['rubrics.manage', 'lessons.manage']}>
                     <AdminLessonRubricsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar"
+                element={
+                  <RequirePermission permission="grammar.manage">
+                    <AdminGrammarStepsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar/moderation"
+                element={
+                  <RequirePermission permission="grammar.moderate">
+                    <AdminGrammarModerationPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="grammar/:code"
+                element={
+                  <RequirePermission permission="grammar.manage">
+                    <AdminGrammarStepRoute />
                   </RequirePermission>
                 }
               />
@@ -265,6 +358,13 @@ export const AppRouter: React.FC = () => {
           <Route path="*" element={<Navigate to="/student/tutor" replace />} />
         </Routes>
       </Suspense>
+  );
+};
+
+export const AppRouter: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 };

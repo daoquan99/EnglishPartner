@@ -133,7 +133,7 @@ export const SentenceUnscramblePlayer: React.FC<SentenceUnscramblePlayerProps> =
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ orderedTokenIds: selectedTokenIds })}
+            data-exercise-submit onClick={() => onSubmit({ orderedTokenIds: selectedTokenIds })}
             disabled={selectedTokenIds.length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

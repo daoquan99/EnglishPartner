@@ -1,6 +1,8 @@
 using EnglishLiveTutor.Domain.AiCatalog;
 using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Domain.Conversations.Entities;
+using EnglishLiveTutor.Domain.Grammar;
+using EnglishLiveTutor.Domain.Grammar.Entities;
 using EnglishLiveTutor.Domain.Identity;
 using EnglishLiveTutor.Domain.Identity.Entities;
 using EnglishLiveTutor.Domain.Learning;
@@ -90,6 +92,13 @@ public interface IAppDbContext : IAsyncDisposable, IDisposable
     // Vocabulary Games Aggregate
     DbSet<EnglishLiveTutor.Domain.VocabularyGames.FallingWordGameSessionEntity> FallingWordGameSessions { get; }
     DbSet<EnglishLiveTutor.Domain.VocabularyGames.Entities.FallingWordGameRoundEntity> FallingWordGameRounds { get; }
+
+    // Grammar Roadmap Aggregate
+    DbSet<GrammarStepEntity> GrammarSteps { get; }
+    DbSet<GrammarExerciseEntity> GrammarExercises { get; }
+    DbSet<UserGrammarStepProgressEntity> UserGrammarStepProgress { get; }
+    DbSet<GrammarAttemptEntity> GrammarAttempts { get; }
+    DbSet<GrammarAttemptAnswerEntity> GrammarAttemptAnswers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

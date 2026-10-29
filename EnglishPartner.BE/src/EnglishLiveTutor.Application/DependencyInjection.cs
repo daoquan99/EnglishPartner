@@ -1,5 +1,8 @@
 using EnglishLiveTutor.Application.Common.Behaviors;
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Grammar.ContentPacks;
+using EnglishLiveTutor.Application.Features.Grammar.Models;
+using EnglishLiveTutor.Application.Features.Grammar.Services;
 using EnglishLiveTutor.Application.Features.Learning.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Validation;
@@ -52,6 +55,15 @@ public static class DependencyInjection
         services.AddScoped<ILessonRubricDetailBuilder, LessonRubricDetailBuilder>();
         services.AddScoped<IVocabularyPromptBuilder, VocabularyPromptBuilder>();
         services.AddScoped<IDailyVocabularyPlanInitializer, DailyVocabularyPlanInitializer>();
+
+        // Grammar Content Pack Importer & Sanitizer
+        services.AddScoped<GrammarContentPackImporter>();
+        services.AddSingleton<IGrammarLearnerContentSanitizer, GrammarLearnerContentSanitizer>();
+
+        // Grammar Exercise Generation services
+        services.AddSingleton<IGrammarExercisePromptBuilder, GrammarExercisePromptBuilder>();
+        services.AddScoped<IGrammarExercisePromptContextLoader, GrammarExercisePromptContextLoader>();
+        services.AddSingleton<IGrammarExerciseOutputProcessor, GrammarExerciseOutputProcessor>();
 
         return services;
     }

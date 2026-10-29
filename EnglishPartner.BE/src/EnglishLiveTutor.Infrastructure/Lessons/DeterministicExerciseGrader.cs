@@ -258,7 +258,7 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
             throw new InvalidOperationException("Bài luyện chính tả chưa có từ mẫu.");
 
         bool caseSensitive = gradingNode?["caseSensitive"]?.GetValue<bool>() ?? false;
-        string userWord = (answerNode?["spelledWord"]?.ToString() ?? string.Empty).Trim();
+        string userWord = NormalizeApostrophes(answerNode?["spelledWord"]?.ToString() ?? string.Empty).Trim();
 
         bool isCorrect;
         if (caseSensitive)
@@ -470,7 +470,7 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
         bool caseSensitive,
         bool ignorePunctuation)
     {
-        string u = userVal.Trim();
+        string u = NormalizeApostrophes(userVal).Trim();
         if (!caseSensitive)
             u = u.ToLowerInvariant();
         if (ignorePunctuation)
@@ -478,7 +478,7 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
 
         foreach (var ca in correctAnswers)
         {
-            string expected = ca.Trim();
+            string expected = NormalizeApostrophes(ca).Trim();
             if (!caseSensitive)
                 expected = expected.ToLowerInvariant();
             if (ignorePunctuation)
@@ -493,7 +493,13 @@ public sealed class DeterministicExerciseGrader : IDeterministicExerciseGrader
 
     private static string NormalizeSentence(string s)
     {
-        return s.Trim().ToLowerInvariant().Trim('.', '!', '?');
+        return NormalizeApostrophes(s).Trim().ToLowerInvariant().Trim('.', '!', '?');
+    }
+
+    // Mobile keyboards (iOS smart punctuation) type curly apostrophes; treat them as the ASCII one.
+    private static string NormalizeApostrophes(string s)
+    {
+        return s.Replace('’', '\'').Replace('‘', '\'').Replace('ʼ', '\'');
     }
 
     private static JsonNode? ParseJson(string json)

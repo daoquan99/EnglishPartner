@@ -1,0 +1,845 @@
+{
+  "packVersion": 1,
+  "level": "B2",
+  "steps": [
+    {
+      "code": "B2-01",
+      "order": 1,
+      "titleVi": "Câu điều kiện loại 3",
+      "titleEn": "Third conditional",
+      "summaryVi": "Giả định trái với quá khứ: If + had + V3, would have + V3; tiếc nuối và phê bình.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói về điều đã không xảy ra trong quá khứ và kết quả tưởng tượng của nó.",
+          "Dùng could have/might have để chỉ khả năng trong quá khứ.",
+          "Phân biệt loại 2 và loại 3."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Cả điều kiện và kết quả đều trái với những gì đã thực sự xảy ra.",
+            "formulas": [
+              { "label": "Công thức", "pattern": "If + S + had + V3, S + would/could/might + have + V3" },
+              { "label": "Phủ định", "pattern": "If + S + hadn't + V3, S + wouldn't have + V3" }
+            ],
+            "examples": [
+              { "en": "If I had studied harder, I would have passed the exam.", "vi": "Nếu tôi học chăm hơn thì tôi đã đỗ (thực tế: không học chăm, đã trượt).", "highlight": "had studied" },
+              { "en": "If we hadn't missed the train, we wouldn't have been late.", "vi": "Nếu không lỡ tàu thì chúng tôi đã không bị muộn.", "highlight": "wouldn't have been" },
+              { "en": "She might have got the job if she had applied earlier.", "vi": "Cô ấy có thể đã có công việc đó nếu nộp đơn sớm hơn.", "highlight": "might have got" }
+            ],
+            "notes": ["Rút gọn khi nói: If I'd known, I'd have told you. ('d đầu tiên = had, 'd thứ hai = would)."]
+          },
+          {
+            "heading": "Loại 2 hay loại 3?",
+            "explanationVi": "Loại 2 nói về hiện tại/tương lai không thật. Loại 3 nói về quá khứ không thật.",
+            "formulas": [],
+            "examples": [
+              { "en": "If I knew her number, I would call her. (bây giờ)", "vi": "Nếu tôi biết số cô ấy, tôi sẽ gọi.", "highlight": "knew" },
+              { "en": "If I had known her number, I would have called her. (hôm qua)", "vi": "Nếu tôi đã biết số cô ấy thì tôi đã gọi rồi.", "highlight": "had known" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "If I would have known, I would have come.", "right": "If I had known, I would have come.", "explanationVi": "Mệnh đề if dùng had + V3, không dùng would have." },
+          { "wrong": "If she had came, she would have seen it.", "right": "If she had come, she would have seen it.", "explanationVi": "had + V3 (come – came – come)." },
+          { "wrong": "If he had left earlier, he would catch the bus.", "right": "If he had left earlier, he would have caught the bus.", "explanationVi": "Kết quả trong quá khứ cần would have + V3." }
+        ],
+        "tips": ["Hai vế đều có \"had/have + V3\" vì đều nói về quá khứ."],
+        "summary": [
+          "If + had V3, would have V3.",
+          "Trái với sự thật quá khứ: tiếc nuối, phê bình.",
+          "could/might have V3 cho khả năng."
+        ]
+      }
+    },
+    {
+      "code": "B2-02",
+      "order": 2,
+      "titleVi": "Câu điều kiện hỗn hợp",
+      "titleEn": "Mixed conditionals",
+      "summaryVi": "Điều kiện quá khứ → kết quả hiện tại, và ngược lại.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nối nguyên nhân quá khứ với kết quả hiện tại.",
+          "Nối đặc điểm hiện tại với kết quả quá khứ."
+        ],
+        "sections": [
+          {
+            "heading": "Hai dạng hỗn hợp",
+            "explanationVi": "Ghép một vế của loại 3 với một vế của loại 2, tùy theo thời gian thực của từng vế.",
+            "formulas": [
+              { "label": "Quá khứ → hiện tại", "pattern": "If + had + V3, S + would + V (now)" },
+              { "label": "Hiện tại → quá khứ", "pattern": "If + V2/were, S + would have + V3" }
+            ],
+            "examples": [
+              { "en": "If I had taken that job, I would be living in London now.", "vi": "Nếu (khi đó) tôi nhận công việc ấy thì giờ tôi đang sống ở London.", "highlight": "would be living" },
+              { "en": "If she hadn't missed the flight, she would be here now.", "vi": "Nếu cô ấy không lỡ chuyến bay thì giờ cô ấy đã ở đây.", "highlight": "would be" },
+              { "en": "If I were more organised, I wouldn't have forgotten the meeting.", "vi": "Nếu tôi ngăn nắp hơn (vốn dĩ) thì đã không quên cuộc họp.", "highlight": "were" }
+            ],
+            "notes": ["Dấu hiệu: now, today, still ở vế kết quả hiện tại."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "If I had studied medicine, I would have been a doctor now.", "right": "If I had studied medicine, I would be a doctor now.", "explanationVi": "Kết quả ở hiện tại (now) dùng would + V." },
+          { "wrong": "If I was taller, I would have joined the team last year.", "right": "If I were taller, I would have joined the team last year.", "explanationVi": "Văn viết chuẩn dùng were; kết quả quá khứ dùng would have V3." }
+        ],
+        "tips": ["Xác định thời gian thật của TỪNG vế, rồi chọn công thức cho từng vế."],
+        "summary": [
+          "If + had V3 → would V (hiện tại).",
+          "If + V2 → would have V3 (quá khứ).",
+          "Chọn theo thời gian của từng vế."
+        ]
+      }
+    },
+    {
+      "code": "B2-03",
+      "order": 3,
+      "titleVi": "Bị động nâng cao",
+      "titleEn": "Advanced passive forms",
+      "summaryVi": "Bị động mọi thì; It is said that…; S + is said to + V / to have + V3; bị động với hai tân ngữ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng bị động ở các thì tiếp diễn và hoàn thành.",
+          "Tường thuật ý kiến chung bằng bị động khách quan.",
+          "Chuyển câu có hai tân ngữ sang bị động."
+        ],
+        "sections": [
+          {
+            "heading": "Bị động khách quan",
+            "explanationVi": "Dùng trong tin tức, văn học thuật để nêu ý kiến/niềm tin chung mà không nói ai nghĩ vậy. Động từ: say, believe, think, report, know, expect, consider.",
+            "formulas": [
+              { "label": "It + bị động", "pattern": "It is said/believed/reported + that + clause" },
+              { "label": "Chủ ngữ + bị động + to V", "pattern": "S + is said to + V (cùng lúc)" },
+              { "label": "Việc xảy ra trước", "pattern": "S + is said to + have + V3" }
+            ],
+            "examples": [
+              { "en": "It is believed that the painting is worth millions.", "vi": "Người ta tin rằng bức tranh trị giá hàng triệu.", "highlight": "It is believed" },
+              { "en": "The painting is believed to be worth millions.", "vi": "Bức tranh được cho là trị giá hàng triệu.", "highlight": "is believed to be" },
+              { "en": "The thief is thought to have left the country.", "vi": "Tên trộm được cho là đã rời khỏi đất nước.", "highlight": "to have left" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Bị động với hai tân ngữ",
+            "explanationVi": "Động từ give, send, show, offer, tell… có tân ngữ người và tân ngữ vật. Thường đưa NGƯỜI lên làm chủ ngữ.",
+            "formulas": [{ "label": "Công thức", "pattern": "They gave me a prize. → I was given a prize. / A prize was given to me." }],
+            "examples": [
+              { "en": "She was offered a promotion.", "vi": "Cô ấy được đề nghị thăng chức.", "highlight": "was offered" },
+              { "en": "We have been told nothing about it.", "vi": "Chúng tôi chưa được thông báo gì về việc đó.", "highlight": "have been told" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "He is said that he is rich.", "right": "It is said that he is rich. / He is said to be rich.", "explanationVi": "Không trộn hai cấu trúc." },
+          { "wrong": "She is believed to leave yesterday.", "right": "She is believed to have left yesterday.", "explanationVi": "Việc xảy ra trước dùng to have + V3." },
+          { "wrong": "I was gave a gift.", "right": "I was given a gift.", "explanationVi": "Bị động dùng V3." }
+        ],
+        "tips": ["Tin tức hay dùng \"is reported to have…\" — luyện đọc báo để quen."],
+        "summary": [
+          "It is said that… = S is said to V.",
+          "to have V3 cho việc đã xảy ra trước.",
+          "Hai tân ngữ: ưu tiên người làm chủ ngữ."
+        ]
+      }
+    },
+    {
+      "code": "B2-04",
+      "order": 4,
+      "titleVi": "Thể sai khiến: have/get something done",
+      "titleEn": "Causative: have/get something done",
+      "summaryVi": "Nhờ/thuê người khác làm; trải nghiệm không mong muốn; have someone do / get someone to do.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói về dịch vụ người khác làm cho mình.",
+          "Dùng have/get something done cho sự việc không may.",
+          "Dùng have someone do và get someone to do."
+        ],
+        "sections": [
+          {
+            "heading": "have/get + vật + V3",
+            "explanationVi": "Dùng khi người khác làm việc gì đó cho ta (thường là dịch vụ trả tiền). get thân mật hơn have. have chia theo thì như động từ thường.",
+            "formulas": [
+              { "label": "Công thức", "pattern": "S + have/get + object + V3" },
+              { "label": "Các thì", "pattern": "I'm having my car repaired. · I had my hair cut. · I've had my phone fixed." }
+            ],
+            "examples": [
+              { "en": "I had my hair cut yesterday.", "vi": "Hôm qua tôi đi cắt tóc.", "highlight": "had my hair cut" },
+              { "en": "We're getting our house painted next week.", "vi": "Tuần sau chúng tôi thuê người sơn nhà.", "highlight": "getting our house painted" },
+              { "en": "She had her bag stolen on the bus.", "vi": "Cô ấy bị trộm túi trên xe buýt.", "highlight": "had her bag stolen" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "have someone do / get someone to do",
+            "explanationVi": "Khi muốn nêu rõ người làm: have + người + V nguyên mẫu; get + người + to V (thuyết phục ai làm).",
+            "formulas": [
+              { "label": "have", "pattern": "have + someone + V" },
+              { "label": "get", "pattern": "get + someone + to V" }
+            ],
+            "examples": [
+              { "en": "I'll have the technician check it.", "vi": "Tôi sẽ nhờ kỹ thuật viên kiểm tra.", "highlight": "have the technician check" },
+              { "en": "I finally got my brother to help me.", "vi": "Cuối cùng tôi cũng thuyết phục được em trai giúp.", "highlight": "got my brother to help" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I cut my hair at the salon.", "right": "I had my hair cut at the salon.", "explanationVi": "Người khác cắt cho mình → have something done. Câu sai nghĩa là tự cắt." },
+          { "wrong": "I had my car repair.", "right": "I had my car repaired.", "explanationVi": "Cần V3." },
+          { "wrong": "I got him repair it.", "right": "I got him to repair it.", "explanationVi": "get + người + to V." }
+        ],
+        "tips": ["Tiếng Việt \"đi cắt tóc, đi sửa xe\" → have/get + vật + V3."],
+        "summary": [
+          "have/get + vật + V3: người khác làm cho mình.",
+          "Cũng dùng cho chuyện không may (had my bag stolen).",
+          "have someone do; get someone to do."
+        ]
+      }
+    },
+    {
+      "code": "B2-05",
+      "order": 5,
+      "titleVi": "Câu gián tiếp — mệnh lệnh và động từ tường thuật",
+      "titleEn": "Reported commands and reporting verbs",
+      "summaryVi": "told/asked + O + (not) to V; advise, warn, suggest, admit, deny, promise, refuse.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Thuật lại mệnh lệnh, yêu cầu.",
+          "Dùng đúng mẫu câu sau các động từ tường thuật phổ biến.",
+          "Tránh lỗi suggest + to V."
+        ],
+        "sections": [
+          {
+            "heading": "Mệnh lệnh và yêu cầu",
+            "explanationVi": "Thuật lại mệnh lệnh bằng tell/ask/order + người + (not) to V.",
+            "formulas": [{ "label": "Công thức", "pattern": "S + told/asked + O + (not) to + V" }],
+            "examples": [
+              { "en": "\"Close the window.\" → She told me to close the window.", "vi": "\"Đóng cửa sổ lại.\" → Cô ấy bảo tôi đóng cửa sổ.", "highlight": "to close" },
+              { "en": "\"Please don't be late.\" → He asked us not to be late.", "vi": "\"Đừng đến muộn nhé.\" → Anh ấy đề nghị chúng tôi đừng đến muộn.", "highlight": "not to be" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Động từ tường thuật theo mẫu",
+            "explanationVi": "Động từ tường thuật truyền tải chức năng của lời nói (khuyên, cảnh báo, hứa…). Mỗi động từ có mẫu riêng.",
+            "formulas": [
+              { "label": "+ to V", "pattern": "agree, offer, promise, refuse, threaten" },
+              { "label": "+ O + to V", "pattern": "advise, warn, remind, encourage, persuade, invite" },
+              { "label": "+ V-ing", "pattern": "admit, deny, suggest, recommend" },
+              { "label": "+ giới từ + V-ing", "pattern": "apologise for, accuse sb of, insist on, blame sb for" },
+              { "label": "suggest", "pattern": "suggest + V-ing · suggest + (that) + S + (should) + V" }
+            ],
+            "examples": [
+              { "en": "She promised to call me.", "vi": "Cô ấy hứa sẽ gọi cho tôi.", "highlight": "promised to call" },
+              { "en": "The doctor advised him to rest.", "vi": "Bác sĩ khuyên anh ấy nghỉ ngơi.", "highlight": "advised him to rest" },
+              { "en": "He denied taking the money.", "vi": "Anh ta phủ nhận đã lấy tiền.", "highlight": "denied taking" },
+              { "en": "I suggested going by train.", "vi": "Tôi đề xuất đi bằng tàu.", "highlight": "suggested going" },
+              { "en": "She apologised for being late.", "vi": "Cô ấy xin lỗi vì đến muộn.", "highlight": "apologised for being" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "She told me don't go.", "right": "She told me not to go.", "explanationVi": "Mệnh lệnh phủ định: not to V." },
+          { "wrong": "He suggested me to go.", "right": "He suggested going. / He suggested that I (should) go.", "explanationVi": "suggest không đi với O + to V." },
+          { "wrong": "She denied to steal it.", "right": "She denied stealing it.", "explanationVi": "deny + V-ing." }
+        ],
+        "tips": ["Học động từ tường thuật kèm mẫu: \"advise sb to V\", \"admit V-ing\"."],
+        "summary": [
+          "told/asked + O + (not) to V.",
+          "promise/refuse + to V; advise/warn + O + to V.",
+          "admit/deny/suggest + V-ing."
+        ]
+      }
+    },
+    {
+      "code": "B2-06",
+      "order": 6,
+      "titleVi": "Mệnh đề quan hệ không xác định",
+      "titleEn": "Non-defining relative clauses",
+      "summaryVi": "Thông tin thêm có dấu phẩy; không dùng that; which nói về cả mệnh đề; giới từ + whom/which.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Phân biệt mệnh đề quan hệ xác định và không xác định.",
+          "Dùng which để bình luận cả mệnh đề trước.",
+          "Dùng giới từ + whom/which và lượng từ + of whom/which."
+        ],
+        "sections": [
+          {
+            "heading": "Thông tin bổ sung",
+            "explanationVi": "Mệnh đề không xác định thêm thông tin về một danh từ đã rõ (tên riêng, vật duy nhất). Luôn có dấu phẩy, không dùng that, không được lược bỏ đại từ.",
+            "formulas": [
+              { "label": "Công thức", "pattern": "Noun, who/which/whose/where + clause, …" },
+              { "label": "Bình luận cả câu", "pattern": "…, which + V (which = toàn bộ sự việc)" }
+            ],
+            "examples": [
+              { "en": "My mother, who is a nurse, works night shifts.", "vi": "Mẹ tôi, người là y tá, làm ca đêm.", "highlight": "who is a nurse" },
+              { "en": "Da Lat, which is in the Central Highlands, is cool all year.", "vi": "Đà Lạt, nằm ở Tây Nguyên, mát mẻ quanh năm.", "highlight": "which" },
+              { "en": "He passed the exam, which surprised everyone.", "vi": "Anh ấy đỗ kỳ thi, điều đó làm mọi người ngạc nhiên.", "highlight": "which surprised" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Giới từ và lượng từ",
+            "explanationVi": "Văn trang trọng đặt giới từ trước whom/which. Sau lượng từ (some, many, most, all, none, both) dùng of whom/of which.",
+            "formulas": [
+              { "label": "Giới từ", "pattern": "the man to whom I spoke · the house in which she lived" },
+              { "label": "Lượng từ", "pattern": "…, most of whom… · …, some of which…" }
+            ],
+            "examples": [
+              { "en": "The manager, to whom I sent the email, hasn't replied.", "vi": "Người quản lý, người mà tôi đã gửi email, chưa trả lời.", "highlight": "to whom" },
+              { "en": "I have two brothers, both of whom live abroad.", "vi": "Tôi có hai anh trai, cả hai đều sống ở nước ngoài.", "highlight": "both of whom" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Hanoi, that is the capital, is busy.", "right": "Hanoi, which is the capital, is busy.", "explanationVi": "Mệnh đề không xác định không dùng that." },
+          { "wrong": "My father who is 60 still works.", "right": "My father, who is 60, still works.", "explanationVi": "Thông tin bổ sung về người đã xác định cần dấu phẩy." },
+          { "wrong": "I have many friends, most of them live here.", "right": "I have many friends, most of whom live here.", "explanationVi": "Nối mệnh đề cần of whom." },
+          { "wrong": "the man to who I spoke", "right": "the man to whom I spoke", "explanationVi": "Sau giới từ dùng whom." }
+        ],
+        "tips": ["Bỏ mệnh đề đi mà câu vẫn đủ nghĩa → không xác định → dùng dấu phẩy."],
+        "summary": [
+          "Dấu phẩy, không that, không lược bỏ.",
+          "…, which… bình luận cả mệnh đề.",
+          "giới từ + whom/which; most of whom/some of which."
+        ]
+      }
+    },
+    {
+      "code": "B2-07",
+      "order": 7,
+      "titleVi": "Rút gọn mệnh đề quan hệ",
+      "titleEn": "Reduced relative clauses",
+      "summaryVi": "V-ing (chủ động), V3 (bị động), to V (sau the first/only, so sánh nhất).",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Rút gọn mệnh đề quan hệ chủ động bằng V-ing.",
+          "Rút gọn mệnh đề bị động bằng V3.",
+          "Dùng to V sau the first/last/only và so sánh nhất."
+        ],
+        "sections": [
+          {
+            "heading": "Ba cách rút gọn",
+            "explanationVi": "Khi đại từ quan hệ làm chủ ngữ, có thể bỏ đại từ và be/biến đổi động từ để câu gọn hơn.",
+            "formulas": [
+              { "label": "Chủ động", "pattern": "who/which + V → V-ing: the man who lives next door → the man living next door" },
+              { "label": "Bị động", "pattern": "who/which + be + V3 → V3: the car which was made in Japan → the car made in Japan" },
+              { "label": "to V", "pattern": "the first/last/only/so sánh nhất + N + who V → to V" }
+            ],
+            "examples": [
+              { "en": "Students wanting to join should register today.", "vi": "Sinh viên muốn tham gia nên đăng ký hôm nay.", "highlight": "wanting" },
+              { "en": "The books written by her are very popular.", "vi": "Những cuốn sách do cô ấy viết rất được ưa chuộng.", "highlight": "written" },
+              { "en": "She was the first woman to win the prize.", "vi": "Bà là người phụ nữ đầu tiên giành giải.", "highlight": "to win" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The man lived next door is a pilot.", "right": "The man living next door is a pilot.", "explanationVi": "Rút gọn chủ động dùng V-ing." },
+          { "wrong": "The houses building last year are expensive.", "right": "The houses built last year are expensive.", "explanationVi": "Nhà được xây → bị động → V3." },
+          { "wrong": "He was the only one passed the test.", "right": "He was the only one to pass the test.", "explanationVi": "Sau the only dùng to V." }
+        ],
+        "tips": ["Hỏi: danh từ TỰ làm (V-ing) hay BỊ làm (V3)?"],
+        "summary": [
+          "V-ing thay mệnh đề chủ động.",
+          "V3 thay mệnh đề bị động.",
+          "to V sau the first/only/so sánh nhất."
+        ]
+      }
+    },
+    {
+      "code": "B2-08",
+      "order": 8,
+      "titleVi": "Modal ở quá khứ",
+      "titleEn": "Past modals",
+      "summaryVi": "should have, could have, must have, might have, can't have + V3.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Bày tỏ tiếc nuối và phê bình về quá khứ.",
+          "Suy luận về sự việc đã xảy ra.",
+          "Nói về khả năng đã có nhưng không thực hiện."
+        ],
+        "sections": [
+          {
+            "heading": "Tiếc nuối, phê bình, khả năng",
+            "explanationVi": "Modal + have + V3 nói về quá khứ.",
+            "formulas": [
+              { "label": "Lẽ ra nên/không nên", "pattern": "should/shouldn't have + V3" },
+              { "label": "Lẽ ra đã có thể", "pattern": "could have + V3" },
+              { "label": "Không cần mà đã làm", "pattern": "needn't have + V3 (học kỹ ở C1)" }
+            ],
+            "examples": [
+              { "en": "You should have told me earlier.", "vi": "Lẽ ra bạn nên nói với tôi sớm hơn.", "highlight": "should have told" },
+              { "en": "I shouldn't have eaten so much.", "vi": "Lẽ ra tôi không nên ăn nhiều như vậy.", "highlight": "shouldn't have eaten" },
+              { "en": "We could have won, but we gave up.", "vi": "Chúng tôi đã có thể thắng nhưng lại bỏ cuộc.", "highlight": "could have won" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Suy luận về quá khứ",
+            "explanationVi": "Giống suy luận hiện tại (B1-13) nhưng thêm have + V3.",
+            "formulas": [
+              { "label": "Chắc chắn đã", "pattern": "must have + V3" },
+              { "label": "Có thể đã", "pattern": "might/may/could have + V3" },
+              { "label": "Chắc chắn đã không", "pattern": "can't/couldn't have + V3" }
+            ],
+            "examples": [
+              { "en": "The ground is wet. It must have rained.", "vi": "Mặt đất ướt. Chắc hẳn trời đã mưa.", "highlight": "must have rained" },
+              { "en": "She might have missed the bus.", "vi": "Có thể cô ấy đã lỡ xe buýt.", "highlight": "might have missed" },
+              { "en": "He can't have seen us; he didn't wave.", "vi": "Anh ấy không thể đã thấy chúng ta; anh ấy không vẫy tay.", "highlight": "can't have seen" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "You should told me.", "right": "You should have told me.", "explanationVi": "Quá khứ: should + have + V3." },
+          { "wrong": "He must have went home.", "right": "He must have gone home.", "explanationVi": "have + V3 (gone)." },
+          { "wrong": "She mustn't have known.", "right": "She can't have known.", "explanationVi": "Suy luận phủ định dùng can't have." },
+          { "wrong": "I should of called.", "right": "I should have called.", "explanationVi": "\"should've\" nghe giống \"should of\" nhưng viết đúng là have." }
+        ],
+        "tips": ["Modal + have + V3 = nhìn lại quá khứ."],
+        "summary": [
+          "should have V3: lẽ ra nên.",
+          "could have V3: lẽ ra có thể.",
+          "must/might/can't have V3: suy luận quá khứ."
+        ]
+      }
+    },
+    {
+      "code": "B2-09",
+      "order": 9,
+      "titleVi": "Tương lai hoàn thành và tương lai hoàn thành tiếp diễn",
+      "titleEn": "Future perfect and future perfect continuous",
+      "summaryVi": "will have + V3 (sẽ xong trước mốc); will have been + V-ing (sẽ đã kéo dài bao lâu tính đến mốc).",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói về việc sẽ hoàn thành trước một mốc tương lai.",
+          "Nói về khoảng thời gian một việc sẽ kéo dài tính đến mốc tương lai.",
+          "Dùng by và by the time."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Đứng ở một điểm trong tương lai và nhìn lại.",
+            "formulas": [
+              { "label": "Tương lai hoàn thành", "pattern": "S + will have + V3 (by + mốc)" },
+              { "label": "Tương lai HT tiếp diễn", "pattern": "S + will have been + V-ing + for + khoảng (by + mốc)" },
+              { "label": "by the time", "pattern": "By the time + S + V (hiện tại đơn), S + will have + V3" }
+            ],
+            "examples": [
+              { "en": "By 2030, I will have finished my PhD.", "vi": "Đến năm 2030, tôi sẽ đã hoàn thành bằng tiến sĩ.", "highlight": "will have finished" },
+              { "en": "By the time you arrive, we will have eaten.", "vi": "Lúc bạn đến thì chúng tôi đã ăn xong rồi.", "highlight": "will have eaten" },
+              { "en": "Next month, she will have been working here for ten years.", "vi": "Tháng sau là cô ấy làm ở đây tròn mười năm.", "highlight": "will have been working" }
+            ],
+            "notes": ["by + mốc = trước hoặc muộn nhất là lúc đó."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "By the time you will arrive, I will have left.", "right": "By the time you arrive, I will have left.", "explanationVi": "Mệnh đề by the time dùng hiện tại đơn." },
+          { "wrong": "I will have finish it by Friday.", "right": "I will have finished it by Friday.", "explanationVi": "will have + V3." },
+          { "wrong": "Until next year I will have graduated.", "right": "By next year I will have graduated.", "explanationVi": "Mốc hoàn thành dùng by, không dùng until." }
+        ],
+        "tips": ["Thấy \"by + mốc tương lai\" → nghĩ đến will have + V3."],
+        "summary": [
+          "will have V3: hoàn thành trước mốc tương lai.",
+          "will have been V-ing: kéo dài đến mốc.",
+          "By the time + hiện tại đơn."
+        ]
+      }
+    },
+    {
+      "code": "B2-10",
+      "order": 10,
+      "titleVi": "wish/if only ở quá khứ; would rather; it's time",
+      "titleEn": "wish about the past; would rather; it's time",
+      "summaryVi": "wish + had V3; would rather + V / + S + V2; it's (high) time + S + V2.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Bày tỏ tiếc nuối về quá khứ với wish/if only + had V3.",
+          "Diễn đạt ưu tiên với would rather.",
+          "Nói việc lẽ ra phải làm rồi với it's time."
+        ],
+        "sections": [
+          {
+            "heading": "wish / if only + had V3",
+            "explanationVi": "Lùi thì từ quá khứ đơn sang quá khứ hoàn thành để nói điều trái với quá khứ.",
+            "formulas": [{ "label": "Công thức", "pattern": "S + wish / If only + S + had (not) + V3" }],
+            "examples": [
+              { "en": "I wish I had studied harder at school.", "vi": "Ước gì hồi đi học tôi chăm hơn.", "highlight": "had studied" },
+              { "en": "If only we hadn't sold the house!", "vi": "Giá mà chúng ta đã không bán nhà!", "highlight": "hadn't sold" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "would rather",
+            "explanationVi": "would rather + V: mình thích làm gì hơn. would rather + người khác + V2: muốn người khác làm gì (giả định).",
+            "formulas": [
+              { "label": "Chính mình", "pattern": "S + would rather ('d rather) + V (+ than + V)" },
+              { "label": "Người khác", "pattern": "S + would rather + S2 + V2 (hiện tại) / had V3 (quá khứ)" }
+            ],
+            "examples": [
+              { "en": "I'd rather stay at home than go out.", "vi": "Tôi thà ở nhà còn hơn ra ngoài.", "highlight": "'d rather stay" },
+              { "en": "I'd rather you didn't smoke here.", "vi": "Tôi mong bạn không hút thuốc ở đây.", "highlight": "didn't smoke" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "it's (high) time",
+            "explanationVi": "Đã đến lúc (thậm chí đã muộn) phải làm gì.",
+            "formulas": [
+              { "label": "Chung", "pattern": "It's time + to V" },
+              { "label": "Nhấn mạnh muộn", "pattern": "It's (high/about) time + S + V2" }
+            ],
+            "examples": [{ "en": "It's high time you found a job.", "vi": "Đã đến lúc bạn phải tìm việc rồi đấy.", "highlight": "found" }],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I wish I didn't say that yesterday.", "right": "I wish I hadn't said that yesterday.", "explanationVi": "Tiếc nuối quá khứ → had + V3." },
+          { "wrong": "I'd rather to walk.", "right": "I'd rather walk.", "explanationVi": "would rather + V nguyên mẫu." },
+          { "wrong": "It's time we go home.", "right": "It's time we went home.", "explanationVi": "It's time + S + V2." }
+        ],
+        "tips": ["wish/would rather/it's time + S: \"lùi thì\" giống câu điều kiện."],
+        "summary": [
+          "wish/if only + had V3: tiếc quá khứ.",
+          "would rather + V; would rather + S + V2.",
+          "It's high time + S + V2."
+        ]
+      }
+    },
+    {
+      "code": "B2-11",
+      "order": 11,
+      "titleVi": "Diễn đạt tương phản",
+      "titleEn": "Contrast: although, despite, however",
+      "summaryVi": "although/even though + mệnh đề; despite/in spite of + danh từ/V-ing; however, whereas, while.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Chọn từ nối tương phản đúng loại theo sau (mệnh đề hay cụm danh từ).",
+          "Dùng however, nevertheless đúng dấu câu.",
+          "Dùng whereas/while để so sánh hai sự việc."
+        ],
+        "sections": [
+          {
+            "heading": "Mệnh đề hay cụm danh từ?",
+            "explanationVi": "although/though/even though + mệnh đề (S + V). despite/in spite of + danh từ, V-ing, hoặc the fact that + mệnh đề.",
+            "formulas": [
+              { "label": "Mệnh đề", "pattern": "Although + S + V, S + V" },
+              { "label": "Cụm danh từ", "pattern": "Despite / In spite of + N / V-ing, S + V" },
+              { "label": "Chuyển đổi", "pattern": "Despite the fact that + S + V" }
+            ],
+            "examples": [
+              { "en": "Although it was raining, we went out.", "vi": "Mặc dù trời mưa, chúng tôi vẫn ra ngoài.", "highlight": "Although" },
+              { "en": "Despite the rain, we went out.", "vi": "Bất chấp cơn mưa, chúng tôi vẫn ra ngoài.", "highlight": "Despite" },
+              { "en": "In spite of feeling ill, she went to work.", "vi": "Dù thấy mệt, cô ấy vẫn đi làm.", "highlight": "In spite of feeling" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Trạng từ liên kết",
+            "explanationVi": "however, nevertheless nối hai CÂU; đứng đầu câu thứ hai, theo sau là dấu phẩy (hoặc sau dấu chấm phẩy). whereas/while so sánh hai sự việc trái ngược.",
+            "formulas": [
+              { "label": "however", "pattern": "S + V. However, S + V. · S + V; however, S + V." },
+              { "label": "whereas", "pattern": "S + V, whereas + S + V" }
+            ],
+            "examples": [
+              { "en": "The hotel was expensive. However, the service was excellent.", "vi": "Khách sạn đắt. Tuy nhiên, dịch vụ rất tốt.", "highlight": "However" },
+              { "en": "My brother loves sport, whereas I prefer reading.", "vi": "Anh tôi mê thể thao, trong khi tôi thích đọc sách.", "highlight": "whereas" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Although it was raining, but we went out.", "right": "Although it was raining, we went out.", "explanationVi": "Không dùng but cùng although (\"Mặc dù… nhưng…\")." },
+          { "wrong": "Despite it was raining, we went out.", "right": "Despite the rain / Although it was raining, we went out.", "explanationVi": "despite + danh từ, không + mệnh đề." },
+          { "wrong": "Despite of the cost, they bought it.", "right": "Despite the cost / In spite of the cost, they bought it.", "explanationVi": "despite không có of." },
+          { "wrong": "It was cheap, however it was good.", "right": "It was cheap. However, it was good.", "explanationVi": "however không nối hai mệnh đề bằng dấu phẩy." }
+        ],
+        "tips": ["although + câu; despite + cụm danh từ."],
+        "summary": [
+          "although/even though + S + V.",
+          "despite/in spite of + N/V-ing.",
+          "However, … nối hai câu; whereas so sánh đối lập."
+        ]
+      }
+    },
+    {
+      "code": "B2-12",
+      "order": 12,
+      "titleVi": "Mục đích và kết quả",
+      "titleEn": "Purpose and result",
+      "summaryVi": "to/in order to/so as to + V; so that + S + can/could/will/would; therefore, as a result.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Diễn đạt mục đích bằng to V, in order to, so as to, so that.",
+          "Diễn đạt mục đích phủ định đúng cách.",
+          "Dùng từ nối kết quả trong văn viết."
+        ],
+        "sections": [
+          {
+            "heading": "Mục đích",
+            "explanationVi": "to/in order to/so as to + V khi cùng chủ ngữ. so that + mệnh đề (thường có can/could/will/would) khi khác chủ ngữ hoặc cần nói khả năng.",
+            "formulas": [
+              { "label": "Cùng chủ ngữ", "pattern": "S + V + (in order) to / so as to + V" },
+              { "label": "Phủ định", "pattern": "in order not to / so as not to + V" },
+              { "label": "Mệnh đề", "pattern": "S + V + so that + S + can/could/will/would + V" }
+            ],
+            "examples": [
+              { "en": "She left early in order to catch the train.", "vi": "Cô ấy đi sớm để kịp tàu.", "highlight": "in order to" },
+              { "en": "I whispered so as not to wake the baby.", "vi": "Tôi nói thầm để không đánh thức em bé.", "highlight": "so as not to" },
+              { "en": "I'll send you the file so that you can check it.", "vi": "Tôi sẽ gửi bạn tệp để bạn kiểm tra.", "highlight": "so that you can" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Kết quả",
+            "explanationVi": "Trong văn viết trang trọng, nối kết quả bằng therefore, as a result, consequently (đầu câu sau, có dấu phẩy).",
+            "formulas": [{ "label": "Công thức", "pattern": "S + V. Therefore / As a result, S + V." }],
+            "examples": [{ "en": "Sales fell sharply. As a result, the company cut jobs.", "vi": "Doanh số giảm mạnh. Kết quả là công ty cắt giảm nhân sự.", "highlight": "As a result" }],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I study hard for passing the exam.", "right": "I study hard to pass the exam.", "explanationVi": "Mục đích dùng to V." },
+          { "wrong": "She left early to not miss the train.", "right": "She left early so as not to miss the train.", "explanationVi": "Mục đích phủ định trang trọng: so as not to / in order not to." },
+          { "wrong": "I'll explain so that you understanding.", "right": "I'll explain so that you understand / can understand.", "explanationVi": "so that + mệnh đề đầy đủ." }
+        ],
+        "tips": ["\"để\" + động từ → to V; \"để\" + người khác làm → so that + S + can."],
+        "summary": [
+          "to / in order to / so as to + V.",
+          "so that + S + can/will/could/would + V.",
+          "Therefore / As a result cho kết quả."
+        ]
+      }
+    },
+    {
+      "code": "B2-13",
+      "order": 13,
+      "titleVi": "Mệnh đề phân từ",
+      "titleEn": "Participle clauses",
+      "summaryVi": "V-ing/V3 thay mệnh đề trạng ngữ chỉ thời gian, lý do, kết quả; cùng chủ ngữ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Rút gọn mệnh đề trạng ngữ bằng V-ing hoặc V3.",
+          "Đảm bảo chủ ngữ của hai mệnh đề trùng nhau.",
+          "Dùng having + V3 cho việc xảy ra trước."
+        ],
+        "sections": [
+          {
+            "heading": "V-ing và V3",
+            "explanationVi": "Khi hai mệnh đề có cùng chủ ngữ, có thể bỏ liên từ + chủ ngữ ở mệnh đề phụ. V-ing mang nghĩa chủ động; V3 mang nghĩa bị động.",
+            "formulas": [
+              { "label": "Chủ động", "pattern": "V-ing …, S + V: Feeling tired, I went to bed." },
+              { "label": "Bị động", "pattern": "V3 …, S + V: Built in 1900, the house needs repairs." },
+              { "label": "Sau liên từ", "pattern": "After/Before/While/When + V-ing" }
+            ],
+            "examples": [
+              { "en": "Walking along the beach, we saw a turtle.", "vi": "Khi đi dọc bãi biển, chúng tôi thấy một con rùa.", "highlight": "Walking" },
+              { "en": "Not knowing what to say, she stayed silent.", "vi": "Không biết nói gì, cô ấy im lặng.", "highlight": "Not knowing" },
+              { "en": "Written in simple English, the book is easy to read.", "vi": "Được viết bằng tiếng Anh đơn giản, cuốn sách dễ đọc.", "highlight": "Written" },
+              { "en": "After finishing work, he went to the gym.", "vi": "Sau khi tan làm, anh ấy đi tập gym.", "highlight": "After finishing" }
+            ],
+            "notes": ["Having + V3 nhấn mạnh việc xảy ra trước (học sâu ở C1-06)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Walking home, the rain started.", "right": "Walking home, I got caught in the rain. / While I was walking home, the rain started.", "explanationVi": "Chủ ngữ phải trùng: mưa không \"đi bộ về nhà\" (lỗi dangling participle)." },
+          { "wrong": "Writing in 1990, the book is still popular.", "right": "Written in 1990, the book is still popular.", "explanationVi": "Sách được viết → bị động → V3." },
+          { "wrong": "Don't knowing the answer, he guessed.", "right": "Not knowing the answer, he guessed.", "explanationVi": "Phủ định: Not + V-ing." }
+        ],
+        "tips": ["Kiểm tra: chủ ngữ của mệnh đề chính có thực sự làm/chịu hành động của phân từ không?"],
+        "summary": [
+          "V-ing: chủ động; V3: bị động.",
+          "Hai mệnh đề phải cùng chủ ngữ.",
+          "Not + V-ing cho phủ định."
+        ]
+      }
+    },
+    {
+      "code": "B2-14",
+      "order": 14,
+      "titleVi": "Mạo từ nâng cao",
+      "titleEn": "Advanced articles",
+      "summaryVi": "the với nhóm/loài, tên địa lý, so sánh nhất, tính từ chỉ nhóm người; không mạo từ với danh từ trừu tượng chung.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng the với tên địa lý đúng quy tắc.",
+          "Dùng the + tính từ để chỉ một nhóm người.",
+          "Bỏ mạo từ với danh từ trừu tượng khi nói chung."
+        ],
+        "sections": [
+          {
+            "heading": "Tên riêng và địa lý",
+            "explanationVi": "Đa số tên nước, thành phố, hồ đơn lẻ, núi đơn lẻ không có the. Dùng the với sông, biển, đại dương, dãy núi, nhóm đảo, tên nước có Republic/Kingdom/States hoặc số nhiều.",
+            "formulas": [
+              { "label": "Không the", "pattern": "Vietnam, Paris, Lake Geneva, Mount Fuji, Asia" },
+              { "label": "Có the", "pattern": "the Mekong, the Pacific, the Alps, the Philippines, the UK, the USA" }
+            ],
+            "examples": [
+              { "en": "The Mekong flows through six countries.", "vi": "Sông Mê Kông chảy qua sáu quốc gia.", "highlight": "The Mekong" },
+              { "en": "She has climbed Mount Fuji twice.", "vi": "Cô ấy đã leo núi Phú Sĩ hai lần.", "highlight": "Mount Fuji" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Nói chung và nhóm",
+            "explanationVi": "Danh từ trừu tượng hoặc không đếm được khi nói chung không dùng the; khi được xác định cụ thể thì dùng the. the + tính từ chỉ cả nhóm người (động từ số nhiều).",
+            "formulas": [
+              { "label": "Chung", "pattern": "Life is short. · Education is important." },
+              { "label": "Cụ thể", "pattern": "The education I received was excellent." },
+              { "label": "Nhóm người", "pattern": "the rich, the poor, the elderly, the unemployed + V số nhiều" }
+            ],
+            "examples": [
+              { "en": "Happiness is more important than money.", "vi": "Hạnh phúc quan trọng hơn tiền bạc.", "highlight": "Happiness" },
+              { "en": "The elderly need more support.", "vi": "Người cao tuổi cần được hỗ trợ nhiều hơn.", "highlight": "The elderly" }
+            ],
+            "notes": ["Nơi chốn theo chức năng không dùng the: go to bed/school/hospital/prison (đến để học/chữa bệnh…)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The life is beautiful.", "right": "Life is beautiful.", "explanationVi": "Danh từ trừu tượng nói chung không dùng the." },
+          { "wrong": "I live in the Vietnam.", "right": "I live in Vietnam.", "explanationVi": "Tên nước thông thường không có the." },
+          { "wrong": "The poor needs help.", "right": "The poor need help.", "explanationVi": "the + tính từ chỉ nhóm → động từ số nhiều." }
+        ],
+        "tips": ["Hỏi: đang nói chung chung hay một cái cụ thể đã xác định?"],
+        "summary": [
+          "the + sông/biển/dãy núi/nước có Kingdom, States.",
+          "Không the với danh từ trừu tượng nói chung.",
+          "the + adj = nhóm người (số nhiều)."
+        ]
+      }
+    },
+    {
+      "code": "B2-15",
+      "order": 15,
+      "titleVi": "Lượng từ nâng cao",
+      "titleEn": "Advanced quantifiers",
+      "summaryVi": "each/every, either/neither, both, all, none; hòa hợp chủ ngữ – động từ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Phân biệt each và every.",
+          "Dùng both, either, neither cho hai đối tượng.",
+          "Chia động từ đúng sau các lượng từ."
+        ],
+        "sections": [
+          {
+            "heading": "each / every / all",
+            "explanationVi": "each và every + danh từ số ít + động từ số ít. each nhấn mạnh từng cá thể (từ 2 trở lên); every nhấn mạnh tất cả (từ 3 trở lên). all + danh từ số nhiều.",
+            "formulas": [
+              { "label": "each/every", "pattern": "each/every + N số ít + V số ít" },
+              { "label": "each of", "pattern": "each of + the/my + N số nhiều + V số ít" },
+              { "label": "all", "pattern": "all (of the) + N số nhiều + V số nhiều" }
+            ],
+            "examples": [
+              { "en": "Every student has a laptop.", "vi": "Mọi sinh viên đều có máy tính xách tay.", "highlight": "has" },
+              { "en": "Each of the rooms has a balcony.", "vi": "Mỗi phòng đều có ban công.", "highlight": "Each of" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "both / either / neither / none",
+            "explanationVi": "Dùng cho hai đối tượng: both (cả hai), either (một trong hai), neither (không cái nào). none of cho từ ba trở lên.",
+            "formulas": [
+              { "label": "both", "pattern": "both A and B + V số nhiều" },
+              { "label": "either/neither", "pattern": "either/neither + N số ít · either A or B · neither A nor B (V theo B)" },
+              { "label": "none", "pattern": "none of + the + N (V số ít trang trọng / số nhiều thân mật)" }
+            ],
+            "examples": [
+              { "en": "Both my parents are teachers.", "vi": "Cả bố lẫn mẹ tôi đều là giáo viên.", "highlight": "Both" },
+              { "en": "You can take either road.", "vi": "Bạn có thể đi một trong hai con đường.", "highlight": "either" },
+              { "en": "Neither the manager nor the staff were informed.", "vi": "Cả quản lý lẫn nhân viên đều không được thông báo.", "highlight": "Neither" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Every students have a book.", "right": "Every student has a book.", "explanationVi": "every + danh từ số ít + động từ số ít." },
+          { "wrong": "Neither of them don't like it.", "right": "Neither of them likes it.", "explanationVi": "neither đã phủ định; không thêm don't." },
+          { "wrong": "Both of my brother are tall.", "right": "Both of my brothers are tall.", "explanationVi": "both + danh từ số nhiều." }
+        ],
+        "tips": ["each/every \"nhìn từng cái một\" → số ít."],
+        "summary": [
+          "each/every + số ít.",
+          "both (số nhiều); either/neither (một trong hai/không cái nào).",
+          "neither … nor: động từ theo chủ ngữ gần nhất."
+        ]
+      }
+    },
+    {
+      "code": "B2-16",
+      "order": 16,
+      "titleVi": "Ôn tập B2 và kiểm tra level",
+      "titleEn": "B2 review and level test",
+      "summaryVi": "Tổng hợp câu điều kiện 3/hỗn hợp, bị động nâng cao, modal quá khứ, mệnh đề và liên kết câu.",
+      "isLevelReview": true,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Viết đoạn văn mạch lạc với các cấu trúc B2.",
+          "Chọn cấu trúc phù hợp với sắc thái (tiếc nuối, suy luận, tương phản).",
+          "Đạt từ 80% bài kiểm tra để hoàn thành B2."
+        ],
+        "sections": [
+          {
+            "heading": "Bản đồ ngữ pháp B2",
+            "explanationVi": "B2 tập trung vào diễn đạt quan hệ phức tạp giữa các sự kiện, giả định quá khứ và văn phong trang trọng hơn.",
+            "formulas": [
+              { "label": "Giả định", "pattern": "If had V3 → would have V3 · hỗn hợp · wish had V3 · would rather S V2" },
+              { "label": "Modal quá khứ", "pattern": "should/could/must/might/can't + have V3" },
+              { "label": "Bị động", "pattern": "It is said that… · is said to (have) V · have sth done" },
+              { "label": "Mệnh đề", "pattern": "non-defining (, which/who) · rút gọn V-ing/V3/to V · mệnh đề phân từ" },
+              { "label": "Liên kết", "pattern": "although/despite · however · so that/in order to · therefore" },
+              { "label": "Tương lai", "pattern": "will have V3 · will have been V-ing" }
+            ],
+            "examples": [
+              { "en": "If I had known about the traffic, I would have left earlier — I should have checked the news.", "vi": "Nếu biết về tắc đường thì tôi đã đi sớm hơn — lẽ ra tôi nên xem tin tức.", "highlight": "should have checked" },
+              { "en": "Despite being warned, the hikers, most of whom were inexperienced, continued.", "vi": "Dù đã được cảnh báo, những người đi bộ đường dài, hầu hết thiếu kinh nghiệm, vẫn tiếp tục.", "highlight": "most of whom" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [],
+        "tips": ["Ôn lại các step về mệnh đề (B2-06, B2-07, B2-13) vì đây là phần dễ nhầm nhất."],
+        "summary": [
+          "Giả định quá khứ: had V3 / would have V3.",
+          "Mệnh đề quan hệ và phân từ giúp câu gọn, trang trọng.",
+          "Đạt ≥ 80% bài kiểm tra để mở C1."
+        ]
+      }
+    }
+  ]
+}

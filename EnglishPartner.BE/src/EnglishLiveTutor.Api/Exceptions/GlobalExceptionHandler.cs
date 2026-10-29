@@ -39,6 +39,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         int statusCode;
         string detail;
         IDictionary<string, string[]>? validationErrors = null;
+        IDictionary<string, object?>? customExtensions = null;
 
         switch (exception)
         {
@@ -76,6 +77,19 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 statusCode = StatusCodes.Status409Conflict;
                 detail = conflictEx.Message;
                 _logger.LogWarning(conflictEx, "Conflict on {Path}: {Message}", httpContext.Request.Path, conflictEx.Message);
+                break;
+
+            case UnprocessableEntityException unprocEx:
+                statusCode = StatusCodes.Status422UnprocessableEntity;
+                detail = unprocEx.Message;
+                customExtensions = unprocEx.Extensions;
+                _logger.LogWarning(unprocEx, "Unprocessable entity on {Path}: {Message}", httpContext.Request.Path, unprocEx.Message);
+                break;
+
+            case TooManyRequestsException tmrEx:
+                statusCode = StatusCodes.Status429TooManyRequests;
+                detail = tmrEx.Message;
+                _logger.LogWarning(tmrEx, "Too many requests on {Path}: {Message}", httpContext.Request.Path, tmrEx.Message);
                 break;
 
             case UnauthorizedAccessException unauthEx:
@@ -128,6 +142,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             statusCode,
             detail,
             errors: validationErrors,
+            customExtensions: customExtensions,
             cancellationToken: cancellationToken);
 
         return true;

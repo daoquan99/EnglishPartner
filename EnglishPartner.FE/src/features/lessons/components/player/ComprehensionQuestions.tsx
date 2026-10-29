@@ -59,7 +59,7 @@ export function ComprehensionQuestions({ questions, onSubmit, isSubmitting, isSu
         </fieldset>
       ))}
       {!isSubmitted && <Button type="button" className="w-full" disabled={!allAnswered || isSubmitting}
-        onClick={() => onSubmit(buildComprehensionSubmission(items, answers))}>
+        data-exercise-submit onClick={() => onSubmit(buildComprehensionSubmission(items, answers))}>
         {isSubmitting ? 'Đang nộp câu trả lời...' : 'Nộp các câu trả lời'}
       </Button>}
     </div>

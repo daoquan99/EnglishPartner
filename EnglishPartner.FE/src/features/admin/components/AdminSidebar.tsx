@@ -29,7 +29,19 @@ export interface AdminNavItem {
   labelKey?: string;
   descriptionKey?: string;
   requiredPermissions: string[];
-  iconName: 'dashboard' | 'vocabularies' | 'users' | 'roles' | 'prompts' | 'voices' | 'topics' | 'rubrics' | 'lessons' | 'lesson-rubrics';
+  iconName:
+    | 'dashboard'
+    | 'vocabularies'
+    | 'users'
+    | 'roles'
+    | 'prompts'
+    | 'voices'
+    | 'topics'
+    | 'rubrics'
+    | 'lessons'
+    | 'lesson-rubrics'
+    | 'grammar'
+    | 'grammar-moderation';
 }
 
 export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
@@ -50,6 +62,8 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
       'lessons.manage',
       'lessons.read',
       'lessons.publish',
+      'grammar.manage',
+      'grammar.moderate',
     ],
     iconName: 'dashboard',
   },
@@ -70,6 +84,24 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
     descriptionKey: 'nav.adminLessonRubricsSub',
     requiredPermissions: ['rubrics.manage', 'lessons.manage'],
     iconName: 'lesson-rubrics',
+  },
+  {
+    to: '/admin/grammar',
+    label: 'Lộ trình Ngữ pháp',
+    description: 'Quản lý 100 Step, lý thuyết & bài tập chuẩn',
+    labelKey: 'nav.adminGrammarSteps',
+    descriptionKey: 'nav.adminGrammarStepsSub',
+    requiredPermissions: ['grammar.manage'],
+    iconName: 'grammar',
+  },
+  {
+    to: '/admin/grammar/moderation',
+    label: 'Kiểm duyệt Ngữ pháp',
+    description: 'Duyệt bài tập cộng đồng của học viên',
+    labelKey: 'nav.adminGrammarModeration',
+    descriptionKey: 'nav.adminGrammarModerationSub',
+    requiredPermissions: ['grammar.moderate'],
+    iconName: 'grammar-moderation',
   },
   {
     to: '/admin/vocabularies',
@@ -159,6 +191,8 @@ const ADMIN_NAV_SVG_ICONS: Record<AdminNavItem['iconName'], string> = {
   roles: '/assets/icons/navigation/nav-roles.svg',
   lessons: '/assets/icons/navigation/nav-study.svg',
   'lesson-rubrics': '/assets/icons/navigation/nav-rubrics.svg',
+  grammar: '/assets/icons/navigation/nav-study.svg',
+  'grammar-moderation': '/assets/icons/navigation/nav-prompts.svg',
 };
 
 function renderIcon(name: AdminNavItem['iconName']) {
@@ -249,7 +283,7 @@ export const AdminSidebar: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/admin'}
+              end={item.to === '/admin' || item.to === '/admin/grammar'}
               title={`${item.labelKey ? t(item.labelKey) : item.label} — ${item.descriptionKey ? t(item.descriptionKey) : item.description}`}
               className={({ isActive }) =>
                 cn(

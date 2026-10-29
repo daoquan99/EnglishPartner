@@ -1,4 +1,7 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Grammar.ContentPacks;
+using EnglishLiveTutor.Application.Features.Grammar.Ports;
+using EnglishLiveTutor.Infrastructure.Grammar;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Domain.AiCatalog.Repositories;
 using EnglishLiveTutor.Domain.Conversations.Repositories;
@@ -57,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IAppDbContextFactory, AppDbContextFactoryWrapper>();
+        services.AddSingleton<IGrammarContentPackSource, EmbeddedGrammarContentPackSource>();
 
         // Security & Token Services
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
@@ -144,6 +148,17 @@ public static class DependencyInjection
         services.AddHttpClient<IVocabularyAiGenerator, GeminiVocabularyAiGenerator>((sp, client) =>
         {
             var options = sp.GetRequiredService<IOptions<VocabularyGenerationOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
+        services.AddOptions<GrammarGenerationAiOptions>()
+            .Bind(configuration.GetSection(GrammarGenerationAiOptions.SectionName))
+            .Validate(options => options.TimeoutSeconds > 0 && options.TimeoutSeconds <= 3600,
+                "Ai:GrammarGeneration:TimeoutSeconds must be between 1 and 3600.")
+            .ValidateOnStart();
+
+        services.AddHttpClient<IGrammarExerciseAiGenerator, GeminiGrammarExerciseAiGenerator>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<GrammarGenerationAiOptions>>().Value;
             client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
         });
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();

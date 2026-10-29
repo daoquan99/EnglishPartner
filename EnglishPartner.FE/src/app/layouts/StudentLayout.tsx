@@ -55,6 +55,10 @@ export const isStudentFallingWordsGroupRoute = (pathname: string): boolean => {
   return /^\/student\/vocabulary-games\/falling-words(\/.*)?$/.test(pathname);
 };
 
+export const isStudentGrammarGroupRoute = (pathname: string): boolean => {
+  return /^\/student\/grammar(\/.*)?$/.test(pathname);
+};
+
 /**
  * Student Portal App Shell:
  * - Outer container: `h-screen w-full overflow-hidden flex` (prevents body scroll)
@@ -72,6 +76,7 @@ export const StudentLayout: React.FC = () => {
 
   const isLessonGroupActive = isStudentLessonGroupRoute(location.pathname);
   const isFallingWordsActive = isStudentFallingWordsGroupRoute(location.pathname);
+  const isGrammarGroupActive = isStudentGrammarGroupRoute(location.pathname);
 
   const {
     apiKey,
@@ -280,6 +285,35 @@ export const StudentLayout: React.FC = () => {
                   <div className="text-xs font-bold truncate">Bài học & Luyện tập</div>
                   <div className="text-[10px] opacity-80 truncate">
                     16 loại bài tập đa kỹ năng
+                  </div>
+                </div>
+              )}
+            </Link>
+
+            <Link
+              to="/student/grammar"
+              title={t('nav.grammar')}
+              aria-current={isGrammarGroupActive ? 'page' : undefined}
+              className={cn(
+                'flex items-center rounded-2xl transition-all',
+                isStudentSidebarCollapsed
+                  ? 'justify-center w-12 h-12 mx-auto'
+                  : 'gap-3 px-3.5 py-3',
+                isGrammarGroupActive
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              )}
+            >
+              <img
+                src="/assets/icons/navigation/nav-sentences.svg"
+                alt=""
+                className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
+              />
+              {!isStudentSidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">{t('nav.grammar')}</div>
+                  <div className="text-[10px] opacity-80 truncate">
+                    {t('nav.grammarSub')}
                   </div>
                 </div>
               )}

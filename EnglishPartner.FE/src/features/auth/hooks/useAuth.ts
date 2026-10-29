@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/authApi';
+import { performSingleFlightTokenRefresh } from '@/shared/api/httpClient';
 import { useAuthStore, hasPermission, hasAnyPermission, hasRole } from '../store/authStore';
 import type { LoginRequestDto, RegisterUserRequestDto } from '@/shared/api/openapi.types';
 
@@ -12,32 +13,20 @@ export const AUTH_QUERY_KEYS = {
  * Bootstraps authentication session on app startup using silent Refresh Token cookie check.
  */
 export function useBootstrapAuth() {
-  const { isInitialized, accessToken, setSession, clearSession, markInitialized } =
-    useAuthStore();
+  const { isInitialized, accessToken, markInitialized } = useAuthStore();
 
   useEffect(() => {
     if (isInitialized) return;
-    let mounted = true;
+    if (accessToken) {
+      markInitialized();
+      return;
+    }
 
-    (async () => {
-      try {
-        // Attempt silent token refresh using HttpOnly cookie if we don't have an accessToken in memory yet
-        if (!accessToken) {
-          const refreshed = await authApi.refreshSession();
-          if (mounted) setSession(refreshed);
-          return;
-        }
-      } catch {
-        if (mounted) clearSession();
-      } finally {
-        if (mounted) markInitialized();
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [isInitialized, accessToken, setSession, clearSession, markInitialized]);
+    // Shared single-flight refresh: StrictMode runs this effect twice, and two parallel refreshes with the
+    // same rotating cookie make the second one fail (BE then deletes the cookie) and log the user out.
+    // The refresh result reaches the store through registerAuthSyncCallback, even after unmount.
+    void performSingleFlightTokenRefresh().finally(() => useAuthStore.getState().markInitialized());
+  }, [isInitialized, accessToken, markInitialized]);
 }
 
 export function useCurrentUser() {

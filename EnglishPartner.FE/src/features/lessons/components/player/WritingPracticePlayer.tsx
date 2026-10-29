@@ -97,7 +97,7 @@ export const WritingPracticePlayer: React.FC<WritingPracticePlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ writtenText: text.trim() })}
+            data-exercise-submit onClick={() => onSubmit({ writtenText: text.trim() })}
             disabled={wordCount === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

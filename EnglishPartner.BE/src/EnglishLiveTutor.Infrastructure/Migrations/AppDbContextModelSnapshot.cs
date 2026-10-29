@@ -339,6 +339,458 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.ToTable("Corrections", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.Entities.GrammarAttemptAnswerEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnswerPayloadJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<Guid>("ExerciseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FeedbackJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("MaxPoints")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal?>("PointsEarned")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal?>("Score100")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset>("SubmittedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId", "ExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("GrammarAttemptAnswers", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarAttemptEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CefrLevel")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<string>("ExerciseIdsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal?>("Score100")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("StepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StepId");
+
+                    b.HasIndex("UserId", "StartedAtUtc");
+
+                    b.ToTable("GrammarAttempts", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarExerciseEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorUserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Focus")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("GradingDefinitionJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GradingMode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Instructions")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsCore")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<decimal>("MaxPoints")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<int>("Moderation")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OwnerUserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("RejectReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("ReviewedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId", "StepId");
+
+                    b.HasIndex("StepId", "ContentHash");
+
+                    b.HasIndex("StepId", "Key")
+                        .IsUnique()
+                        .HasFilter("[Key] IS NOT NULL");
+
+                    b.HasIndex("StepId", "Source", "Moderation", "IsDeleted");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("StepId", "Source", "Moderation", "IsDeleted"), new[] { "IsCore", "OwnerUserId", "Difficulty", "Key", "CreatedAtUtc" });
+
+                    b.ToTable("GrammarExercises", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarStepEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CefrLevel")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<bool>("IsLevelReview")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SummaryVi")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("TheoryEditedByAdmin")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TheoryJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TheoryVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TitleVi")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CefrLevel", "Order")
+                        .IsUnique();
+
+                    b.ToTable("GrammarSteps", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.UserGrammarStepProgressEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BestScore100")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("CreatedAtUtc");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("DeletedAtUtc");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("DeletedBy");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<DateTimeOffset?>("PassedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("PassedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UnlockedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("UpdatedAtUtc");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("UpdatedBy");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StepId");
+
+                    b.HasIndex("UserId", "StepId")
+                        .IsUnique();
+
+                    b.ToTable("UserGrammarStepProgress", (string)null);
+                });
+
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.Entities.RefreshTokenEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3417,6 +3869,41 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.Entities.GrammarAttemptAnswerEntity", b =>
+                {
+                    b.HasOne("EnglishLiveTutor.Domain.Grammar.GrammarAttemptEntity", null)
+                        .WithMany("Answers")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarAttemptEntity", b =>
+                {
+                    b.HasOne("EnglishLiveTutor.Domain.Grammar.GrammarStepEntity", null)
+                        .WithMany()
+                        .HasForeignKey("StepId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarExerciseEntity", b =>
+                {
+                    b.HasOne("EnglishLiveTutor.Domain.Grammar.GrammarStepEntity", null)
+                        .WithMany()
+                        .HasForeignKey("StepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.UserGrammarStepProgressEntity", b =>
+                {
+                    b.HasOne("EnglishLiveTutor.Domain.Grammar.GrammarStepEntity", null)
+                        .WithMany()
+                        .HasForeignKey("StepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.Entities.RefreshTokenEntity", b =>
                 {
                     b.HasOne("EnglishLiveTutor.Domain.Identity.UserEntity", null)
@@ -3563,6 +4050,11 @@ namespace EnglishLiveTutor.Infrastructure.Migrations
                     b.Navigation("Corrections");
 
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("EnglishLiveTutor.Domain.Grammar.GrammarAttemptEntity", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("EnglishLiveTutor.Domain.Identity.RoleEntity", b =>

@@ -75,7 +75,7 @@ else
   fi
   # FE trong worktree dùng chung node_modules qua junction (không cài lại).
   if [[ $SCOPE == fe && ! -e $BASE/EnglishPartner.FE/node_modules && -d $REPO/EnglishPartner.FE/node_modules ]]; then
-    cmd //c mklink /J "$(cygpath -w "$BASE/EnglishPartner.FE/node_modules")" "$(cygpath -w "$REPO/EnglishPartner.FE/node_modules")" >/dev/null
+    powershell.exe -NoProfile -Command "New-Item -ItemType Junction -Path '$(cygpath -w "$BASE/EnglishPartner.FE/node_modules")' -Target '$(cygpath -w "$REPO/EnglishPartner.FE/node_modules")' | Out-Null"
   fi
 fi
 WORKDIR="$BASE/$SUBDIR"

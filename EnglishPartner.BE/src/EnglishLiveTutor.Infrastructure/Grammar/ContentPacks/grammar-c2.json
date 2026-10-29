@@ -1,0 +1,633 @@
+{
+  "packVersion": 1,
+  "level": "C2",
+  "steps": [
+    {
+      "code": "C2-01",
+      "order": 1,
+      "titleVi": "Sắc thái thì và thể (aspect)",
+      "titleEn": "Nuances of tense and aspect",
+      "summaryVi": "Thể tiếp diễn và hoàn thành để thể hiện tạm thời, khó chịu, lịch sự, khoảng cách; thì trong văn kể và học thuật.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Hiểu thì/thể không chỉ về thời gian mà còn về thái độ và góc nhìn.",
+          "Dùng tiếp diễn để làm mềm, thể hiện tạm thời hoặc khó chịu.",
+          "Dùng thì quá khứ để tạo khoảng cách lịch sự."
+        ],
+        "sections": [
+          {
+            "heading": "Thể tiếp diễn mang sắc thái",
+            "explanationVi": "Ngoài nghĩa \"đang diễn ra\", tiếp diễn còn diễn tả tính tạm thời, sự khó chịu (với always/forever), hoặc làm lời nói mềm hơn. Một số động từ trạng thái dùng tiếp diễn khi đổi nghĩa.",
+            "formulas": [
+              { "label": "Khó chịu", "pattern": "S + be + always/constantly/forever + V-ing" },
+              { "label": "Tạm thời", "pattern": "She's being very rude today. (khác: She is rude — bản chất)" },
+              { "label": "Đổi nghĩa", "pattern": "I'm thinking about it (cân nhắc) · I think so (cho rằng) · We're having dinner (ăn)" }
+            ],
+            "examples": [
+              { "en": "He's always leaving his dirty socks on the floor!", "vi": "Lúc nào anh ta cũng vứt tất bẩn ra sàn!", "highlight": "always leaving" },
+              { "en": "You're being unusually quiet tonight.", "vi": "Tối nay bạn im lặng khác thường.", "highlight": "being" },
+              { "en": "I'm hoping you could give me some advice.", "vi": "Tôi đang mong bạn có thể cho tôi lời khuyên. (mềm, lịch sự)", "highlight": "I'm hoping" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Quá khứ tạo khoảng cách",
+            "explanationVi": "Dùng thì quá khứ (thậm chí quá khứ tiếp diễn) cho hiện tại để yêu cầu, đề nghị nghe khiêm tốn, ít áp đặt hơn.",
+            "formulas": [{ "label": "Mẫu", "pattern": "I wondered/was wondering if… · I wanted to ask… · Did you want…?" }],
+            "examples": [
+              { "en": "I was wondering if you might be free on Friday.", "vi": "Không biết thứ Sáu anh có rảnh không ạ.", "highlight": "was wondering" },
+              { "en": "Did you want me to send the file again?", "vi": "Anh có muốn tôi gửi lại tệp không?", "highlight": "Did you want" }
+            ],
+            "notes": ["Trong văn học thuật, hiện tại đơn cho quan điểm/kết quả đã công bố (Smith argues…), quá khứ đơn cho quy trình nghiên cứu (We collected data…)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "She always complains! (ý phàn nàn mạnh)", "right": "She's always complaining!", "explanationVi": "Để thể hiện sự khó chịu, dùng tiếp diễn + always." },
+          { "wrong": "I wonder if you can help me. (quá trực tiếp trong email trang trọng)", "right": "I was wondering if you could help me.", "explanationVi": "Lùi thì làm lời đề nghị lịch sự hơn." },
+          { "wrong": "In 2019, Smith argues that… (khi nói về sự kiện nghiên cứu cụ thể)", "right": "Smith (2019) argues that… / In 2019, Smith found that…", "explanationVi": "Quan điểm dùng hiện tại; việc đã làm trong quá khứ dùng quá khứ." }
+        ],
+        "tips": ["Hỏi: mình muốn nghe trung tính, tạm thời, khó chịu hay khiêm tốn? — rồi chọn thể phù hợp."],
+        "summary": [
+          "always + V-ing: khó chịu; be being + adj: tạm thời.",
+          "Quá khứ/tiếp diễn làm lời đề nghị mềm.",
+          "Học thuật: hiện tại cho quan điểm, quá khứ cho quy trình."
+        ]
+      }
+    },
+    {
+      "code": "C2-02",
+      "order": 2,
+      "titleVi": "Fronting và cấu trúc thông tin",
+      "titleEn": "Fronting and information structure",
+      "summaryVi": "Đưa tân ngữ/bổ ngữ/trạng ngữ lên đầu; đảo ngữ sau trạng ngữ nơi chốn; thông tin cũ trước, mới sau.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Hiểu nguyên tắc thông tin cũ → mới (given → new) và end-weight.",
+          "Đưa thành phần lên đầu câu để tạo liên kết và nhấn mạnh.",
+          "Dùng đảo ngữ sau trạng ngữ chỉ nơi chốn/phương hướng."
+        ],
+        "sections": [
+          {
+            "heading": "Thông tin cũ trước, mới sau",
+            "explanationVi": "Câu tiếng Anh tự nhiên đặt thông tin đã biết ở đầu (nối với câu trước) và thông tin mới, dài, quan trọng ở cuối (end-weight). Có thể dùng bị động, there, it giả để sắp xếp lại.",
+            "formulas": [
+              { "label": "Nguyên tắc", "pattern": "Given (đầu câu) → New (cuối câu)" },
+              { "label": "End-weight", "pattern": "Đưa cụm dài ra cuối: It is surprising that so many people… thay vì That so many people… is surprising." }
+            ],
+            "examples": [
+              { "en": "The company launched a new app. This app was designed by a team of students.", "vi": "Công ty ra mắt một ứng dụng mới. Ứng dụng này được thiết kế bởi một nhóm sinh viên.", "highlight": "This app" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Fronting",
+            "explanationVi": "Đưa tân ngữ, bổ ngữ hoặc trạng ngữ lên đầu để nhấn mạnh hoặc đối chiếu. Sau trạng ngữ nơi chốn/phương hướng (thường với be, come, stand, lie), có thể đảo động từ chính lên trước chủ ngữ danh từ.",
+            "formulas": [
+              { "label": "Tân ngữ", "pattern": "This I cannot accept. · Some things you never forget." },
+              { "label": "Bổ ngữ", "pattern": "So successful was the event that… · Strange as it may seem, …" },
+              { "label": "Nơi chốn + đảo", "pattern": "Adverbial of place + V + N subject: On the hill stood an old castle." }
+            ],
+            "examples": [
+              { "en": "This I cannot accept.", "vi": "Điều này thì tôi không thể chấp nhận.", "highlight": "This" },
+              { "en": "On the hill stood an old castle.", "vi": "Trên đồi sừng sững một tòa lâu đài cổ.", "highlight": "stood an old castle" },
+              { "en": "Strange as it may seem, I enjoy doing paperwork.", "vi": "Nghe có vẻ lạ, nhưng tôi thích làm giấy tờ.", "highlight": "Strange as it may seem" },
+              { "en": "Here comes the bus.", "vi": "Xe buýt đến kìa.", "highlight": "comes the bus" }
+            ],
+            "notes": ["Với đại từ chủ ngữ không đảo: Here it comes (không nói Here comes it)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Here comes he.", "right": "Here he comes.", "explanationVi": "Chủ ngữ là đại từ thì không đảo." },
+          { "wrong": "Strange as may it seem, …", "right": "Strange as it may seem, …", "explanationVi": "Trong cấu trúc adj + as + S + V không đảo." },
+          { "wrong": "That he resigned surprised that everyone in the office.", "right": "It surprised everyone in the office that he resigned.", "explanationVi": "Dùng it giả để đưa mệnh đề dài ra cuối." }
+        ],
+        "tips": ["Đọc lại đoạn văn: mỗi câu có bắt đầu bằng thứ người đọc vừa biết không?"],
+        "summary": [
+          "Cũ trước, mới sau; cụm dài ra cuối.",
+          "Fronting để nhấn mạnh/đối chiếu.",
+          "Trạng ngữ nơi chốn + V + N (không đảo với đại từ)."
+        ]
+      }
+    },
+    {
+      "code": "C2-03",
+      "order": 3,
+      "titleVi": "Đảo ngữ và nhấn mạnh tu từ nâng cao",
+      "titleEn": "Advanced rhetorical inversion",
+      "summaryVi": "So + adj + be…, Such was…, Little did…, Not until…, Nowhere…, Only by…; đảo ngữ trong so sánh.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng So/Such + đảo ngữ để nhấn mạnh mức độ.",
+          "Dùng Not until, Little, Nowhere, Only by/in this way + đảo ngữ.",
+          "Nhận biết đảo ngữ tùy chọn trong so sánh văn trang trọng."
+        ],
+        "sections": [
+          {
+            "heading": "So / Such",
+            "explanationVi": "Đưa So + tính từ hoặc Such + be lên đầu để nhấn mạnh mức độ dẫn đến kết quả.",
+            "formulas": [
+              { "label": "So", "pattern": "So + adj + be + S + that + clause" },
+              { "label": "Such", "pattern": "Such + be + N (+ that + clause)" }
+            ],
+            "examples": [
+              { "en": "So complex was the problem that no one could solve it.", "vi": "Vấn đề phức tạp đến mức không ai giải được.", "highlight": "So complex was the problem" },
+              { "en": "Such was the demand that tickets sold out in minutes.", "vi": "Nhu cầu lớn đến mức vé bán hết trong vài phút.", "highlight": "Such was the demand" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Các trạng ngữ đảo khác",
+            "explanationVi": "Mở rộng từ C1-01, dùng trong diễn văn, văn chương, báo chí.",
+            "formulas": [
+              { "label": "Little", "pattern": "Little + did + S + V (hoàn toàn không biết/ngờ)" },
+              { "label": "Not until", "pattern": "Not until + time/clause + aux + S + V" },
+              { "label": "Nowhere / Only by", "pattern": "Nowhere + aux + S + V · Only by + V-ing + aux + S + V" },
+              { "label": "So sánh trang trọng", "pattern": "…, as did/does + N · …than did/does + N" }
+            ],
+            "examples": [
+              { "en": "Little did they know that the police were watching.", "vi": "Họ hoàn toàn không biết rằng cảnh sát đang theo dõi.", "highlight": "Little did they know" },
+              { "en": "Not until the 19th century did the city become a major port.", "vi": "Mãi đến thế kỷ 19 thành phố mới trở thành cảng lớn.", "highlight": "did the city become" },
+              { "en": "Only by working together can we solve this crisis.", "vi": "Chỉ bằng cách hợp tác chúng ta mới giải quyết được khủng hoảng này.", "highlight": "can we solve" },
+              { "en": "She performed better than did any of her rivals.", "vi": "Cô ấy thể hiện tốt hơn bất kỳ đối thủ nào.", "highlight": "than did" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Little they knew the truth.", "right": "Little did they know the truth.", "explanationVi": "Little (phủ định) đầu câu cần đảo trợ động từ." },
+          { "wrong": "Not until I read it I understood.", "right": "Not until I read it did I understand.", "explanationVi": "Đảo ở mệnh đề chính." },
+          { "wrong": "So was tired she that she slept.", "right": "So tired was she that she slept.", "explanationVi": "So + adj + be + S." }
+        ],
+        "tips": ["Đảo ngữ tu từ rất mạnh; một đoạn văn chỉ nên có tối đa một câu."],
+        "summary": [
+          "So + adj + be + S + that…; Such + be + N + that…",
+          "Little/Not until/Nowhere/Only by + aux + S.",
+          "Dùng tiết chế, trong văn phong trang trọng."
+        ]
+      }
+    },
+    {
+      "code": "C2-04",
+      "order": 4,
+      "titleVi": "Sắc thái động từ khuyết thiếu",
+      "titleEn": "Subtle uses of modal verbs",
+      "summaryVi": "will/would chỉ thói quen và suy đoán; should chỉ khả năng; may…but; could chỉ phê bình; shall trong văn bản pháp lý.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng will/would cho thói quen đặc trưng và suy đoán.",
+          "Dùng should cho kỳ vọng hợp lý và may … but cho nhượng bộ.",
+          "Dùng could/might cho phê bình nhẹ và shall trong văn bản quy định."
+        ],
+        "sections": [
+          {
+            "heading": "Nghĩa ít phổ biến",
+            "explanationVi": "Modal mang nhiều sắc thái ngoài nghĩa cơ bản; ngữ cảnh quyết định.",
+            "formulas": [
+              { "label": "Thói quen đặc trưng", "pattern": "S + will + V (hiện tại) / would + V (quá khứ); nhấn giọng WILL = khó chịu" },
+              { "label": "Suy đoán", "pattern": "That'll be the postman. · That would be about 2005." },
+              { "label": "Kỳ vọng hợp lý", "pattern": "should + V: The parcel should arrive tomorrow." },
+              { "label": "Nhượng bộ", "pattern": "S + may + V, but …" },
+              { "label": "Phê bình", "pattern": "You could/might have + V3 · You might + V (gợi ý gay gắt)" },
+              { "label": "Văn bản quy định", "pattern": "The tenant shall pay rent monthly." }
+            ],
+            "examples": [
+              { "en": "She'll sit for hours reading without saying a word.", "vi": "Cô ấy có thể ngồi hàng giờ đọc sách không nói một lời.", "highlight": "'ll sit" },
+              { "en": "There's someone at the door. — That'll be Nam.", "vi": "Có người ở cửa. — Chắc là Nam đấy.", "highlight": "That'll be" },
+              { "en": "He may be clever, but he's not very practical.", "vi": "Anh ta có thể thông minh thật, nhưng không thực tế lắm.", "highlight": "may be clever, but" },
+              { "en": "You might have told me you were coming!", "vi": "Bạn đáng lẽ phải báo tôi là bạn đến chứ!", "highlight": "might have told" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "That will be probably the courier.", "right": "That'll probably be the courier.", "explanationVi": "Trạng từ đứng sau will." },
+          { "wrong": "The parcel must arrive tomorrow. (ý chỉ dự kiến)", "right": "The parcel should arrive tomorrow.", "explanationVi": "Kỳ vọng hợp lý dùng should; must là bắt buộc/suy luận chắc chắn." },
+          { "wrong": "You might to tell me.", "right": "You might have told me.", "explanationVi": "Phê bình về quá khứ: might have V3." }
+        ],
+        "tips": ["Khi gặp modal trong văn bản C2, đọc cả câu và giọng điệu trước khi dịch."],
+        "summary": [
+          "will/would: thói quen đặc trưng, suy đoán.",
+          "should: kỳ vọng hợp lý; may…but: nhượng bộ.",
+          "might have V3: phê bình; shall: quy định."
+        ]
+      }
+    },
+    {
+      "code": "C2-05",
+      "order": 5,
+      "titleVi": "Câu phức nhiều tầng mệnh đề",
+      "titleEn": "Multi-clause complex sentences",
+      "summaryVi": "Mệnh đề danh từ làm chủ ngữ/bổ ngữ, mệnh đề lồng nhau, song song cấu trúc, hòa hợp chủ ngữ – động từ ở câu dài.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng mệnh đề danh từ (that/whether/wh-) làm chủ ngữ và bổ ngữ.",
+          "Xây dựng câu nhiều mệnh đề mà vẫn rõ ràng.",
+          "Giữ cấu trúc song song và hòa hợp chủ ngữ – động từ."
+        ],
+        "sections": [
+          {
+            "heading": "Mệnh đề danh từ",
+            "explanationVi": "Một mệnh đề hoàn chỉnh có thể đóng vai danh từ. Làm chủ ngữ thì động từ chính chia số ít.",
+            "formulas": [
+              { "label": "Chủ ngữ", "pattern": "That/Whether/What + clause + V (số ít)" },
+              { "label": "Bổ ngữ", "pattern": "The problem is that … · The question is whether …" },
+              { "label": "Sau giới từ", "pattern": "giới từ + wh-/whether + clause (không dùng that)" }
+            ],
+            "examples": [
+              { "en": "Whether the project succeeds depends on funding.", "vi": "Dự án có thành công hay không phụ thuộc vào kinh phí.", "highlight": "Whether the project succeeds depends" },
+              { "en": "What surprised me most was how calm she remained.", "vi": "Điều làm tôi ngạc nhiên nhất là cô ấy giữ bình tĩnh đến mức nào.", "highlight": "What surprised me most was" },
+              { "en": "We argued about who should pay.", "vi": "Chúng tôi tranh cãi về việc ai nên trả tiền.", "highlight": "about who should pay" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Câu nhiều tầng và song song",
+            "explanationVi": "Khi lồng nhiều mệnh đề, xác định rõ mệnh đề chính trước. Các thành phần nối bằng and/or/not only…but also phải cùng dạng ngữ pháp.",
+            "formulas": [
+              { "label": "Song song", "pattern": "to V, to V and to V · V-ing, V-ing and V-ing" },
+              { "label": "Hòa hợp", "pattern": "The number of N (số nhiều) + V số ít · A number of N + V số nhiều" }
+            ],
+            "examples": [
+              { "en": "The report, which was published after experts who had studied the region for years raised concerns, recommends that the dam be reconsidered.", "vi": "Bản báo cáo, được công bố sau khi các chuyên gia đã nghiên cứu khu vực nhiều năm nêu quan ngại, khuyến nghị xem xét lại con đập.", "highlight": "recommends" },
+              { "en": "The aim is to reduce costs, improve quality and increase sales.", "vi": "Mục tiêu là giảm chi phí, nâng chất lượng và tăng doanh số.", "highlight": "to reduce costs, improve quality and increase" },
+              { "en": "The number of applicants has risen sharply.", "vi": "Số lượng ứng viên đã tăng mạnh.", "highlight": "has risen" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "That he lied were obvious.", "right": "That he lied was obvious.", "explanationVi": "Mệnh đề làm chủ ngữ → động từ số ít." },
+          { "wrong": "She likes swimming, to read and cooking.", "right": "She likes swimming, reading and cooking.", "explanationVi": "Song song cấu trúc." },
+          { "wrong": "The list of requirements are long.", "right": "The list of requirements is long.", "explanationVi": "Chủ ngữ chính là list (số ít)." },
+          { "wrong": "We discussed about that he should leave.", "right": "We discussed whether he should leave.", "explanationVi": "discuss không có about; dùng whether/wh- chứ không dùng that sau giới từ." }
+        ],
+        "tips": ["Gạch dưới chủ ngữ chính và động từ chính trước khi viết tiếp các mệnh đề phụ."],
+        "summary": [
+          "Mệnh đề danh từ làm chủ ngữ → V số ít.",
+          "Song song cấu trúc trong liệt kê.",
+          "Xác định chủ ngữ chính để chia động từ."
+        ]
+      }
+    },
+    {
+      "code": "C2-06",
+      "order": 6,
+      "titleVi": "Tỉnh lược nâng cao",
+      "titleEn": "Advanced ellipsis",
+      "summaryVi": "Tỉnh lược đầu câu trong hội thoại, gapping, tỉnh lược sau so sánh và mệnh đề phụ thuộc.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhận biết và dùng tỉnh lược tự nhiên trong hội thoại thân mật.",
+          "Dùng gapping (bỏ động từ lặp) trong văn viết.",
+          "Tỉnh lược sau as/than và trong mệnh đề trạng ngữ."
+        ],
+        "sections": [
+          {
+            "heading": "Hội thoại thân mật",
+            "explanationVi": "Người bản xứ bỏ chủ ngữ và trợ động từ ở đầu câu khi ngữ cảnh rõ.",
+            "formulas": [{ "label": "Mẫu", "pattern": "(Have you) Got a minute? · (I) Told you so. · (Are you) Coming? · (It) Sounds good." }],
+            "examples": [
+              { "en": "Seen my keys anywhere?", "vi": "Thấy chìa khóa của tôi đâu không?", "highlight": "Seen" },
+              { "en": "Sounds like a plan.", "vi": "Nghe được đấy.", "highlight": "Sounds" }
+            ],
+            "notes": ["Không dùng dạng này trong văn bản trang trọng."]
+          },
+          {
+            "heading": "Văn viết",
+            "explanationVi": "Gapping: bỏ động từ lặp lại ở mệnh đề sau. Sau when/while/if/although có thể bỏ chủ ngữ + be. Sau as/than có thể bỏ phần lặp.",
+            "formulas": [
+              { "label": "Gapping", "pattern": "Some chose tea, others (chose) coffee." },
+              { "label": "Mệnh đề phụ", "pattern": "When (it is) completed, the bridge will… · If (it is) necessary, …" },
+              { "label": "So sánh", "pattern": "She earns more than I (do). · as (is) often the case" }
+            ],
+            "examples": [
+              { "en": "Anna studied law, and her brother medicine.", "vi": "Anna học luật, còn anh trai cô ấy học y.", "highlight": "her brother medicine" },
+              { "en": "Although tired, she kept working.", "vi": "Dù mệt, cô ấy vẫn tiếp tục làm việc.", "highlight": "Although tired" },
+              { "en": "If in doubt, ask your supervisor.", "vi": "Nếu không chắc, hãy hỏi người giám sát.", "highlight": "If in doubt" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Although being tired, she kept working.", "right": "Although tired, she kept working. / Although she was tired, she kept working.", "explanationVi": "Sau although tỉnh lược bỏ cả S + be." },
+          { "wrong": "When finishing, the report will be sent.", "right": "When finished, the report will be sent.", "explanationVi": "Báo cáo bị hoàn thành → bị động." },
+          { "wrong": "Got a minute? (trong email gửi khách hàng)", "right": "Do you have a moment?", "explanationVi": "Tỉnh lược đầu câu chỉ dùng thân mật." }
+        ],
+        "tips": ["Tỉnh lược chỉ đúng khi phần bị bỏ có thể khôi phục chính xác từ ngữ cảnh."],
+        "summary": [
+          "Thân mật: bỏ chủ ngữ + trợ động từ đầu câu.",
+          "Gapping: bỏ động từ lặp.",
+          "If/when/although + adj/V3 (bỏ S + be)."
+        ]
+      }
+    },
+    {
+      "code": "C2-07",
+      "order": 7,
+      "titleVi": "Văn phong trang trọng và thân mật",
+      "titleEn": "Register: formal and informal",
+      "summaryVi": "Lựa chọn ngữ pháp theo văn phong: bị động, danh từ hóa, đảo ngữ vs. rút gọn, cụm động từ, câu hỏi đuôi.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhận biết dấu hiệu ngữ pháp của văn phong trang trọng và thân mật.",
+          "Chuyển một đoạn văn giữa hai văn phong.",
+          "Tránh trộn lẫn văn phong trong cùng văn bản."
+        ],
+        "sections": [
+          {
+            "heading": "Dấu hiệu ngữ pháp",
+            "explanationVi": "Văn phong không chỉ là từ vựng: lựa chọn cấu trúc câu cũng báo hiệu mức độ trang trọng.",
+            "formulas": [
+              { "label": "Trang trọng", "pattern": "bị động · danh từ hóa · đảo ngữ (Should you…) · giới từ trước whom · động từ một từ (investigate, tolerate)" },
+              { "label": "Thân mật", "pattern": "rút gọn (it's, won't) · cụm động từ (look into, put up with) · giới từ cuối câu · câu hỏi đuôi · tỉnh lược" }
+            ],
+            "examples": [
+              { "en": "Formal: Should you require further assistance, please do not hesitate to contact us.", "vi": "Trang trọng: Nếu quý khách cần thêm hỗ trợ, xin đừng ngần ngại liên hệ.", "highlight": "Should you require" },
+              { "en": "Informal: If you need anything else, just give us a shout.", "vi": "Thân mật: Cần gì thêm cứ gọi bọn mình nhé.", "highlight": "give us a shout" },
+              { "en": "Formal: The person to whom the letter was addressed has left.", "vi": "Người mà lá thư gửi tới đã rời đi.", "highlight": "to whom" },
+              { "en": "Informal: The guy the letter was for has left.", "vi": "Cái anh được gửi thư đi rồi.", "highlight": "was for" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Dear Sir, I wanna ask about the job.", "right": "Dear Sir, I am writing to enquire about the position.", "explanationVi": "Thư trang trọng không dùng rút gọn thân mật." },
+          { "wrong": "Hey! Should you be free, let's grab a coffee.", "right": "Hey! If you're free, let's grab a coffee.", "explanationVi": "Đảo ngữ trang trọng lạc lõng trong tin nhắn thân mật." },
+          { "wrong": "The committee will look into the issue thoroughly and investigate it. (lặp, trộn văn phong)", "right": "The committee will investigate the issue thoroughly.", "explanationVi": "Chọn một văn phong và tránh lặp ý." }
+        ],
+        "tips": ["Xác định người đọc trước khi viết: sếp, đối tác, bạn bè, hay hội đồng chấm thi."],
+        "summary": [
+          "Trang trọng: bị động, danh từ hóa, đảo ngữ, động từ một từ.",
+          "Thân mật: rút gọn, cụm động từ, tỉnh lược.",
+          "Giữ nhất quán trong một văn bản."
+        ]
+      }
+    },
+    {
+      "code": "C2-08",
+      "order": 8,
+      "titleVi": "Collocation ngữ pháp và mẫu động từ ít gặp",
+      "titleEn": "Grammatical collocations and rarer verb patterns",
+      "summaryVi": "Tính từ + giới từ, danh từ + giới từ, động từ + that-clause với should/might, verb + it + that.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng đúng giới từ cố định sau tính từ và danh từ ở trình độ cao.",
+          "Nắm các mẫu động từ ít gặp: take it that, owe it to sb to V, see to it that.",
+          "Dùng các cấu trúc tính từ + to V / that."
+        ],
+        "sections": [
+          {
+            "heading": "Collocation giới từ",
+            "explanationVi": "Ở C2 lỗi giới từ là dấu hiệu dễ thấy nhất của người không phải bản xứ. Học theo cụm.",
+            "formulas": [
+              { "label": "Tính từ + giới từ", "pattern": "conducive to · tantamount to · averse to · oblivious to/of · indicative of · fraught with · devoid of" },
+              { "label": "Danh từ + giới từ", "pattern": "a lack of · access to · a tendency towards · an aptitude for · a slump in" }
+            ],
+            "examples": [
+              { "en": "A quiet environment is conducive to learning.", "vi": "Môi trường yên tĩnh thuận lợi cho việc học.", "highlight": "conducive to" },
+              { "en": "His silence was tantamount to an admission of guilt.", "vi": "Sự im lặng của anh ta chẳng khác gì thừa nhận có tội.", "highlight": "tantamount to" },
+              { "en": "The plan is fraught with risks.", "vi": "Kế hoạch đầy rẫy rủi ro.", "highlight": "fraught with" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Mẫu động từ đặc biệt",
+            "explanationVi": "Một số mẫu dùng it làm tân ngữ giả theo sau là mệnh đề hoặc to V.",
+            "formulas": [
+              { "label": "take it", "pattern": "I take it (that) + clause (tôi đoán là)" },
+              { "label": "owe it to", "pattern": "owe it to sb to V (có trách nhiệm với ai phải làm gì)" },
+              { "label": "see to it", "pattern": "see to it that + clause (đảm bảo)" },
+              { "label": "leave it to", "pattern": "leave it to sb to V" }
+            ],
+            "examples": [
+              { "en": "I take it you've heard the news.", "vi": "Tôi đoán là bạn đã nghe tin rồi.", "highlight": "I take it" },
+              { "en": "You owe it to yourself to take a break.", "vi": "Bạn cần cho bản thân được nghỉ ngơi.", "highlight": "owe it to yourself" },
+              { "en": "Please see to it that the doors are locked.", "vi": "Hãy đảm bảo các cửa đã được khóa.", "highlight": "see to it that" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "conducive for growth", "right": "conducive to growth", "explanationVi": "conducive to." },
+          { "wrong": "devoid from meaning", "right": "devoid of meaning", "explanationVi": "devoid of." },
+          { "wrong": "See that to it the work is done.", "right": "See to it that the work is done.", "explanationVi": "Cụm cố định see to it that." }
+        ],
+        "tips": ["Đọc nhiều văn bản chất lượng và ghi lại cụm tính từ/danh từ + giới từ trong câu đầy đủ."],
+        "summary": [
+          "conducive to, tantamount to, fraught with, devoid of.",
+          "I take it…, owe it to sb to V, see to it that…",
+          "Học collocation theo cụm, không theo từ."
+        ]
+      }
+    },
+    {
+      "code": "C2-09",
+      "order": 9,
+      "titleVi": "Quá khứ không thật nâng cao",
+      "titleEn": "Advanced unreal past",
+      "summaryVi": "as if/as though, suppose/supposing, would that, if it weren't/hadn't been for, lest, phân biệt thật/không thật.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng as if/as though với thì thật và thì lùi để thể hiện mức độ tin tưởng.",
+          "Dùng suppose/supposing, what if với thì không thật.",
+          "Nhận biết would that và lest trong văn phong cổ/trang trọng."
+        ],
+        "sections": [
+          {
+            "heading": "as if / as though",
+            "explanationVi": "Thì thật (hiện tại) khi điều đó có thể đúng; thì lùi (quá khứ/quá khứ hoàn thành) khi điều đó không đúng hoặc khó tin.",
+            "formulas": [
+              { "label": "Có thể đúng", "pattern": "It looks as if it's going to rain." },
+              { "label": "Không thật (hiện tại)", "pattern": "He talks as if he were/knew everything." },
+              { "label": "Không thật (quá khứ)", "pattern": "She looked as though she had seen a ghost." }
+            ],
+            "examples": [
+              { "en": "He spends money as if he were a millionaire.", "vi": "Anh ta tiêu tiền như thể mình là triệu phú.", "highlight": "were" },
+              { "en": "You look as if you haven't slept.", "vi": "Trông bạn như chưa ngủ (có thể đúng).", "highlight": "haven't slept" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Các cấu trúc khác",
+            "explanationVi": "Đều dùng nguyên tắc lùi thì để chỉ điều không thật.",
+            "formulas": [
+              { "label": "Giả thuyết", "pattern": "Suppose/Supposing/What if + V2 (hiện tại không thật) / had V3 (quá khứ)" },
+              { "label": "Ước (văn chương)", "pattern": "Would that + S + V2/had V3" },
+              { "label": "Phòng ngừa (trang trọng)", "pattern": "lest + S + (should) + V (để khỏi)" }
+            ],
+            "examples": [
+              { "en": "What if we had taken the other road?", "vi": "Nếu lúc ấy chúng ta đi đường kia thì sao?", "highlight": "had taken" },
+              { "en": "Would that I could turn back time.", "vi": "Ước gì tôi có thể quay ngược thời gian.", "highlight": "Would that" },
+              { "en": "She wrote it down lest she forget.", "vi": "Cô ấy ghi lại kẻo quên.", "highlight": "lest she forget" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "He acts as if he is the boss. (ý: anh ta KHÔNG phải sếp, nhấn mạnh)", "right": "He acts as if he were the boss.", "explanationVi": "Không thật → lùi thì." },
+          { "wrong": "Supposing you win the lottery, what would you do?", "right": "Supposing you won the lottery, what would you do?", "explanationVi": "would ở mệnh đề chính → mệnh đề giả thuyết dùng quá khứ." },
+          { "wrong": "lest he forgets", "right": "lest he forget / lest he should forget", "explanationVi": "lest + thức giả định." }
+        ],
+        "tips": ["Lùi thì = \"đẩy xa khỏi thực tế\"; giữ thì = \"có thể là thật\"."],
+        "summary": [
+          "as if + thì thật (có thể) / thì lùi (không thật).",
+          "Suppose/What if + V2 / had V3.",
+          "would that, lest + V: văn phong trang trọng/văn chương."
+        ]
+      }
+    },
+    {
+      "code": "C2-10",
+      "order": 10,
+      "titleVi": "Liên kết văn bản",
+      "titleEn": "Cohesion: reference, substitution, linking",
+      "summaryVi": "Tham chiếu this/that/such/the former/the latter, thay thế, lặp từ đồng nghĩa, tránh tham chiếu mơ hồ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng từ tham chiếu để nối câu mà không lặp từ.",
+          "Dùng the former/the latter, respectively, such + N.",
+          "Phát hiện và sửa tham chiếu mơ hồ."
+        ],
+        "sections": [
+          {
+            "heading": "Công cụ tham chiếu",
+            "explanationVi": "Liên kết văn bản giúp người đọc theo dõi ý. this + danh từ tóm tắt ý trước (this approach, this problem) rõ ràng hơn this đứng một mình.",
+            "formulas": [
+              { "label": "Tóm tắt", "pattern": "this/these/such + N tóm tắt (this trend, such measures)" },
+              { "label": "Hai đối tượng", "pattern": "the former … the latter …" },
+              { "label": "Tương ứng", "pattern": "A and B … X and Y respectively" },
+              { "label": "Từ đồng nghĩa/khái quát", "pattern": "the device, the company, the issue (thay vì lặp tên)" }
+            ],
+            "examples": [
+              { "en": "Prices rose by 20%. This increase hit low-income families hardest.", "vi": "Giá tăng 20%. Mức tăng này ảnh hưởng nặng nhất đến các gia đình thu nhập thấp.", "highlight": "This increase" },
+              { "en": "Hanoi and Saigon are both major cities; the former is the capital, the latter the economic hub.", "vi": "Hà Nội và Sài Gòn đều là thành phố lớn; nơi trước là thủ đô, nơi sau là trung tâm kinh tế.", "highlight": "the former" },
+              { "en": "Lan and Minh scored 8 and 9 respectively.", "vi": "Lan và Minh lần lượt đạt 8 và 9 điểm.", "highlight": "respectively" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The manager told the assistant that she would be promoted. (mơ hồ: ai được thăng chức?)", "right": "The manager told the assistant, \"You will be promoted.\" / … that the assistant would be promoted.", "explanationVi": "Đại từ có thể chỉ hai người → viết rõ." },
+          { "wrong": "Unemployment rose. This is a problem. This is serious.", "right": "Unemployment rose. This trend is a serious problem.", "explanationVi": "this đứng một mình lặp lại gây mơ hồ; dùng this + danh từ tóm tắt." },
+          { "wrong": "Lan and Minh got 8 and 9 respectively points.", "right": "Lan and Minh got 8 and 9 points respectively.", "explanationVi": "respectively đứng cuối cụm." }
+        ],
+        "tips": ["Sau khi viết, khoanh tròn mỗi đại từ và nối mũi tên tới danh từ nó chỉ; nếu có hai lựa chọn thì viết lại."],
+        "summary": [
+          "this/such + danh từ tóm tắt.",
+          "the former/the latter; respectively.",
+          "Tránh đại từ mơ hồ."
+        ]
+      }
+    },
+    {
+      "code": "C2-11",
+      "order": 11,
+      "titleVi": "Lỗi tinh vi của người học trình độ cao",
+      "titleEn": "Subtle errors at advanced level",
+      "summaryVi": "Mạo từ, hòa hợp, giới từ, trật tự trạng từ, lạm dụng tiếp diễn/hoàn thành, dịch sát tiếng Việt.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhận diện các lỗi vẫn tồn tại ở người học trình độ cao.",
+          "Tự sửa lỗi trong bài viết của mình.",
+          "Hiểu nguyên nhân do ảnh hưởng tiếng Việt."
+        ],
+        "sections": [
+          {
+            "heading": "Nhóm lỗi thường gặp",
+            "explanationVi": "Ở C2, ngữ pháp cơ bản đã vững nhưng các lỗi nhỏ lặp lại làm giảm độ tự nhiên. Đa số đến từ việc dịch cấu trúc tiếng Việt.",
+            "formulas": [
+              { "label": "Mạo từ", "pattern": "the + danh từ trừu tượng nói chung (The society…) → Society…" },
+              { "label": "Hòa hợp", "pattern": "One of the + N số nhiều + V số ít · each of + V số ít" },
+              { "label": "Giới từ thừa/thiếu", "pattern": "discuss (about) · emphasise (on) · reach (to) · approach (to)" },
+              { "label": "Trật tự", "pattern": "trạng từ không chen giữa động từ và tân ngữ" },
+              { "label": "Dịch sát", "pattern": "\"Although … but …\" · \"Because … so …\" · \"It has many…\" thay cho \"There are many…\"" }
+            ],
+            "examples": [
+              { "en": "One of the main reasons is cost.", "vi": "Một trong những lý do chính là chi phí.", "highlight": "is" },
+              { "en": "The committee discussed the proposal at length.", "vi": "Ủy ban đã thảo luận kỹ về đề xuất.", "highlight": "discussed the proposal" },
+              { "en": "Technology has changed society profoundly.", "vi": "Công nghệ đã thay đổi xã hội sâu sắc.", "highlight": "society" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "One of the best solution are…", "right": "One of the best solutions is…", "explanationVi": "Danh từ số nhiều sau one of; động từ theo one (số ít)." },
+          { "wrong": "We need to discuss about this issue.", "right": "We need to discuss this issue.", "explanationVi": "discuss không cần about." },
+          { "wrong": "The modern life is stressful.", "right": "Modern life is stressful.", "explanationVi": "Khái niệm chung không dùng the." },
+          { "wrong": "I have been to Hanoi since 2010.", "right": "I have lived in Hanoi since 2010.", "explanationVi": "been to = đã từng đến; sống từ khi nào dùng have lived." },
+          { "wrong": "This problem needs to be paid attention.", "right": "This problem needs attention. / Attention needs to be paid to this problem.", "explanationVi": "Bị động sai cấu trúc khi dịch sát \"cần được chú ý\"." }
+        ],
+        "tips": ["Lập danh sách lỗi cá nhân và rà riêng từng loại khi soát bài."],
+        "summary": [
+          "Mạo từ với khái niệm chung; one of + N số nhiều + V số ít.",
+          "Bỏ giới từ thừa sau discuss/emphasise/reach.",
+          "Cảnh giác với dịch sát cấu trúc tiếng Việt."
+        ]
+      }
+    },
+    {
+      "code": "C2-12",
+      "order": 12,
+      "titleVi": "Ôn tập C2 và kiểm tra level",
+      "titleEn": "C2 review and level test",
+      "summaryVi": "Tổng hợp sắc thái thì, cấu trúc thông tin, đảo ngữ tu từ, văn phong và liên kết văn bản.",
+      "isLevelReview": true,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Sử dụng ngữ pháp chính xác, linh hoạt và phù hợp văn phong.",
+          "Phát hiện lỗi tinh vi và sắc thái sai trong văn bản.",
+          "Đạt từ 80% bài kiểm tra để hoàn thành lộ trình."
+        ],
+        "sections": [
+          {
+            "heading": "Bản đồ ngữ pháp C2",
+            "explanationVi": "C2 không có nhiều cấu trúc mới; trọng tâm là chọn đúng công cụ cho ý định, người đọc và văn phong.",
+            "formulas": [
+              { "label": "Sắc thái", "pattern": "always + V-ing · I was wondering… · will/would đặc trưng · may…but" },
+              { "label": "Thông tin", "pattern": "given → new · fronting · it giả · end-weight" },
+              { "label": "Nhấn mạnh", "pattern": "So + adj + was… · Little did… · Not until… did…" },
+              { "label": "Không thật", "pattern": "as if + V2/had V3 · What if… · lest + V" },
+              { "label": "Liên kết", "pattern": "this + N tóm tắt · the former/latter · respectively" },
+              { "label": "Văn phong", "pattern": "trang trọng ↔ thân mật; tránh trộn lẫn" }
+            ],
+            "examples": [
+              { "en": "Such was the public outcry that the government was forced to reconsider, a decision that, as if to prove its critics right, came far too late.", "vi": "Dư luận phản đối mạnh đến mức chính phủ buộc phải xem xét lại — một quyết định, như thể để chứng minh những người chỉ trích là đúng, đã đến quá muộn.", "highlight": "Such was the public outcry" },
+              { "en": "I was wondering whether you might consider extending the deadline.", "vi": "Không biết anh có thể cân nhắc gia hạn thời hạn không ạ.", "highlight": "was wondering" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [],
+        "tips": ["Đọc và phân tích văn bản chất lượng cao (báo, sách học thuật), chú ý vì sao tác giả chọn cấu trúc đó."],
+        "summary": [
+          "Ngữ pháp phục vụ ý định và văn phong.",
+          "Sắc thái, cấu trúc thông tin, liên kết văn bản.",
+          "Đạt ≥ 80% để hoàn thành lộ trình A1 → C2."
+        ]
+      }
+    }
+  ]
+}

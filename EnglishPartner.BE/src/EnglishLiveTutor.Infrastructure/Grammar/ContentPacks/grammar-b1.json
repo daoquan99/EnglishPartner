@@ -1,0 +1,972 @@
+{
+  "packVersion": 1,
+  "level": "B1",
+  "steps": [
+    {
+      "code": "B1-01",
+      "order": 1,
+      "titleVi": "Hiện tại hoàn thành tiếp diễn; for và since",
+      "titleEn": "Present perfect continuous; for and since",
+      "summaryVi": "Hành động bắt đầu trong quá khứ, kéo dài đến nay; for + khoảng thời gian, since + mốc.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng for và since đúng với hiện tại hoàn thành.",
+          "Dùng hiện tại hoàn thành tiếp diễn để nhấn mạnh quá trình kéo dài.",
+          "Hỏi How long…?"
+        ],
+        "sections": [
+          {
+            "heading": "for và since",
+            "explanationVi": "Khi một trạng thái/hành động bắt đầu trong quá khứ và vẫn tiếp tục đến bây giờ, dùng thì hoàn thành (không dùng hiện tại đơn). for + khoảng thời gian; since + mốc thời điểm bắt đầu.",
+            "formulas": [
+              { "label": "for", "pattern": "for two years, for a long time, for ages" },
+              { "label": "since", "pattern": "since 2020, since Monday, since I was a child" },
+              { "label": "Câu hỏi", "pattern": "How long have you + V3 / been V-ing?" }
+            ],
+            "examples": [
+              { "en": "I have lived here for five years.", "vi": "Tôi đã sống ở đây được năm năm (và vẫn đang sống).", "highlight": "for" },
+              { "en": "She has known him since 2018.", "vi": "Cô ấy quen anh ấy từ năm 2018.", "highlight": "since" },
+              { "en": "How long have you worked here?", "vi": "Bạn làm ở đây bao lâu rồi?", "highlight": "How long" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Hiện tại hoàn thành tiếp diễn",
+            "explanationVi": "Nhấn mạnh quá trình, độ dài của hành động đang tiếp diễn, hoặc hành động vừa dừng và để lại dấu hiệu. Không dùng với động từ trạng thái (know, like, have = sở hữu…).",
+            "formulas": [
+              { "label": "Khẳng định", "pattern": "S + have/has been + V-ing" },
+              { "label": "Phủ định", "pattern": "S + haven't/hasn't been + V-ing" },
+              { "label": "Câu hỏi", "pattern": "Have/Has + S + been + V-ing?" }
+            ],
+            "examples": [
+              { "en": "I've been waiting for you for an hour!", "vi": "Tôi đã đợi bạn cả tiếng rồi!", "highlight": "'ve been waiting" },
+              { "en": "It has been raining since this morning.", "vi": "Trời mưa từ sáng đến giờ.", "highlight": "has been raining" },
+              { "en": "Your eyes are red. Have you been crying?", "vi": "Mắt bạn đỏ. Bạn vừa khóc à?", "highlight": "been crying" }
+            ],
+            "notes": ["So sánh: I've read the book (đã đọc xong – kết quả) / I've been reading the book (đang đọc dở – quá trình)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I live here since 2015.", "right": "I have lived here since 2015.", "explanationVi": "Từ quá khứ đến nay → thì hoàn thành, không dùng hiện tại đơn." },
+          { "wrong": "I've worked here since three years.", "right": "I've worked here for three years.", "explanationVi": "Khoảng thời gian dùng for." },
+          { "wrong": "I've been knowing her for years.", "right": "I've known her for years.", "explanationVi": "know là động từ trạng thái, không dùng tiếp diễn." }
+        ],
+        "tips": ["Tiếng Việt \"được… rồi\", \"từ… đến giờ\" thường tương ứng với thì hoàn thành."],
+        "summary": [
+          "for + khoảng; since + mốc.",
+          "have/has been + V-ing: nhấn mạnh quá trình kéo dài.",
+          "Động từ trạng thái dùng hiện tại hoàn thành đơn."
+        ]
+      }
+    },
+    {
+      "code": "B1-02",
+      "order": 2,
+      "titleVi": "Quá khứ hoàn thành",
+      "titleEn": "Past perfect",
+      "summaryVi": "had + V3 cho việc xảy ra trước một mốc/việc khác trong quá khứ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng quá khứ hoàn thành để chỉ việc xảy ra trước trong hai việc quá khứ.",
+          "Kết hợp với when, before, after, by the time, already.",
+          "Biết khi nào không cần quá khứ hoàn thành."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức và cách dùng",
+            "explanationVi": "Khi kể chuyện quá khứ, việc xảy ra TRƯỚC dùng had + V3, việc xảy ra SAU dùng quá khứ đơn.",
+            "formulas": [
+              { "label": "Khẳng định", "pattern": "S + had ('d) + V3" },
+              { "label": "Phủ định", "pattern": "S + hadn't + V3" },
+              { "label": "Câu hỏi", "pattern": "Had + S + V3?" }
+            ],
+            "examples": [
+              { "en": "When we arrived, the film had already started.", "vi": "Khi chúng tôi đến thì phim đã bắt đầu rồi.", "highlight": "had already started" },
+              { "en": "She was nervous because she had never flown before.", "vi": "Cô ấy lo lắng vì trước đó chưa từng đi máy bay.", "highlight": "had never flown" },
+              { "en": "By the time I got home, everyone had gone to bed.", "vi": "Lúc tôi về đến nhà thì mọi người đã đi ngủ.", "highlight": "had gone" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Khi nào không cần?",
+            "explanationVi": "Nếu trình tự đã rõ nhờ before/after, hoặc kể các việc liên tiếp theo đúng thứ tự, có thể dùng quá khứ đơn cho cả hai.",
+            "formulas": [],
+            "examples": [
+              { "en": "I got up, had a shower and left for work.", "vi": "Tôi dậy, tắm rồi đi làm.", "highlight": "got up" },
+              { "en": "After he (had) finished his work, he went home.", "vi": "Sau khi làm xong việc, anh ấy về nhà.", "highlight": "After" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "When I arrived, the train left.", "right": "When I arrived, the train had left.", "explanationVi": "Tàu đi TRƯỚC khi tôi đến → had left. Câu sai có nghĩa tàu đi lúc tôi vừa đến." },
+          { "wrong": "I had seen him yesterday.", "right": "I saw him yesterday.", "explanationVi": "Chỉ có một việc quá khứ → quá khứ đơn." },
+          { "wrong": "She had went home.", "right": "She had gone home.", "explanationVi": "Sau had dùng V3." }
+        ],
+        "tips": ["Vẽ hai điểm trên dòng thời gian quá khứ: điểm xa hơn dùng had + V3."],
+        "summary": [
+          "had + V3: việc xảy ra trước một việc quá khứ khác.",
+          "Hay đi với when, by the time, already, never…before.",
+          "Thứ tự đã rõ thì quá khứ đơn là đủ."
+        ]
+      }
+    },
+    {
+      "code": "B1-03",
+      "order": 3,
+      "titleVi": "used to và would cho thói quen quá khứ",
+      "titleEn": "used to and would for past habits",
+      "summaryVi": "used to + V: thói quen/trạng thái trước đây không còn; would + V: hành động lặp lại; phân biệt be used to + V-ing.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói về thói quen và trạng thái trong quá khứ bằng used to.",
+          "Dùng would cho hành động lặp lại khi kể chuyện.",
+          "Phân biệt used to + V và be/get used to + V-ing."
+        ],
+        "sections": [
+          {
+            "heading": "used to + V",
+            "explanationVi": "Diễn tả việc thường làm hoặc trạng thái đúng trong quá khứ nhưng bây giờ không còn.",
+            "formulas": [
+              { "label": "Khẳng định", "pattern": "S + used to + V" },
+              { "label": "Phủ định", "pattern": "S + didn't use to + V" },
+              { "label": "Câu hỏi", "pattern": "Did + S + use to + V?" }
+            ],
+            "examples": [
+              { "en": "I used to play football every afternoon.", "vi": "Tôi từng đá bóng mỗi chiều (giờ không còn).", "highlight": "used to play" },
+              { "en": "There used to be a cinema here.", "vi": "Ở đây từng có một rạp chiếu phim.", "highlight": "used to be" },
+              { "en": "Did you use to live in Hai Phong?", "vi": "Trước đây bạn sống ở Hải Phòng à?", "highlight": "use to" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "would cho hành động lặp lại",
+            "explanationVi": "would + V dùng cho hành động lặp lại trong quá khứ (thường khi hồi tưởng), KHÔNG dùng cho trạng thái (be, have, live, like).",
+            "formulas": [{ "label": "Công thức", "pattern": "S + would + V (hành động lặp lại)" }],
+            "examples": [
+              { "en": "Every summer, my grandmother would take us to the beach.", "vi": "Mỗi mùa hè, bà lại đưa chúng tôi đi biển.", "highlight": "would take" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "be/get used to + V-ing",
+            "explanationVi": "be used to = đã quen với; get used to = dần quen với. to ở đây là giới từ nên sau đó dùng V-ing hoặc danh từ.",
+            "formulas": [{ "label": "Công thức", "pattern": "S + be/get used to + V-ing / noun" }],
+            "examples": [
+              { "en": "I'm used to getting up early.", "vi": "Tôi đã quen dậy sớm.", "highlight": "used to getting" },
+              { "en": "She is getting used to the cold weather.", "vi": "Cô ấy đang dần quen với thời tiết lạnh.", "highlight": "getting used to" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I use to smoke.", "right": "I used to smoke.", "explanationVi": "Khẳng định là used to." },
+          { "wrong": "I didn't used to like it.", "right": "I didn't use to like it.", "explanationVi": "Sau did/didn't dùng use (nguyên mẫu)." },
+          { "wrong": "I'm used to get up early.", "right": "I'm used to getting up early.", "explanationVi": "be used to + V-ing." },
+          { "wrong": "I would live in Hue.", "right": "I used to live in Hue.", "explanationVi": "Trạng thái (live) không dùng would." }
+        ],
+        "tips": ["\"từng/hồi trước hay\" → used to; \"đã quen\" → be used to + V-ing."],
+        "summary": [
+          "used to + V: trước đây, giờ không còn.",
+          "would + V: hành động lặp lại (không cho trạng thái).",
+          "be/get used to + V-ing: quen/dần quen."
+        ]
+      }
+    },
+    {
+      "code": "B1-04",
+      "order": 4,
+      "titleVi": "Tương lai tiếp diễn",
+      "titleEn": "Future continuous",
+      "summaryVi": "will be + V-ing cho việc đang diễn ra tại một thời điểm tương lai; hỏi lịch sự về kế hoạch.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng tương lai tiếp diễn cho hành động đang diễn ra tại một thời điểm tương lai.",
+          "Hỏi lịch sự về kế hoạch của người khác."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức và cách dùng",
+            "explanationVi": "will be + V-ing diễn tả việc sẽ đang diễn ra tại một thời điểm cụ thể trong tương lai, hoặc việc sẽ xảy ra như một phần bình thường của lịch trình.",
+            "formulas": [
+              { "label": "Khẳng định", "pattern": "S + will be + V-ing" },
+              { "label": "Phủ định", "pattern": "S + won't be + V-ing" },
+              { "label": "Câu hỏi lịch sự", "pattern": "Will you be + V-ing…?" }
+            ],
+            "examples": [
+              { "en": "This time tomorrow, I'll be flying to Seoul.", "vi": "Giờ này ngày mai tôi sẽ đang bay đến Seoul.", "highlight": "'ll be flying" },
+              { "en": "Don't call at 8 — we'll be having dinner.", "vi": "Đừng gọi lúc 8 giờ — lúc đó chúng tôi sẽ đang ăn tối.", "highlight": "'ll be having" },
+              { "en": "Will you be using the car tonight?", "vi": "Tối nay bạn có dùng xe không? (hỏi lịch sự)", "highlight": "Will you be using" }
+            ],
+            "notes": ["Mốc thường gặp: this time tomorrow, at 9 a.m. next Monday, in two hours' time."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "At 10 tomorrow I will work.", "right": "At 10 tomorrow I will be working.", "explanationVi": "Đang diễn ra tại một thời điểm tương lai → will be + V-ing." },
+          { "wrong": "I will be know the result.", "right": "I will know the result.", "explanationVi": "know là động từ trạng thái." },
+          { "wrong": "She will being studying.", "right": "She will be studying.", "explanationVi": "Sau will dùng be nguyên mẫu." }
+        ],
+        "tips": ["Giống quá khứ tiếp diễn nhưng đẩy sang tương lai: was doing → will be doing."],
+        "summary": [
+          "will be + V-ing.",
+          "Đang diễn ra tại một thời điểm tương lai.",
+          "Will you be V-ing…? hỏi lịch sự về kế hoạch."
+        ]
+      }
+    },
+    {
+      "code": "B1-05",
+      "order": 5,
+      "titleVi": "Câu điều kiện loại 0 và loại 1; unless",
+      "titleEn": "Zero and first conditionals; unless",
+      "summaryVi": "Sự thật luôn đúng (loại 0) và khả năng có thật ở tương lai (loại 1).",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng câu điều kiện loại 0 cho sự thật và quy luật.",
+          "Dùng câu điều kiện loại 1 cho tình huống có thể xảy ra ở tương lai.",
+          "Dùng unless = if … not."
+        ],
+        "sections": [
+          {
+            "heading": "Loại 0: sự thật chung",
+            "explanationVi": "Khi điều kiện xảy ra thì kết quả luôn xảy ra. Cả hai mệnh đề dùng hiện tại đơn; if có thể thay bằng when.",
+            "formulas": [{ "label": "Công thức", "pattern": "If + hiện tại đơn, hiện tại đơn" }],
+            "examples": [
+              { "en": "If you heat ice, it melts.", "vi": "Nếu đun nóng đá, nó tan.", "highlight": "melts" },
+              { "en": "If I drink coffee at night, I can't sleep.", "vi": "Nếu uống cà phê buổi tối thì tôi không ngủ được.", "highlight": "can't sleep" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Loại 1: khả năng có thật",
+            "explanationVi": "Tình huống có khả năng xảy ra ở hiện tại/tương lai và kết quả của nó. Mệnh đề if dùng hiện tại đơn; mệnh đề chính dùng will/can/may/mệnh lệnh.",
+            "formulas": [
+              { "label": "Công thức", "pattern": "If + hiện tại đơn, will/can/may + V" },
+              { "label": "unless", "pattern": "Unless + hiện tại đơn (khẳng định), … = If … not" }
+            ],
+            "examples": [
+              { "en": "If it rains tomorrow, we'll stay at home.", "vi": "Nếu mai mưa, chúng ta sẽ ở nhà.", "highlight": "rains" },
+              { "en": "If you see Minh, tell him to call me.", "vi": "Nếu gặp Minh thì bảo cậu ấy gọi cho tôi.", "highlight": "tell" },
+              { "en": "You'll miss the bus unless you hurry.", "vi": "Bạn sẽ lỡ xe buýt nếu không nhanh lên.", "highlight": "unless" }
+            ],
+            "notes": ["Mệnh đề if đứng đầu thì có dấu phẩy; đứng sau thì không cần."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "If it will rain, we will stay home.", "right": "If it rains, we will stay home.", "explanationVi": "Mệnh đề if loại 1 dùng hiện tại đơn, không dùng will." },
+          { "wrong": "Unless you don't study, you will fail.", "right": "Unless you study, you will fail.", "explanationVi": "unless đã mang nghĩa phủ định." },
+          { "wrong": "If you will need help, call me.", "right": "If you need help, call me.", "explanationVi": "Không dùng will sau if." }
+        ],
+        "tips": ["Tiếng Việt \"Nếu mai mưa…\" không chia thì; tiếng Anh mệnh đề if dùng hiện tại đơn dù nói về tương lai."],
+        "summary": [
+          "Loại 0: If + hiện tại, hiện tại (luôn đúng).",
+          "Loại 1: If + hiện tại, will + V (có thể xảy ra).",
+          "unless = if … not."
+        ]
+      }
+    },
+    {
+      "code": "B1-06",
+      "order": 6,
+      "titleVi": "Câu điều kiện loại 2",
+      "titleEn": "Second conditional",
+      "summaryVi": "Giả định không có thật ở hiện tại hoặc khó xảy ra: If + quá khứ đơn, would + V.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói về tình huống tưởng tượng, không có thật ở hiện tại.",
+          "Đưa lời khuyên với If I were you…",
+          "Phân biệt loại 1 và loại 2."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Dùng quá khứ đơn trong mệnh đề if để thể hiện điều không thật/khó xảy ra (không phải nói về quá khứ). Với be, dùng were cho mọi chủ ngữ (văn trang trọng).",
+            "formulas": [
+              { "label": "Công thức", "pattern": "If + S + V2/were, S + would/could/might + V" },
+              { "label": "Lời khuyên", "pattern": "If I were you, I would + V" }
+            ],
+            "examples": [
+              { "en": "If I had more money, I would travel around the world.", "vi": "Nếu tôi có nhiều tiền hơn, tôi sẽ đi du lịch vòng quanh thế giới.", "highlight": "had" },
+              { "en": "If she lived closer, we could meet more often.", "vi": "Nếu cô ấy sống gần hơn, chúng tôi có thể gặp nhau thường xuyên hơn.", "highlight": "could meet" },
+              { "en": "If I were you, I would take the job.", "vi": "Nếu tôi là bạn, tôi sẽ nhận công việc đó.", "highlight": "were" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Loại 1 hay loại 2?",
+            "explanationVi": "Loại 1: người nói nghĩ việc có khả năng xảy ra. Loại 2: người nói nghĩ việc không có thật hoặc khó xảy ra.",
+            "formulas": [],
+            "examples": [
+              { "en": "If I win the match, I'll be happy. (có cơ hội thắng)", "vi": "Nếu tôi thắng trận, tôi sẽ vui.", "highlight": "win" },
+              { "en": "If I won the lottery, I'd buy a house. (khó xảy ra)", "vi": "Nếu tôi trúng số, tôi sẽ mua nhà.", "highlight": "won" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "If I would have time, I would help you.", "right": "If I had time, I would help you.", "explanationVi": "Không dùng would trong mệnh đề if." },
+          { "wrong": "If I am you, I would go.", "right": "If I were you, I would go.", "explanationVi": "Giả định không thật dùng were." },
+          { "wrong": "If he studied harder, he will pass.", "right": "If he studied harder, he would pass.", "explanationVi": "Loại 2: mệnh đề chính dùng would." }
+        ],
+        "tips": ["Lùi một thì để \"xa rời thực tế\": have → had, will → would."],
+        "summary": [
+          "If + quá khứ đơn, would + V.",
+          "were cho mọi chủ ngữ: If I were you…",
+          "Không thật/khó xảy ra ở hiện tại hoặc tương lai."
+        ]
+      }
+    },
+    {
+      "code": "B1-07",
+      "order": 7,
+      "titleVi": "Câu bị động — hiện tại đơn và quá khứ đơn",
+      "titleEn": "Passive voice — present and past simple",
+      "summaryVi": "am/is/are/was/were + V3; khi nào dùng bị động; by + tác nhân.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Chuyển câu chủ động sang bị động ở hiện tại đơn và quá khứ đơn.",
+          "Biết khi nào nên dùng bị động.",
+          "Dùng by khi cần nêu người thực hiện."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Câu bị động đưa đối tượng chịu tác động lên làm chủ ngữ. Dùng be (chia theo thì) + V3.",
+            "formulas": [
+              { "label": "Hiện tại đơn", "pattern": "S + am/is/are + V3" },
+              { "label": "Quá khứ đơn", "pattern": "S + was/were + V3" },
+              { "label": "Phủ định / câu hỏi", "pattern": "isn't/wasn't + V3 · Is/Was + S + V3?" },
+              { "label": "Chuyển đổi", "pattern": "They make cars here. → Cars are made here." }
+            ],
+            "examples": [
+              { "en": "English is spoken all over the world.", "vi": "Tiếng Anh được nói trên toàn thế giới.", "highlight": "is spoken" },
+              { "en": "This bridge was built in 1902.", "vi": "Cây cầu này được xây năm 1902.", "highlight": "was built" },
+              { "en": "Were you invited to the party?", "vi": "Bạn có được mời dự tiệc không?", "highlight": "Were you invited" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Khi nào dùng bị động?",
+            "explanationVi": "Khi không biết, không quan trọng, hoặc hiển nhiên ai làm; khi muốn nhấn mạnh đối tượng/kết quả. Chỉ thêm by + người/vật thực hiện khi thông tin đó quan trọng.",
+            "formulas": [{ "label": "Tác nhân", "pattern": "… + by + agent" }],
+            "examples": [
+              { "en": "My bike was stolen last night.", "vi": "Xe đạp của tôi bị lấy trộm tối qua.", "highlight": "was stolen" },
+              { "en": "The Mona Lisa was painted by Leonardo da Vinci.", "vi": "Bức Mona Lisa được vẽ bởi Leonardo da Vinci.", "highlight": "by" }
+            ],
+            "notes": ["Động từ không có tân ngữ (happen, arrive, die) không có dạng bị động."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The house built in 1990.", "right": "The house was built in 1990.", "explanationVi": "Thiếu be. Tiếng Việt \"Ngôi nhà xây năm 1990\" không cần \"được\", nhưng tiếng Anh bắt buộc có be." },
+          { "wrong": "The letter was wrote by her.", "right": "The letter was written by her.", "explanationVi": "Bị động dùng V3." },
+          { "wrong": "The accident was happened at 5.", "right": "The accident happened at 5.", "explanationVi": "happen không có bị động." },
+          { "wrong": "Rice is grew in Vietnam.", "right": "Rice is grown in Vietnam.", "explanationVi": "grow – grew – grown." }
+        ],
+        "tips": ["\"được/bị\" trong tiếng Việt → be + V3."],
+        "summary": [
+          "am/is/are + V3; was/were + V3.",
+          "Dùng khi người làm không rõ/không quan trọng.",
+          "by + tác nhân khi cần thiết."
+        ]
+      }
+    },
+    {
+      "code": "B1-08",
+      "order": 8,
+      "titleVi": "Câu bị động với modal, tương lai và hoàn thành",
+      "titleEn": "Passive with modals, future and perfect",
+      "summaryVi": "can/must/should be + V3; will be + V3; have/has been + V3; is being + V3.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Lập câu bị động với modal và will.",
+          "Lập câu bị động ở hiện tại hoàn thành và hiện tại tiếp diễn."
+        ],
+        "sections": [
+          {
+            "heading": "Bảng công thức",
+            "explanationVi": "Giữ cấu trúc thì của câu chủ động, chỉ thay động từ chính bằng be (ở dạng phù hợp) + V3.",
+            "formulas": [
+              { "label": "Modal", "pattern": "can/must/should/may + be + V3" },
+              { "label": "Tương lai", "pattern": "will be + V3 · am/is/are going to be + V3" },
+              { "label": "Hiện tại hoàn thành", "pattern": "have/has been + V3" },
+              { "label": "Hiện tại tiếp diễn", "pattern": "am/is/are being + V3" }
+            ],
+            "examples": [
+              { "en": "Mobile phones must be turned off.", "vi": "Điện thoại di động phải được tắt.", "highlight": "must be turned" },
+              { "en": "The results will be announced tomorrow.", "vi": "Kết quả sẽ được công bố vào ngày mai.", "highlight": "will be announced" },
+              { "en": "Your order has been sent.", "vi": "Đơn hàng của bạn đã được gửi.", "highlight": "has been sent" },
+              { "en": "The road is being repaired.", "vi": "Con đường đang được sửa.", "highlight": "is being repaired" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The work must finished today.", "right": "The work must be finished today.", "explanationVi": "Modal bị động: modal + be + V3." },
+          { "wrong": "The room has cleaned.", "right": "The room has been cleaned.", "explanationVi": "Hoàn thành bị động cần been." },
+          { "wrong": "The house is building now.", "right": "The house is being built now.", "explanationVi": "Tiếp diễn bị động: is being + V3." }
+        ],
+        "tips": ["Mẹo: viết câu chủ động trước, giữ nguyên trợ động từ, thay V bằng be ở dạng tương ứng + V3."],
+        "summary": [
+          "modal + be + V3.",
+          "will be + V3; have/has been + V3.",
+          "am/is/are being + V3."
+        ]
+      }
+    },
+    {
+      "code": "B1-09",
+      "order": 9,
+      "titleVi": "Mệnh đề quan hệ xác định",
+      "titleEn": "Defining relative clauses",
+      "summaryVi": "who, which, that, whose, where, when để xác định danh từ đang nói đến.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Chọn đúng đại từ quan hệ cho người, vật, nơi chốn, thời gian, sở hữu.",
+          "Nối hai câu bằng mệnh đề quan hệ.",
+          "Biết khi nào có thể lược bỏ đại từ quan hệ."
+        ],
+        "sections": [
+          {
+            "heading": "Đại từ quan hệ",
+            "explanationVi": "Mệnh đề quan hệ đứng ngay sau danh từ, cho biết đang nói về người/vật nào. Mệnh đề xác định không có dấu phẩy.",
+            "formulas": [
+              { "label": "Người", "pattern": "who / that" },
+              { "label": "Vật", "pattern": "which / that" },
+              { "label": "Sở hữu", "pattern": "whose + noun" },
+              { "label": "Nơi chốn / thời gian", "pattern": "where / when" }
+            ],
+            "examples": [
+              { "en": "The woman who lives next door is a doctor.", "vi": "Người phụ nữ sống cạnh nhà là bác sĩ.", "highlight": "who" },
+              { "en": "This is the book that I told you about.", "vi": "Đây là quyển sách mà tôi đã kể với bạn.", "highlight": "that" },
+              { "en": "I have a friend whose father is a pilot.", "vi": "Tôi có một người bạn có bố là phi công.", "highlight": "whose" },
+              { "en": "That's the café where we first met.", "vi": "Đó là quán cà phê nơi chúng tôi gặp nhau lần đầu.", "highlight": "where" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Lược bỏ đại từ quan hệ",
+            "explanationVi": "Khi who/which/that làm TÂN NGỮ của mệnh đề quan hệ (sau nó có chủ ngữ khác), có thể bỏ. Khi nó làm CHỦ NGỮ thì không được bỏ.",
+            "formulas": [
+              { "label": "Bỏ được", "pattern": "The film (that) we watched was great." },
+              { "label": "Không bỏ được", "pattern": "The man who called you is here." }
+            ],
+            "examples": [{ "en": "The phone I bought last week is broken.", "vi": "Cái điện thoại tôi mua tuần trước bị hỏng.", "highlight": "I bought" }],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "The man which helped me", "right": "The man who helped me", "explanationVi": "Người dùng who/that." },
+          { "wrong": "The book that I read it was boring.", "right": "The book that I read was boring.", "explanationVi": "Không lặp lại tân ngữ (it) trong mệnh đề quan hệ." },
+          { "wrong": "The girl who her mother is a teacher", "right": "The girl whose mother is a teacher", "explanationVi": "Sở hữu dùng whose." },
+          { "wrong": "The city which I was born", "right": "The city where I was born", "explanationVi": "Nơi chốn dùng where (hoặc which … in)." }
+        ],
+        "tips": ["\"mà\" trong tiếng Việt thường tương ứng với who/which/that."],
+        "summary": [
+          "who (người), which (vật), that (cả hai), whose (sở hữu), where/when.",
+          "Không lặp lại chủ ngữ/tân ngữ trong mệnh đề quan hệ.",
+          "Bỏ được đại từ khi nó làm tân ngữ."
+        ]
+      }
+    },
+    {
+      "code": "B1-10",
+      "order": 10,
+      "titleVi": "Câu gián tiếp — câu kể",
+      "titleEn": "Reported speech — statements",
+      "summaryVi": "say/tell; lùi thì; đổi đại từ và trạng từ thời gian/nơi chốn.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Thuật lại lời nói bằng say và tell đúng cấu trúc.",
+          "Lùi thì khi động từ tường thuật ở quá khứ.",
+          "Đổi đại từ, trạng từ thời gian và nơi chốn."
+        ],
+        "sections": [
+          {
+            "heading": "say và tell",
+            "explanationVi": "say + (that) + mệnh đề; tell + người + (that) + mệnh đề. tell luôn cần tân ngữ chỉ người.",
+            "formulas": [
+              { "label": "say", "pattern": "S + said (that) + clause" },
+              { "label": "tell", "pattern": "S + told + someone + (that) + clause" }
+            ],
+            "examples": [
+              { "en": "She said (that) she was tired.", "vi": "Cô ấy nói rằng cô ấy mệt.", "highlight": "said" },
+              { "en": "He told me (that) he lived in Hanoi.", "vi": "Anh ấy bảo tôi rằng anh ấy sống ở Hà Nội.", "highlight": "told me" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Lùi thì",
+            "explanationVi": "Khi động từ tường thuật ở quá khứ (said, told), lùi thì của lời nói gốc một bậc.",
+            "formulas": [
+              { "label": "Hiện tại → quá khứ", "pattern": "am/is → was · do → did · am doing → was doing" },
+              { "label": "Quá khứ/HTHT → QKHT", "pattern": "did / have done → had done" },
+              { "label": "Modal", "pattern": "will → would · can → could · may → might · must → had to" }
+            ],
+            "examples": [
+              { "en": "\"I will call you.\" → He said he would call me.", "vi": "\"Tôi sẽ gọi bạn.\" → Anh ấy nói anh ấy sẽ gọi tôi.", "highlight": "would" },
+              { "en": "\"I've lost my keys.\" → She said she had lost her keys.", "vi": "\"Tôi mất chìa khóa rồi.\" → Cô ấy nói cô ấy đã mất chìa khóa.", "highlight": "had lost" }
+            ],
+            "notes": ["Nếu điều được nói vẫn còn đúng, có thể không lùi thì: He said the earth is round."]
+          },
+          {
+            "heading": "Đổi từ chỉ thời gian và nơi chốn",
+            "explanationVi": "Thay đổi theo góc nhìn của người thuật lại.",
+            "formulas": [
+              { "label": "Thời gian", "pattern": "now → then · today → that day · tomorrow → the next day · yesterday → the day before · ago → before" },
+              { "label": "Nơi chốn", "pattern": "here → there · this → that" }
+            ],
+            "examples": [{ "en": "\"I'm leaving tomorrow.\" → She said she was leaving the next day.", "vi": "\"Mai tôi đi.\" → Cô ấy nói hôm sau cô ấy đi.", "highlight": "the next day" }],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "He said me that he was busy.", "right": "He told me that he was busy.", "explanationVi": "Có người nghe phía sau dùng tell, không dùng say." },
+          { "wrong": "She told that she was hungry.", "right": "She said that she was hungry.", "explanationVi": "tell cần tân ngữ chỉ người." },
+          { "wrong": "He said he will come.", "right": "He said he would come.", "explanationVi": "Lùi thì: will → would." }
+        ],
+        "tips": ["say something; tell SOMEONE something."],
+        "summary": [
+          "said (that) …; told + người + (that) …",
+          "Lùi một thì khi động từ tường thuật ở quá khứ.",
+          "Đổi đại từ, now/today/tomorrow/here."
+        ]
+      }
+    },
+    {
+      "code": "B1-11",
+      "order": 11,
+      "titleVi": "Câu gián tiếp — câu hỏi",
+      "titleEn": "Reported speech — questions",
+      "summaryVi": "asked + if/whether hoặc từ để hỏi; trật tự câu kể (không đảo ngữ).",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Thuật lại câu hỏi Yes/No bằng if/whether.",
+          "Thuật lại câu hỏi Wh- giữ từ để hỏi.",
+          "Dùng trật tự câu kể trong câu hỏi gián tiếp."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Trong câu hỏi gián tiếp, KHÔNG đảo trợ động từ và KHÔNG dùng do/does/did; vẫn lùi thì như câu kể; không có dấu hỏi.",
+            "formulas": [
+              { "label": "Yes/No", "pattern": "S + asked (+ O) + if/whether + S + V (lùi thì)" },
+              { "label": "Wh-", "pattern": "S + asked (+ O) + Wh- + S + V (lùi thì)" }
+            ],
+            "examples": [
+              { "en": "\"Are you hungry?\" → She asked me if I was hungry.", "vi": "\"Bạn đói không?\" → Cô ấy hỏi tôi có đói không.", "highlight": "if I was" },
+              { "en": "\"Where do you live?\" → He asked where I lived.", "vi": "\"Bạn sống ở đâu?\" → Anh ấy hỏi tôi sống ở đâu.", "highlight": "where I lived" },
+              { "en": "\"What time did the bus leave?\" → They asked what time the bus had left.", "vi": "\"Xe buýt đi lúc mấy giờ?\" → Họ hỏi xe buýt đã đi lúc mấy giờ.", "highlight": "what time the bus had left" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Câu hỏi gián tiếp lịch sự",
+            "explanationVi": "Can you tell me…? / Do you know…? / I wonder… dùng trật tự câu kể, không lùi thì.",
+            "formulas": [{ "label": "Công thức", "pattern": "Could you tell me + Wh-/if + S + V?" }],
+            "examples": [
+              { "en": "Could you tell me where the station is?", "vi": "Bạn có thể cho tôi biết nhà ga ở đâu không?", "highlight": "where the station is" },
+              { "en": "Do you know if the shop is open?", "vi": "Bạn có biết cửa hàng có mở cửa không?", "highlight": "if the shop is" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "He asked me where did I live.", "right": "He asked me where I lived.", "explanationVi": "Câu hỏi gián tiếp không dùng did và không đảo ngữ." },
+          { "wrong": "She asked me was I tired.", "right": "She asked me if I was tired.", "explanationVi": "Câu hỏi Yes/No dùng if/whether." },
+          { "wrong": "Can you tell me where is the bank?", "right": "Can you tell me where the bank is?", "explanationVi": "Trật tự câu kể: chủ ngữ trước động từ." }
+        ],
+        "tips": ["Câu hỏi gián tiếp \"trông như câu kể\": S + V."],
+        "summary": [
+          "asked if/whether + S + V.",
+          "asked + Wh- + S + V (không đảo, không do/did).",
+          "Could you tell me where … is?"
+        ]
+      }
+    },
+    {
+      "code": "B1-12",
+      "order": 12,
+      "titleVi": "Câu hỏi đuôi",
+      "titleEn": "Question tags",
+      "summaryVi": "Khẳng định → đuôi phủ định và ngược lại; dùng trợ động từ của mệnh đề chính.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Tạo câu hỏi đuôi đúng trợ động từ và đại từ.",
+          "Nhớ các trường hợp đặc biệt: I am → aren't I, Let's → shall we.",
+          "Hiểu ý nghĩa của ngữ điệu lên/xuống."
+        ],
+        "sections": [
+          {
+            "heading": "Quy tắc",
+            "explanationVi": "Câu hỏi đuôi dùng để xác nhận thông tin. Mệnh đề chính khẳng định → đuôi phủ định; mệnh đề chính phủ định → đuôi khẳng định. Đuôi dùng trợ động từ/be/modal của mệnh đề chính và đại từ chủ ngữ.",
+            "formulas": [
+              { "label": "Khẳng định → phủ định", "pattern": "You are tired, aren't you?" },
+              { "label": "Phủ định → khẳng định", "pattern": "She doesn't eat meat, does she?" },
+              { "label": "Động từ thường", "pattern": "dùng do/does/did: He works here, doesn't he?" }
+            ],
+            "examples": [
+              { "en": "It's cold today, isn't it?", "vi": "Hôm nay lạnh nhỉ?", "highlight": "isn't it" },
+              { "en": "You went to the party, didn't you?", "vi": "Bạn đã đi dự tiệc, đúng không?", "highlight": "didn't you" },
+              { "en": "They can swim, can't they?", "vi": "Họ biết bơi, phải không?", "highlight": "can't they" },
+              { "en": "She has never been there, has she?", "vi": "Cô ấy chưa từng đến đó, phải không?", "highlight": "has she" }
+            ],
+            "notes": ["Câu có never, nobody, nothing, hardly coi là phủ định → đuôi khẳng định."]
+          },
+          {
+            "heading": "Trường hợp đặc biệt",
+            "explanationVi": "Một số đuôi không theo quy tắc thông thường.",
+            "formulas": [
+              { "label": "I am", "pattern": "I'm late, aren't I?" },
+              { "label": "Let's", "pattern": "Let's go, shall we?" },
+              { "label": "Mệnh lệnh", "pattern": "Close the door, will you?" },
+              { "label": "Everyone/nobody", "pattern": "Everyone is here, aren't they?" }
+            ],
+            "examples": [],
+            "notes": ["Ngữ điệu xuống: chỉ muốn xác nhận. Ngữ điệu lên: thật sự hỏi vì không chắc."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "You like coffee, isn't it?", "right": "You like coffee, don't you?", "explanationVi": "Người Việt hay dùng \"isn't it\" cho mọi câu như \"phải không\"; phải dùng đúng trợ động từ." },
+          { "wrong": "She is a teacher, isn't it?", "right": "She is a teacher, isn't she?", "explanationVi": "Đại từ ở đuôi phải khớp chủ ngữ." },
+          { "wrong": "He never comes late, doesn't he?", "right": "He never comes late, does he?", "explanationVi": "never là phủ định → đuôi khẳng định." },
+          { "wrong": "I'm right, amn't I?", "right": "I'm right, aren't I?", "explanationVi": "Đặc biệt: aren't I." }
+        ],
+        "tips": ["Tìm trợ động từ trong câu (hoặc do/does/did ẩn), đảo dấu, thêm đại từ."],
+        "summary": [
+          "Khẳng định → đuôi phủ định; phủ định → đuôi khẳng định.",
+          "Dùng trợ động từ + đại từ chủ ngữ.",
+          "aren't I, shall we, will you."
+        ]
+      }
+    },
+    {
+      "code": "B1-13",
+      "order": 13,
+      "titleVi": "Modal chỉ suy luận: must, might, can't",
+      "titleEn": "Modals of deduction (present)",
+      "summaryVi": "must (chắc chắn đúng), might/may/could (có thể), can't (chắc chắn không) ở hiện tại.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Đưa ra suy luận về hiện tại với các mức độ chắc chắn khác nhau.",
+          "Dùng can't (không phải mustn't) cho suy luận phủ định."
+        ],
+        "sections": [
+          {
+            "heading": "Mức độ chắc chắn",
+            "explanationVi": "Khi đoán dựa trên bằng chứng, chọn modal theo mức độ tin tưởng.",
+            "formulas": [
+              { "label": "Gần như chắc chắn đúng", "pattern": "must + V / must be + V-ing" },
+              { "label": "Có thể", "pattern": "might / may / could + V" },
+              { "label": "Gần như chắc chắn sai", "pattern": "can't / couldn't + V" }
+            ],
+            "examples": [
+              { "en": "She's been working all day. She must be tired.", "vi": "Cô ấy làm cả ngày rồi. Chắc hẳn cô ấy mệt.", "highlight": "must be" },
+              { "en": "He isn't answering. He might be in a meeting.", "vi": "Anh ấy không nghe máy. Có thể anh ấy đang họp.", "highlight": "might be" },
+              { "en": "That can't be Lan. She's in Japan now.", "vi": "Đó không thể là Lan. Bây giờ cô ấy đang ở Nhật.", "highlight": "can't be" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "He mustn't be at home; the lights are off.", "right": "He can't be at home; the lights are off.", "explanationVi": "Suy luận phủ định dùng can't; mustn't nghĩa là cấm." },
+          { "wrong": "She must to be rich.", "right": "She must be rich.", "explanationVi": "Sau modal không có to." },
+          { "wrong": "It may is true.", "right": "It may be true.", "explanationVi": "Sau modal dùng V nguyên mẫu." }
+        ],
+        "tips": ["\"chắc hẳn\" → must; \"có lẽ\" → might/may; \"không thể nào\" → can't."],
+        "summary": [
+          "must: chắc chắn đúng.",
+          "might/may/could: có thể.",
+          "can't: chắc chắn không (không dùng mustn't)."
+        ]
+      }
+    },
+    {
+      "code": "B1-14",
+      "order": 14,
+      "titleVi": "Danh động từ và động từ nguyên mẫu (mở rộng)",
+      "titleEn": "Gerunds and infinitives (extended)",
+      "summaryVi": "V-ing làm chủ ngữ; động từ đổi nghĩa: stop, remember, forget, try; to V chỉ mục đích.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng V-ing làm chủ ngữ và sau giới từ.",
+          "Phân biệt nghĩa của stop/remember/forget/try khi đi với to V và V-ing.",
+          "Dùng to V để chỉ mục đích."
+        ],
+        "sections": [
+          {
+            "heading": "V-ing làm chủ ngữ và to V chỉ mục đích",
+            "explanationVi": "Khi một hành động làm chủ ngữ, dùng V-ing. Khi nói lý do/mục đích làm việc gì, dùng to V.",
+            "formulas": [
+              { "label": "Chủ ngữ", "pattern": "V-ing + V (số ít)" },
+              { "label": "Mục đích", "pattern": "S + V + to V" }
+            ],
+            "examples": [
+              { "en": "Swimming is good for your health.", "vi": "Bơi lội tốt cho sức khỏe.", "highlight": "Swimming" },
+              { "en": "I went to the shop to buy some milk.", "vi": "Tôi ra cửa hàng để mua sữa.", "highlight": "to buy" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Động từ đổi nghĩa",
+            "explanationVi": "Một số động từ đi được với cả hai dạng nhưng nghĩa khác nhau.",
+            "formulas": [
+              { "label": "stop", "pattern": "stop V-ing (ngừng làm) · stop to V (dừng lại để làm)" },
+              { "label": "remember / forget", "pattern": "+ V-ing (nhớ/quên việc đã làm) · + to V (nhớ/quên việc cần làm)" },
+              { "label": "try", "pattern": "try to V (cố gắng) · try V-ing (thử làm xem sao)" }
+            ],
+            "examples": [
+              { "en": "He stopped smoking last year.", "vi": "Anh ấy bỏ thuốc năm ngoái.", "highlight": "stopped smoking" },
+              { "en": "We stopped to buy some water.", "vi": "Chúng tôi dừng lại để mua nước.", "highlight": "stopped to buy" },
+              { "en": "Remember to lock the door.", "vi": "Nhớ khóa cửa nhé.", "highlight": "Remember to lock" },
+              { "en": "I remember meeting her at a party.", "vi": "Tôi nhớ đã gặp cô ấy ở một bữa tiệc.", "highlight": "remember meeting" },
+              { "en": "Try restarting your computer.", "vi": "Thử khởi động lại máy tính xem.", "highlight": "Try restarting" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Learn English is fun.", "right": "Learning English is fun.", "explanationVi": "Hành động làm chủ ngữ dùng V-ing." },
+          { "wrong": "I went there for buying food.", "right": "I went there to buy food.", "explanationVi": "Mục đích dùng to V." },
+          { "wrong": "Don't forget locking the door.", "right": "Don't forget to lock the door.", "explanationVi": "Việc cần làm trong tương lai → forget to V." },
+          { "wrong": "I look forward to see you.", "right": "I look forward to seeing you.", "explanationVi": "to là giới từ trong look forward to → V-ing." }
+        ],
+        "tips": ["to V hướng về tương lai (việc cần làm); V-ing hướng về việc đã/đang làm."],
+        "summary": [
+          "V-ing làm chủ ngữ và sau giới từ.",
+          "to V chỉ mục đích.",
+          "stop/remember/forget/try đổi nghĩa theo dạng."
+        ]
+      }
+    },
+    {
+      "code": "B1-15",
+      "order": 15,
+      "titleVi": "so/such … that; so do I / neither do I",
+      "titleEn": "so/such … that; so do I / neither do I",
+      "summaryVi": "Nhấn mạnh và nói kết quả; đồng tình ngắn gọn với so/neither.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Phân biệt so + tính từ và such + (a) + tính từ + danh từ.",
+          "Nói kết quả với so/such … that.",
+          "Đồng tình với so do I / neither do I."
+        ],
+        "sections": [
+          {
+            "heading": "so và such",
+            "explanationVi": "so đứng trước tính từ/trạng từ; such đứng trước cụm danh từ.",
+            "formulas": [
+              { "label": "so", "pattern": "so + adj/adv (+ that + clause)" },
+              { "label": "such", "pattern": "such + a/an + adj + N số ít · such + adj + N số nhiều/không đếm được" }
+            ],
+            "examples": [
+              { "en": "The film was so boring that I fell asleep.", "vi": "Phim chán đến mức tôi ngủ gật.", "highlight": "so boring" },
+              { "en": "It was such a boring film that I fell asleep.", "vi": "Đó là một bộ phim chán đến mức tôi ngủ gật.", "highlight": "such a boring film" },
+              { "en": "They are such kind people.", "vi": "Họ là những người rất tốt bụng.", "highlight": "such kind people" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Đồng tình ngắn: so / neither",
+            "explanationVi": "Đồng tình với câu khẳng định: So + trợ động từ + S. Đồng tình với câu phủ định: Neither/Nor + trợ động từ + S. Trợ động từ khớp với câu gốc.",
+            "formulas": [
+              { "label": "Khẳng định", "pattern": "So + do/does/did/am/can/have… + S" },
+              { "label": "Phủ định", "pattern": "Neither + do/does/did/am/can/have… + S" }
+            ],
+            "examples": [
+              { "en": "I love spicy food. – So do I.", "vi": "Tôi thích đồ cay. – Tôi cũng vậy.", "highlight": "So do I" },
+              { "en": "I can't swim. – Neither can I.", "vi": "Tôi không biết bơi. – Tôi cũng không.", "highlight": "Neither can I" },
+              { "en": "She has been to Korea. – So have I.", "vi": "Cô ấy từng đến Hàn Quốc. – Tôi cũng thế.", "highlight": "So have I" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "It was so a good day.", "right": "It was such a good day.", "explanationVi": "Trước cụm danh từ dùng such." },
+          { "wrong": "I like tea. – Me too like.", "right": "I like tea. – So do I. / Me too.", "explanationVi": "Dùng So do I hoặc Me too." },
+          { "wrong": "I don't like it. – So don't I.", "right": "I don't like it. – Neither do I.", "explanationVi": "Đồng tình phủ định dùng Neither." }
+        ],
+        "tips": ["so + tính từ; such + danh từ."],
+        "summary": [
+          "so + adj; such (a) + adj + noun; … that + kết quả.",
+          "So + trợ động từ + S (đồng tình khẳng định).",
+          "Neither + trợ động từ + S (đồng tình phủ định)."
+        ]
+      }
+    },
+    {
+      "code": "B1-16",
+      "order": 16,
+      "titleVi": "wish ở hiện tại",
+      "titleEn": "wish about the present",
+      "summaryVi": "wish + quá khứ đơn cho mong ước trái với hiện tại; wish … could; wish … would cho phàn nàn.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nói mong ước trái với thực tế hiện tại.",
+          "Dùng wish + could cho khả năng.",
+          "Dùng wish + would để phàn nàn về hành vi người khác."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Giống câu điều kiện loại 2: lùi một thì để chỉ điều không có thật ở hiện tại.",
+            "formulas": [
+              { "label": "Trạng thái", "pattern": "S + wish + S + V2 / were" },
+              { "label": "Khả năng", "pattern": "S + wish + S + could + V" },
+              { "label": "Phàn nàn", "pattern": "S + wish + someone + would + V (người khác, không phải I)" }
+            ],
+            "examples": [
+              { "en": "I wish I had more free time.", "vi": "Ước gì tôi có nhiều thời gian rảnh hơn.", "highlight": "had" },
+              { "en": "She wishes she were taller.", "vi": "Cô ấy ước mình cao hơn.", "highlight": "were" },
+              { "en": "I wish I could speak Japanese.", "vi": "Ước gì tôi nói được tiếng Nhật.", "highlight": "could speak" },
+              { "en": "I wish you would stop talking.", "vi": "Mong bạn thôi nói đi.", "highlight": "would stop" }
+            ],
+            "notes": ["If only… có nghĩa giống wish nhưng mạnh hơn: If only I knew the answer!"]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "I wish I have a car.", "right": "I wish I had a car.", "explanationVi": "Mong ước trái hiện tại → lùi thì quá khứ." },
+          { "wrong": "I wish I can fly.", "right": "I wish I could fly.", "explanationVi": "can → could." },
+          { "wrong": "I wish I would be rich.", "right": "I wish I were rich.", "explanationVi": "Không dùng I wish I would cho trạng thái của mình." }
+        ],
+        "tips": ["wish = \"ước gì\" → luôn lùi thì so với thực tế."],
+        "summary": [
+          "wish + V2/were: trái với hiện tại.",
+          "wish + could: ước có khả năng.",
+          "wish + someone + would: phàn nàn/mong người khác thay đổi."
+        ]
+      }
+    },
+    {
+      "code": "B1-17",
+      "order": 17,
+      "titleVi": "Cụm động từ thông dụng",
+      "titleEn": "Common phrasal verbs",
+      "summaryVi": "Động từ + tiểu từ; cụm tách được và không tách được; vị trí đại từ tân ngữ.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Hiểu cấu tạo và nghĩa của các cụm động từ thông dụng.",
+          "Biết cụm nào tách được, cụm nào không.",
+          "Đặt đại từ tân ngữ đúng vị trí."
+        ],
+        "sections": [
+          {
+            "heading": "Cụm tách được",
+            "explanationVi": "Với cụm tách được, tân ngữ danh từ có thể đứng giữa hoặc sau; nhưng tân ngữ là ĐẠI TỪ thì BẮT BUỘC đứng giữa.",
+            "formulas": [
+              { "label": "Danh từ", "pattern": "turn off the light = turn the light off" },
+              { "label": "Đại từ", "pattern": "turn it off (không nói turn off it)" },
+              { "label": "Thường gặp", "pattern": "turn on/off, put on, take off, pick up, give up, fill in, look up, throw away, wake up" }
+            ],
+            "examples": [
+              { "en": "Please turn off your phone. / Please turn it off.", "vi": "Vui lòng tắt điện thoại. / Vui lòng tắt nó đi.", "highlight": "turn it off" },
+              { "en": "I looked the word up in the dictionary.", "vi": "Tôi tra từ đó trong từ điển.", "highlight": "looked the word up" },
+              { "en": "She gave up smoking.", "vi": "Cô ấy bỏ thuốc lá.", "highlight": "gave up" }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Cụm không tách được",
+            "explanationVi": "Tân ngữ luôn đứng sau toàn bộ cụm. Cụm ba từ hầu như không tách được.",
+            "formulas": [
+              { "label": "Thường gặp", "pattern": "look after, look for, get on (a bus), come across, run into, get on with, look forward to, run out of" }
+            ],
+            "examples": [
+              { "en": "Can you look after my cat?", "vi": "Bạn trông con mèo giúp tôi được không?", "highlight": "look after" },
+              { "en": "I'm looking for my glasses.", "vi": "Tôi đang tìm kính.", "highlight": "looking for" },
+              { "en": "We've run out of milk.", "vi": "Chúng ta hết sữa rồi.", "highlight": "run out of" }
+            ],
+            "notes": ["Một số cụm không có tân ngữ: get up, break down, grow up, take off (máy bay cất cánh)."]
+          }
+        ],
+        "commonMistakes": [
+          { "wrong": "Turn off it.", "right": "Turn it off.", "explanationVi": "Đại từ phải đứng giữa cụm tách được." },
+          { "wrong": "I'm looking my keys for.", "right": "I'm looking for my keys.", "explanationVi": "look for không tách được." },
+          { "wrong": "My car broke down it.", "right": "My car broke down.", "explanationVi": "break down không có tân ngữ." }
+        ],
+        "tips": ["Học cụm động từ trong câu ví dụ thay vì học từ đơn lẻ; ghi chú (tách được) / (không tách)."],
+        "summary": [
+          "Cụm tách được: đại từ ở giữa (turn it off).",
+          "Cụm không tách được: tân ngữ ở cuối (look after her).",
+          "Học theo ngữ cảnh."
+        ]
+      }
+    },
+    {
+      "code": "B1-18",
+      "order": 18,
+      "titleVi": "Ôn tập B1 và kiểm tra level",
+      "titleEn": "B1 review and level test",
+      "summaryVi": "Tổng hợp thì hoàn thành, câu điều kiện, bị động, mệnh đề quan hệ, câu gián tiếp và cấu trúc động từ B1.",
+      "isLevelReview": true,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Vận dụng linh hoạt các cấu trúc B1 trong đoạn văn và hội thoại.",
+          "Chọn đúng loại câu điều kiện và dạng bị động.",
+          "Đạt từ 80% bài kiểm tra để hoàn thành B1."
+        ],
+        "sections": [
+          {
+            "heading": "Bản đồ ngữ pháp B1",
+            "explanationVi": "B1 giúp bạn diễn đạt quan hệ thời gian phức tạp hơn, giả định, thuật lại lời người khác và mô tả chi tiết bằng mệnh đề.",
+            "formulas": [
+              { "label": "Thì hoàn thành", "pattern": "have been V-ing (for/since) · had + V3" },
+              { "label": "Thói quen quá khứ", "pattern": "used to + V · would + V · be used to + V-ing" },
+              { "label": "Điều kiện", "pattern": "0: hiện tại–hiện tại · 1: hiện tại–will · 2: quá khứ–would · unless" },
+              { "label": "Bị động", "pattern": "be (mọi thì) + V3 · modal + be + V3" },
+              { "label": "Mệnh đề quan hệ", "pattern": "who/which/that/whose/where" },
+              { "label": "Câu gián tiếp", "pattern": "said/told (lùi thì) · asked if/Wh- + S + V" }
+            ],
+            "examples": [
+              { "en": "I've been learning English since I was ten, but I used to hate it.", "vi": "Tôi học tiếng Anh từ năm mười tuổi, nhưng trước đây tôi từng ghét nó.", "highlight": "'ve been learning" },
+              { "en": "If I had more time, I'd join the club that my friend told me about.", "vi": "Nếu có thêm thời gian, tôi sẽ tham gia câu lạc bộ mà bạn tôi đã kể.", "highlight": "had" },
+              { "en": "She asked me whether the report had been sent.", "vi": "Cô ấy hỏi tôi báo cáo đã được gửi chưa.", "highlight": "had been sent" }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [],
+        "tips": ["Ôn lại step có điểm thấp nhất trước khi làm bài kiểm tra level."],
+        "summary": [
+          "Thì hoàn thành: nối hai mốc thời gian.",
+          "Điều kiện 0/1/2 theo mức độ có thật.",
+          "Đạt ≥ 80% bài kiểm tra để mở B2."
+        ]
+      }
+    }
+  ]
+}

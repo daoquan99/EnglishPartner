@@ -1,0 +1,1518 @@
+{
+  "packVersion": 1,
+  "level": "C1",
+  "steps": [
+    {
+      "code": "C1-01",
+      "order": 1,
+      "titleVi": "Đảo ngữ với trạng từ phủ định",
+      "titleEn": "Inversion after negative adverbials",
+      "summaryVi": "Never, Rarely, Seldom, Not only, No sooner, Hardly, Under no circumstances, Only then… + trợ động từ + S.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhấn mạnh bằng cách đưa trạng từ phủ định/hạn chế lên đầu câu và đảo trợ động từ.",
+          "Dùng đúng các cặp No sooner … than, Hardly … when, Not only … but also.",
+          "Nhận biết văn phong trang trọng của đảo ngữ."
+        ],
+        "sections": [
+          {
+            "heading": "Quy tắc đảo",
+            "explanationVi": "Khi một trạng từ mang nghĩa phủ định hoặc hạn chế đứng đầu câu, đảo trợ động từ lên trước chủ ngữ như câu hỏi. Nếu câu không có trợ động từ, dùng do/does/did.",
+            "formulas": [
+              {
+                "label": "Công thức",
+                "pattern": "Negative adverbial + auxiliary + S + V"
+              },
+              {
+                "label": "Thường gặp",
+                "pattern": "Never · Rarely · Seldom · Little · At no time · Under no circumstances · On no account · In no way"
+              },
+              {
+                "label": "Only",
+                "pattern": "Only then / Only after + N / Only when + clause + aux + S + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Never have I seen such a beautiful sunset.",
+                "vi": "Tôi chưa bao giờ thấy hoàng hôn đẹp đến thế.",
+                "highlight": "have I seen"
+              },
+              {
+                "en": "Rarely does she complain about her job.",
+                "vi": "Hiếm khi cô ấy phàn nàn về công việc.",
+                "highlight": "does she complain"
+              },
+              {
+                "en": "Under no circumstances should you share your password.",
+                "vi": "Trong bất cứ trường hợp nào bạn cũng không được chia sẻ mật khẩu.",
+                "highlight": "should you share"
+              },
+              {
+                "en": "Only when I got home did I realise I had lost my wallet.",
+                "vi": "Chỉ khi về đến nhà tôi mới nhận ra mình đã mất ví.",
+                "highlight": "did I realise"
+              }
+            ],
+            "notes": [
+              "Với only when/only after, đảo ngữ ở mệnh đề CHÍNH, không đảo ở mệnh đề chứa only."
+            ]
+          },
+          {
+            "heading": "Các cặp cấu trúc",
+            "explanationVi": "Diễn tả hai việc xảy ra liên tiếp gần như ngay lập tức, hoặc bổ sung ý.",
+            "formulas": [
+              {
+                "label": "Ngay khi",
+                "pattern": "No sooner had + S + V3 + than + S + V2"
+              },
+              {
+                "label": "Vừa mới … thì",
+                "pattern": "Hardly/Scarcely had + S + V3 + when + S + V2"
+              },
+              {
+                "label": "Không những … mà còn",
+                "pattern": "Not only + aux + S + V, but S + also + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "No sooner had we sat down than the phone rang.",
+                "vi": "Chúng tôi vừa ngồi xuống thì điện thoại reo.",
+                "highlight": "No sooner had we"
+              },
+              {
+                "en": "Hardly had she arrived when it started to rain.",
+                "vi": "Cô ấy vừa đến thì trời bắt đầu mưa.",
+                "highlight": "Hardly had she"
+              },
+              {
+                "en": "Not only did he lie, but he also blamed his colleague.",
+                "vi": "Anh ta không những nói dối mà còn đổ lỗi cho đồng nghiệp.",
+                "highlight": "Not only did he"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "Never I have seen such a mess.",
+            "right": "Never have I seen such a mess.",
+            "explanationVi": "Phải đảo trợ động từ lên trước chủ ngữ."
+          },
+          {
+            "wrong": "Rarely she goes out.",
+            "right": "Rarely does she go out.",
+            "explanationVi": "Không có trợ động từ → mượn does, động từ chính về nguyên mẫu."
+          },
+          {
+            "wrong": "No sooner had I left when it rained.",
+            "right": "No sooner had I left than it rained.",
+            "explanationVi": "No sooner đi với than; Hardly đi với when."
+          },
+          {
+            "wrong": "Only when did I see her I understood.",
+            "right": "Only when I saw her did I understand.",
+            "explanationVi": "Đảo ở mệnh đề chính, không ở mệnh đề only when."
+          }
+        ],
+        "tips": [
+          "Viết câu thường trước, rồi chuyển trạng từ lên đầu và \"biến phần còn lại thành câu hỏi\"."
+        ],
+        "summary": [
+          "Trạng từ phủ định đầu câu + aux + S + V.",
+          "No sooner … than; Hardly … when; Not only … but also.",
+          "Only when/after + mệnh đề, đảo ở mệnh đề chính."
+        ]
+      }
+    },
+    {
+      "code": "C1-02",
+      "order": 2,
+      "titleVi": "Đảo ngữ trong câu điều kiện",
+      "titleEn": "Inverted conditionals",
+      "summaryVi": "Had I known… (loại 3), Were I/Were it not for… (loại 2), Should you need… (loại 1) — bỏ if.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Viết câu điều kiện trang trọng bằng đảo ngữ thay cho if.",
+          "Dùng Were it not for / Had it not been for.",
+          "Viết dạng phủ định của đảo ngữ điều kiện."
+        ],
+        "sections": [
+          {
+            "heading": "Ba dạng đảo",
+            "explanationVi": "Bỏ if và đưa should/were/had lên đầu. Chỉ ba trợ động từ này được dùng.",
+            "formulas": [
+              {
+                "label": "Loại 1",
+                "pattern": "Should + S + V, … (= If S should/happens to V)"
+              },
+              {
+                "label": "Loại 2",
+                "pattern": "Were + S + to V / adj/N, … (= If S were / V2)"
+              },
+              {
+                "label": "Loại 3",
+                "pattern": "Had + S + (not) + V3, … (= If S had V3)"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Should you need any help, please contact reception.",
+                "vi": "Nếu quý khách cần trợ giúp, xin liên hệ lễ tân.",
+                "highlight": "Should you need"
+              },
+              {
+                "en": "Were I in your position, I would accept the offer.",
+                "vi": "Nếu tôi ở vị trí của bạn, tôi sẽ nhận lời đề nghị.",
+                "highlight": "Were I"
+              },
+              {
+                "en": "Had we left earlier, we wouldn't have missed the flight.",
+                "vi": "Nếu chúng tôi đi sớm hơn thì đã không lỡ chuyến bay.",
+                "highlight": "Had we left"
+              },
+              {
+                "en": "Had she not helped me, I would have failed.",
+                "vi": "Nếu cô ấy không giúp thì tôi đã thất bại.",
+                "highlight": "Had she not helped"
+              }
+            ],
+            "notes": [
+              "Phủ định: Had + S + not + V3 (không rút gọn thành Hadn't S)."
+            ]
+          },
+          {
+            "heading": "Were it not for / Had it not been for",
+            "explanationVi": "Nghĩa là \"nếu không có/nếu không nhờ\", theo sau là danh từ.",
+            "formulas": [
+              {
+                "label": "Hiện tại",
+                "pattern": "Were it not for + N, S + would + V"
+              },
+              {
+                "label": "Quá khứ",
+                "pattern": "Had it not been for + N, S + would have + V3"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Were it not for your support, I couldn't continue.",
+                "vi": "Nếu không có sự ủng hộ của bạn, tôi không thể tiếp tục.",
+                "highlight": "Were it not for"
+              },
+              {
+                "en": "Had it not been for the seatbelt, he would have been badly hurt.",
+                "vi": "Nếu không nhờ dây an toàn, anh ấy đã bị thương nặng.",
+                "highlight": "Had it not been for"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "Hadn't I seen it, I wouldn't believe it.",
+            "right": "Had I not seen it, I wouldn't have believed it.",
+            "explanationVi": "Đảo ngữ phủ định không rút gọn; kết quả quá khứ dùng would have V3."
+          },
+          {
+            "wrong": "If had I known, I would have come.",
+            "right": "Had I known, I would have come.",
+            "explanationVi": "Đảo ngữ thì bỏ if."
+          },
+          {
+            "wrong": "Would you need help, call me.",
+            "right": "Should you need help, call me.",
+            "explanationVi": "Đảo loại 1 dùng Should."
+          }
+        ],
+        "tips": [
+          "Chỉ ba từ được đảo: Should (loại 1), Were (loại 2), Had (loại 3)."
+        ],
+        "summary": [
+          "Should + S + V = If S V.",
+          "Were + S … = If S were …; Had + S + V3 = If S had V3.",
+          "Were it not for / Had it not been for + N."
+        ]
+      }
+    },
+    {
+      "code": "C1-03",
+      "order": 3,
+      "titleVi": "Câu chẻ",
+      "titleEn": "Cleft sentences",
+      "summaryVi": "It is/was … that/who …; What … is/was …; All I want is…; The reason why…",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhấn mạnh một thành phần câu bằng It-cleft.",
+          "Nhấn mạnh hành động/sự vật bằng What-cleft.",
+          "Dùng All, The thing, The reason why… để nhấn mạnh."
+        ],
+        "sections": [
+          {
+            "heading": "It-cleft",
+            "explanationVi": "Tách thành phần muốn nhấn mạnh ra giữa It is/was … that/who, phần còn lại đặt sau that. Thường dùng để sửa lại thông tin sai.",
+            "formulas": [
+              {
+                "label": "Công thức",
+                "pattern": "It is/was + phần nhấn mạnh + that/who + phần còn lại"
+              }
+            ],
+            "examples": [
+              {
+                "en": "It was Minh who broke the vase, not me.",
+                "vi": "Chính Minh làm vỡ bình hoa chứ không phải tôi.",
+                "highlight": "It was Minh who"
+              },
+              {
+                "en": "It's the price that worries me, not the quality.",
+                "vi": "Chính giá cả làm tôi lo, chứ không phải chất lượng.",
+                "highlight": "It's the price that"
+              },
+              {
+                "en": "It was in 2015 that they moved to Canada.",
+                "vi": "Chính năm 2015 họ chuyển đến Canada.",
+                "highlight": "It was in 2015 that"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "What-cleft và các dạng khác",
+            "explanationVi": "What + mệnh đề làm chủ ngữ, theo sau là is/was + phần nhấn mạnh. Khi nhấn mạnh hành động, dùng do: What I did was (to) call the police.",
+            "formulas": [
+              {
+                "label": "What",
+                "pattern": "What + S + V + is/was + N / to V / clause"
+              },
+              {
+                "label": "Hành động",
+                "pattern": "What + S + do/did + is/was + (to) V"
+              },
+              {
+                "label": "Khác",
+                "pattern": "All (that) S V is … · The thing (that) … is … · The reason (why) … is that …"
+              }
+            ],
+            "examples": [
+              {
+                "en": "What I need is a long holiday.",
+                "vi": "Điều tôi cần là một kỳ nghỉ dài.",
+                "highlight": "What I need is"
+              },
+              {
+                "en": "What she did was resign immediately.",
+                "vi": "Việc cô ấy làm là từ chức ngay lập tức.",
+                "highlight": "What she did was"
+              },
+              {
+                "en": "All I want is a bit of peace and quiet.",
+                "vi": "Tất cả những gì tôi muốn là một chút yên tĩnh.",
+                "highlight": "All I want is"
+              },
+              {
+                "en": "The reason why I called is that I need your advice.",
+                "vi": "Lý do tôi gọi là tôi cần lời khuyên của bạn.",
+                "highlight": "The reason why"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "What I need it is time.",
+            "right": "What I need is time.",
+            "explanationVi": "Không thêm it sau mệnh đề What."
+          },
+          {
+            "wrong": "It was my sister which called.",
+            "right": "It was my sister who/that called.",
+            "explanationVi": "Người dùng who/that."
+          },
+          {
+            "wrong": "The reason why I left is because I was tired.",
+            "right": "The reason why I left is that I was tired.",
+            "explanationVi": "The reason … is that (tránh lặp nghĩa với because trong văn trang trọng)."
+          }
+        ],
+        "tips": [
+          "\"Chính … mới …\" → It is/was … that; \"Điều tôi … là …\" → What I … is …"
+        ],
+        "summary": [
+          "It is/was X that/who …: nhấn mạnh X.",
+          "What S V is/was …",
+          "All I want is…; The reason why … is that …"
+        ]
+      }
+    },
+    {
+      "code": "C1-04",
+      "order": 4,
+      "titleVi": "Thức giả định",
+      "titleEn": "The subjunctive",
+      "summaryVi": "suggest/insist/recommend/demand that + S + V nguyên mẫu; It is essential/vital that + S + V.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng thức giả định sau các động từ đề nghị, yêu cầu.",
+          "Dùng sau các tính từ chỉ sự cần thiết.",
+          "Nhận biết dạng thay thế với should (Anh-Anh)."
+        ],
+        "sections": [
+          {
+            "heading": "Công thức",
+            "explanationVi": "Sau các động từ/tính từ thể hiện đề xuất, yêu cầu, tầm quan trọng, mệnh đề that dùng động từ NGUYÊN MẪU cho mọi chủ ngữ (không -s, không chia thì; be giữ nguyên be). Tiếng Anh-Anh hay dùng should + V.",
+            "formulas": [
+              {
+                "label": "Động từ",
+                "pattern": "suggest/recommend/insist/demand/request/propose + that + S + (not) + V"
+              },
+              {
+                "label": "Tính từ",
+                "pattern": "It is essential/vital/important/necessary/crucial + that + S + (not) + V"
+              },
+              {
+                "label": "Thay thế",
+                "pattern": "… that + S + should + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "The doctor recommended that he rest for a week.",
+                "vi": "Bác sĩ khuyên anh ấy nghỉ ngơi một tuần.",
+                "highlight": "he rest"
+              },
+              {
+                "en": "They insisted that she be present at the meeting.",
+                "vi": "Họ nhất quyết yêu cầu cô ấy có mặt tại cuộc họp.",
+                "highlight": "she be"
+              },
+              {
+                "en": "It is vital that every employee attend the training.",
+                "vi": "Điều cực kỳ quan trọng là mọi nhân viên phải tham dự buổi đào tạo.",
+                "highlight": "employee attend"
+              },
+              {
+                "en": "I suggest that he not take the job.",
+                "vi": "Tôi đề nghị anh ấy không nhận công việc đó.",
+                "highlight": "not take"
+              }
+            ],
+            "notes": [
+              "Phủ định: not + V (không dùng doesn't)."
+            ]
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "She suggested that he goes to a doctor.",
+            "right": "She suggested that he go / should go to a doctor.",
+            "explanationVi": "Thức giả định dùng V nguyên mẫu, không thêm -s."
+          },
+          {
+            "wrong": "It's essential that she is on time.",
+            "right": "It's essential that she be on time.",
+            "explanationVi": "Giữ nguyên be."
+          },
+          {
+            "wrong": "They demanded that he doesn't leave.",
+            "right": "They demanded that he not leave.",
+            "explanationVi": "Phủ định thức giả định: not + V."
+          }
+        ],
+        "tips": [
+          "Thấy suggest/insist/essential + that → kiểm tra động từ phía sau đã ở nguyên mẫu chưa."
+        ],
+        "summary": [
+          "suggest/insist/demand that + S + V nguyên mẫu.",
+          "It is essential/vital that + S + V.",
+          "Phủ định: not + V; có thể dùng should + V."
+        ]
+      }
+    },
+    {
+      "code": "C1-05",
+      "order": 5,
+      "titleVi": "Điều kiện ẩn và thay thế if",
+      "titleEn": "Implied and alternative conditionals",
+      "summaryVi": "but for, otherwise, supposing, provided/providing that, as long as, on condition that, in case, without.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Diễn đạt điều kiện không dùng if.",
+          "Phân biệt in case và if.",
+          "Dùng otherwise và but for để ẩn mệnh đề điều kiện."
+        ],
+        "sections": [
+          {
+            "heading": "Từ thay cho if",
+            "explanationVi": "Các từ/cụm này mang sắc thái riêng: provided/as long as nhấn mạnh điều kiện bắt buộc; supposing đặt giả thuyết; in case là phòng khi (không phải điều kiện).",
+            "formulas": [
+              {
+                "label": "Điều kiện bắt buộc",
+                "pattern": "provided (that) / providing / as long as / on condition that + hiện tại đơn"
+              },
+              {
+                "label": "Giả thuyết",
+                "pattern": "Supposing / Suppose (that) + S + V (hiện tại / quá khứ)"
+              },
+              {
+                "label": "Phòng khi",
+                "pattern": "in case + S + V (hiện tại đơn)"
+              }
+            ],
+            "examples": [
+              {
+                "en": "You can borrow my car provided that you drive carefully.",
+                "vi": "Bạn có thể mượn xe với điều kiện lái cẩn thận.",
+                "highlight": "provided that"
+              },
+              {
+                "en": "Supposing you lost your job, what would you do?",
+                "vi": "Giả sử bạn mất việc, bạn sẽ làm gì?",
+                "highlight": "Supposing"
+              },
+              {
+                "en": "Take an umbrella in case it rains.",
+                "vi": "Mang ô theo phòng khi trời mưa.",
+                "highlight": "in case"
+              }
+            ],
+            "notes": [
+              "in case ≠ if: Take an umbrella in case it rains (mang ô trước, dù mưa hay không)."
+            ]
+          },
+          {
+            "heading": "Điều kiện ẩn",
+            "explanationVi": "Điều kiện không nằm trong mệnh đề if mà ẩn trong một cụm từ.",
+            "formulas": [
+              {
+                "label": "but for / without",
+                "pattern": "But for / Without + N, S + would (have) + V(3)"
+              },
+              {
+                "label": "otherwise",
+                "pattern": "S + V; otherwise, S + would/will + V"
+              },
+              {
+                "label": "or (else)",
+                "pattern": "Mệnh lệnh / must + V, or (else) + S + will + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "But for his quick thinking, we would have crashed.",
+                "vi": "Nếu không nhờ anh ấy phản ứng nhanh thì chúng tôi đã đâm xe.",
+                "highlight": "But for"
+              },
+              {
+                "en": "I had a map; otherwise, I would have got lost.",
+                "vi": "Tôi có bản đồ; nếu không thì tôi đã bị lạc.",
+                "highlight": "otherwise"
+              },
+              {
+                "en": "Hurry up, or you'll miss the bus.",
+                "vi": "Nhanh lên, không thì bạn sẽ lỡ xe buýt.",
+                "highlight": "or"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "Provided that you will finish, you can go.",
+            "right": "Provided that you finish, you can go.",
+            "explanationVi": "Giống if: không dùng will trong mệnh đề điều kiện."
+          },
+          {
+            "wrong": "Bring a jacket if it gets cold (ý là phòng khi).",
+            "right": "Bring a jacket in case it gets cold.",
+            "explanationVi": "Phòng trước → in case."
+          },
+          {
+            "wrong": "But for you helped me, I would have failed.",
+            "right": "But for your help, I would have failed.",
+            "explanationVi": "but for + danh từ."
+          }
+        ],
+        "tips": [
+          "provided/as long as ≈ \"miễn là\"; in case ≈ \"phòng khi\"."
+        ],
+        "summary": [
+          "provided/as long as/on condition that + hiện tại.",
+          "in case = phòng khi (không phải if).",
+          "but for/without + N; otherwise; or (else)."
+        ]
+      }
+    },
+    {
+      "code": "C1-06",
+      "order": 6,
+      "titleVi": "Mệnh đề phân từ nâng cao",
+      "titleEn": "Advanced participle clauses",
+      "summaryVi": "Having + V3, having been + V3, being + V3; chủ ngữ độc lập (absolute clauses).",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng phân từ hoàn thành để nhấn mạnh trình tự.",
+          "Dùng phân từ bị động hoàn thành và tiếp diễn.",
+          "Viết mệnh đề phân từ có chủ ngữ riêng."
+        ],
+        "sections": [
+          {
+            "heading": "Các dạng phân từ",
+            "explanationVi": "Mở rộng từ B2-13: dạng hoàn thành nhấn mạnh hành động xảy ra trước; dạng bị động nhấn mạnh chủ ngữ chịu tác động.",
+            "formulas": [
+              {
+                "label": "Hoàn thành chủ động",
+                "pattern": "Having + V3, S + V"
+              },
+              {
+                "label": "Hoàn thành bị động",
+                "pattern": "Having been + V3, S + V"
+              },
+              {
+                "label": "Tiếp diễn bị động",
+                "pattern": "Being + V3, S + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Having finished the report, she went home.",
+                "vi": "Làm xong báo cáo, cô ấy về nhà.",
+                "highlight": "Having finished"
+              },
+              {
+                "en": "Having been told the news, he called his family.",
+                "vi": "Sau khi được báo tin, anh ấy gọi cho gia đình.",
+                "highlight": "Having been told"
+              },
+              {
+                "en": "Being watched by the whole class, I felt nervous.",
+                "vi": "Bị cả lớp nhìn, tôi thấy hồi hộp.",
+                "highlight": "Being watched"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Chủ ngữ độc lập",
+            "explanationVi": "Khi chủ ngữ của mệnh đề phân từ KHÁC chủ ngữ chính, giữ lại chủ ngữ đó trước phân từ. Văn phong trang trọng, hay gặp trong văn viết.",
+            "formulas": [
+              {
+                "label": "Công thức",
+                "pattern": "N + V-ing/V3 …, S + V"
+              },
+              {
+                "label": "With",
+                "pattern": "With + N + V-ing/V3, S + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "The weather being fine, we decided to go hiking.",
+                "vi": "Trời đẹp, chúng tôi quyết định đi bộ đường dài.",
+                "highlight": "The weather being"
+              },
+              {
+                "en": "With prices rising, many families are struggling.",
+                "vi": "Với giá cả tăng, nhiều gia đình đang gặp khó khăn.",
+                "highlight": "With prices rising"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "Having finish the work, he left.",
+            "right": "Having finished the work, he left.",
+            "explanationVi": "Having + V3."
+          },
+          {
+            "wrong": "Having been finished the work, he left.",
+            "right": "Having finished the work, he left.",
+            "explanationVi": "Anh ấy tự làm (chủ động), không dùng having been."
+          },
+          {
+            "wrong": "Being a sunny day, we went out.",
+            "right": "It being a sunny day, we went out. / As it was a sunny day, we went out.",
+            "explanationVi": "Chủ ngữ khác (\"trời\") phải giữ lại."
+          }
+        ],
+        "tips": [
+          "Dạng phân từ đặt ở đầu câu → chủ ngữ ngay sau dấu phẩy phải là người/vật thực hiện hoặc chịu hành động."
+        ],
+        "summary": [
+          "Having V3: việc xảy ra trước (chủ động).",
+          "Having been V3 / Being V3: bị động.",
+          "Chủ ngữ khác → giữ chủ ngữ (absolute) hoặc dùng with."
+        ]
+      }
+    },
+    {
+      "code": "C1-07",
+      "order": 7,
+      "titleVi": "Danh từ hóa trong văn viết",
+      "titleEn": "Nominalisation",
+      "summaryVi": "Biến động từ/tính từ thành danh từ để câu trang trọng, cô đọng: decide → decision.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Chuyển động từ/tính từ thành danh từ phù hợp.",
+          "Viết lại câu thông thường thành câu học thuật cô đọng.",
+          "Dùng giới từ đúng sau danh từ (of, in, for)."
+        ],
+        "sections": [
+          {
+            "heading": "Hậu tố danh từ hóa",
+            "explanationVi": "Văn học thuật và báo cáo ưu tiên danh từ hơn động từ để nhấn mạnh khái niệm, giảm chủ ngữ cá nhân và gói nhiều thông tin.",
+            "formulas": [
+              {
+                "label": "-tion/-sion",
+                "pattern": "decide → decision, reduce → reduction, expand → expansion"
+              },
+              {
+                "label": "-ment/-ance/-ence",
+                "pattern": "develop → development, perform → performance, depend → dependence"
+              },
+              {
+                "label": "-ity/-ness",
+                "pattern": "able → ability, available → availability, aware → awareness"
+              },
+              {
+                "label": "Giữ nguyên",
+                "pattern": "increase, decline, change, rise (động từ = danh từ)"
+              }
+            ],
+            "examples": [],
+            "notes": []
+          },
+          {
+            "heading": "Viết lại câu",
+            "explanationVi": "Động từ → danh từ; chủ ngữ/tân ngữ → cụm sở hữu hoặc of; trạng từ → tính từ.",
+            "formulas": [
+              {
+                "label": "Mẫu",
+                "pattern": "The government decided quickly → The government's quick decision"
+              },
+              {
+                "label": "Mẫu",
+                "pattern": "Prices rose sharply → a sharp rise in prices"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Because the population grew rapidly, the city needed more schools. → The rapid growth of the population created a need for more schools.",
+                "vi": "Vì dân số tăng nhanh, thành phố cần thêm trường học. → Sự gia tăng nhanh chóng của dân số tạo ra nhu cầu về thêm trường học.",
+                "highlight": "The rapid growth of"
+              },
+              {
+                "en": "When the factory closed, many people lost their jobs. → The closure of the factory led to widespread unemployment.",
+                "vi": "Khi nhà máy đóng cửa, nhiều người mất việc. → Việc nhà máy đóng cửa dẫn đến thất nghiệp lan rộng.",
+                "highlight": "The closure of"
+              },
+              {
+                "en": "There has been a significant increase in demand.",
+                "vi": "Nhu cầu đã tăng đáng kể.",
+                "highlight": "increase in"
+              }
+            ],
+            "notes": [
+              "Giới từ thường gặp: increase/decrease/rise in · effect/impact on · need/demand for · cause of · solution to."
+            ]
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "an increase of prices",
+            "right": "an increase in prices",
+            "explanationVi": "increase in + lĩnh vực thay đổi."
+          },
+          {
+            "wrong": "The develop of technology",
+            "right": "The development of technology",
+            "explanationVi": "Cần dạng danh từ."
+          },
+          {
+            "wrong": "It had a big impact to the economy.",
+            "right": "It had a big impact on the economy.",
+            "explanationVi": "impact on."
+          }
+        ],
+        "tips": [
+          "Đừng danh từ hóa mọi thứ: câu quá nhiều danh từ khó đọc. Dùng khi cần trang trọng, cô đọng."
+        ],
+        "summary": [
+          "Động từ/tính từ → danh từ: decision, growth, availability.",
+          "Trạng từ → tính từ: rose sharply → a sharp rise.",
+          "Học giới từ đi kèm danh từ."
+        ]
+      }
+    },
+    {
+      "code": "C1-08",
+      "order": 8,
+      "titleVi": "Tỉnh lược và thay thế",
+      "titleEn": "Ellipsis and substitution",
+      "summaryVi": "so/not, do so, one/ones; lược bỏ động từ sau trợ động từ và to.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Tránh lặp từ bằng so, not, do so, one/ones.",
+          "Lược bỏ phần lặp sau trợ động từ và to.",
+          "Dùng I think so / I hope not tự nhiên."
+        ],
+        "sections": [
+          {
+            "heading": "Thay thế",
+            "explanationVi": "Dùng từ thay thế để khỏi lặp lại cụm danh từ, động từ hay mệnh đề.",
+            "formulas": [
+              {
+                "label": "Danh từ",
+                "pattern": "one (số ít) / ones (số nhiều): I prefer the red one."
+              },
+              {
+                "label": "Mệnh đề",
+                "pattern": "think/hope/expect/suppose/be afraid + so/not"
+              },
+              {
+                "label": "Cụm động từ",
+                "pattern": "do so / do the same (trang trọng)"
+              }
+            ],
+            "examples": [
+              {
+                "en": "These shoes are too small. Do you have bigger ones?",
+                "vi": "Đôi giày này nhỏ quá. Bạn có đôi to hơn không?",
+                "highlight": "ones"
+              },
+              {
+                "en": "Will it rain tomorrow? – I hope not.",
+                "vi": "Mai có mưa không? – Mong là không.",
+                "highlight": "I hope not"
+              },
+              {
+                "en": "Is she coming? – I think so.",
+                "vi": "Cô ấy có đến không? – Tôi nghĩ là có.",
+                "highlight": "I think so"
+              },
+              {
+                "en": "He was asked to leave, and he did so immediately.",
+                "vi": "Anh ta được yêu cầu rời đi, và anh ta làm vậy ngay lập tức.",
+                "highlight": "did so"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Tỉnh lược",
+            "explanationVi": "Bỏ phần đã rõ từ ngữ cảnh, giữ lại trợ động từ hoặc to.",
+            "formulas": [
+              {
+                "label": "Sau trợ động từ",
+                "pattern": "I haven't finished yet, but Lan has (finished)."
+              },
+              {
+                "label": "Sau to",
+                "pattern": "I'd like to come, but I'm not able to (come)."
+              },
+              {
+                "label": "Sau and/but",
+                "pattern": "She sings and (she) plays the piano."
+              }
+            ],
+            "examples": [
+              {
+                "en": "I can't help you today, but I can tomorrow.",
+                "vi": "Hôm nay tôi không giúp được, nhưng mai thì được.",
+                "highlight": "I can tomorrow"
+              },
+              {
+                "en": "You don't have to come if you don't want to.",
+                "vi": "Bạn không cần đến nếu không muốn.",
+                "highlight": "want to"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "I think yes.",
+            "right": "I think so.",
+            "explanationVi": "Thay mệnh đề bằng so."
+          },
+          {
+            "wrong": "I don't hope so.",
+            "right": "I hope not.",
+            "explanationVi": "hope dùng dạng hope not."
+          },
+          {
+            "wrong": "I wanted to go but I couldn't go it.",
+            "right": "I wanted to go but I couldn't.",
+            "explanationVi": "Tỉnh lược sau trợ động từ, không thêm it."
+          },
+          {
+            "wrong": "I like this car more than that car one.",
+            "right": "I like this car more than that one.",
+            "explanationVi": "one thay cho car."
+          }
+        ],
+        "tips": [
+          "Người bản xứ hiếm khi lặp lại nguyên cụm; luyện trả lời ngắn: I think so / I'm afraid not / I'd love to."
+        ],
+        "summary": [
+          "one/ones thay danh từ; so/not thay mệnh đề.",
+          "do so thay cụm động từ (trang trọng).",
+          "Giữ trợ động từ / to, bỏ phần lặp."
+        ]
+      }
+    },
+    {
+      "code": "C1-09",
+      "order": 9,
+      "titleVi": "Hedging — nói giảm, thận trọng",
+      "titleEn": "Hedging and softening",
+      "summaryVi": "tend to, appear/seem to, it would appear that, may/might, arguably, to some extent.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Giảm mức độ khẳng định trong văn học thuật và giao tiếp chuyên nghiệp.",
+          "Dùng cấu trúc seem/appear + to V và It would appear that.",
+          "Kết hợp modal và trạng từ để thể hiện mức độ chắc chắn."
+        ],
+        "sections": [
+          {
+            "heading": "Công cụ hedging",
+            "explanationVi": "Hedging giúp lập luận khách quan, tránh khẳng định tuyệt đối khi bằng chứng chưa đủ, và giữ lịch sự khi phê bình.",
+            "formulas": [
+              {
+                "label": "Động từ",
+                "pattern": "seem/appear + to V / to have V3 · tend to + V · suggest/indicate that"
+              },
+              {
+                "label": "Phi ngôi",
+                "pattern": "It would appear/seem that … · It is possible/likely that …"
+              },
+              {
+                "label": "Modal",
+                "pattern": "may · might · could · would"
+              },
+              {
+                "label": "Trạng từ/cụm",
+                "pattern": "arguably · possibly · relatively · to some extent · in most cases"
+              }
+            ],
+            "examples": [
+              {
+                "en": "The results seem to suggest a link between sleep and memory.",
+                "vi": "Kết quả dường như gợi ý mối liên hệ giữa giấc ngủ và trí nhớ.",
+                "highlight": "seem to suggest"
+              },
+              {
+                "en": "Young people tend to spend more time online.",
+                "vi": "Người trẻ có xu hướng dành nhiều thời gian trực tuyến hơn.",
+                "highlight": "tend to"
+              },
+              {
+                "en": "It would appear that the system has been updated.",
+                "vi": "Có vẻ như hệ thống đã được cập nhật.",
+                "highlight": "It would appear"
+              },
+              {
+                "en": "This is arguably the best solution available.",
+                "vi": "Có thể nói đây là giải pháp tốt nhất hiện có.",
+                "highlight": "arguably"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Nói giảm khi phê bình",
+            "explanationVi": "Trong công việc, làm mềm lời phê bình bằng modal, câu hỏi phủ định hoặc từ giảm nhẹ.",
+            "formulas": [
+              {
+                "label": "Mẫu",
+                "pattern": "It might be better to… · I'm not sure that… · Wouldn't it be easier to…? · a bit / slightly"
+              }
+            ],
+            "examples": [
+              {
+                "en": "The deadline might be slightly unrealistic.",
+                "vi": "Hạn chót có lẽ hơi khó khả thi.",
+                "highlight": "might be slightly"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "This proves that all students are lazy.",
+            "right": "This suggests that some students may lack motivation.",
+            "explanationVi": "Khẳng định tuyệt đối thiếu căn cứ; văn học thuật cần hedging."
+          },
+          {
+            "wrong": "He seems that he is tired.",
+            "right": "He seems to be tired. / It seems that he is tired.",
+            "explanationVi": "Không trộn hai cấu trúc."
+          },
+          {
+            "wrong": "People tend use phones.",
+            "right": "People tend to use phones.",
+            "explanationVi": "tend to + V."
+          }
+        ],
+        "tips": [
+          "Đừng hedge quá nhiều trong một câu (may possibly perhaps…) — một tín hiệu là đủ."
+        ],
+        "summary": [
+          "seem/appear to V; tend to V; It would appear that…",
+          "may/might/could + arguably/to some extent.",
+          "Làm mềm phê bình bằng modal và từ giảm nhẹ."
+        ]
+      }
+    },
+    {
+      "code": "C1-10",
+      "order": 10,
+      "titleVi": "Modal nâng cao: needn't have, didn't need to, be to",
+      "titleEn": "Advanced modals",
+      "summaryVi": "needn't have V3 vs didn't need to V; was/were to; be bound/due/supposed to; may/might as well.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Phân biệt needn't have V3 và didn't need to V.",
+          "Dùng be to và các cấu trúc gần nghĩa modal.",
+          "Dùng may/might as well để đưa lựa chọn hợp lý."
+        ],
+        "sections": [
+          {
+            "heading": "needn't have vs didn't need to",
+            "explanationVi": "needn't have + V3: đã làm nhưng hóa ra không cần. didn't need to + V: không cần làm (thường là đã không làm).",
+            "formulas": [
+              {
+                "label": "Đã làm thừa",
+                "pattern": "S + needn't have + V3"
+              },
+              {
+                "label": "Không cần",
+                "pattern": "S + didn't need to + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "I needn't have cooked so much food — only three people came.",
+                "vi": "Lẽ ra tôi không cần nấu nhiều thế — chỉ có ba người đến.",
+                "highlight": "needn't have cooked"
+              },
+              {
+                "en": "I didn't need to buy a ticket, so I went straight in.",
+                "vi": "Tôi không cần mua vé nên vào thẳng.",
+                "highlight": "didn't need to buy"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Cấu trúc bán modal",
+            "explanationVi": "Các cụm diễn đạt kế hoạch chính thức, nghĩa vụ, khả năng chắc chắn.",
+            "formulas": [
+              {
+                "label": "Kế hoạch/mệnh lệnh chính thức",
+                "pattern": "be to + V: The President is to visit Hanoi."
+              },
+              {
+                "label": "Chắc chắn sẽ",
+                "pattern": "be bound to + V"
+              },
+              {
+                "label": "Theo lịch / lẽ ra phải",
+                "pattern": "be due to + V · be supposed to + V"
+              },
+              {
+                "label": "Lựa chọn hợp lý",
+                "pattern": "may/might as well + V"
+              }
+            ],
+            "examples": [
+              {
+                "en": "All staff are to wear ID badges.",
+                "vi": "Toàn bộ nhân viên phải đeo thẻ.",
+                "highlight": "are to wear"
+              },
+              {
+                "en": "It's bound to rain if we forget umbrellas.",
+                "vi": "Nếu quên ô thì chắc chắn trời sẽ mưa.",
+                "highlight": "bound to"
+              },
+              {
+                "en": "You were supposed to call me yesterday.",
+                "vi": "Hôm qua lẽ ra bạn phải gọi cho tôi.",
+                "highlight": "supposed to"
+              },
+              {
+                "en": "The bus isn't coming. We might as well walk.",
+                "vi": "Xe buýt không đến. Chúng ta đi bộ luôn cho rồi.",
+                "highlight": "might as well"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "I didn't need to bring my umbrella, but I brought it.",
+            "right": "I needn't have brought my umbrella.",
+            "explanationVi": "Đã làm mà không cần → needn't have V3."
+          },
+          {
+            "wrong": "He is bound to winning.",
+            "right": "He is bound to win.",
+            "explanationVi": "be bound to + V."
+          },
+          {
+            "wrong": "We may as well to leave.",
+            "right": "We may as well leave.",
+            "explanationVi": "may as well + V."
+          }
+        ],
+        "tips": [
+          "needn't have = \"làm thừa\"."
+        ],
+        "summary": [
+          "needn't have V3: đã làm nhưng không cần.",
+          "didn't need to V: không cần làm.",
+          "be to / bound to / due to / supposed to / might as well."
+        ]
+      }
+    },
+    {
+      "code": "C1-11",
+      "order": 11,
+      "titleVi": "Từ nối và tổ chức diễn ngôn",
+      "titleEn": "Discourse markers and linking",
+      "summaryVi": "Bổ sung, đối lập, nhượng bộ, nguyên nhân, minh họa, kết luận trong văn viết học thuật.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Chọn từ nối đúng chức năng và đúng mức trang trọng.",
+          "Dùng đúng dấu câu và cấu trúc theo sau.",
+          "Tổ chức đoạn văn mạch lạc."
+        ],
+        "sections": [
+          {
+            "heading": "Từ nối theo chức năng",
+            "explanationVi": "Mỗi nhóm từ nối có cấu trúc riêng: một số nối hai câu (however), một số đứng trước mệnh đề (whereas), một số trước cụm danh từ (owing to).",
+            "formulas": [
+              {
+                "label": "Bổ sung",
+                "pattern": "Furthermore, · Moreover, · In addition, · In addition to + N/V-ing"
+              },
+              {
+                "label": "Đối lập",
+                "pattern": "However, · Nevertheless, · On the other hand, · whereas + clause · Conversely,"
+              },
+              {
+                "label": "Nhượng bộ",
+                "pattern": "Admittedly, · Even so, · Notwithstanding + N"
+              },
+              {
+                "label": "Nguyên nhân/kết quả",
+                "pattern": "owing to / due to + N · Consequently, · Hence, · Thus,"
+              },
+              {
+                "label": "Minh họa",
+                "pattern": "For instance, · such as + N · namely"
+              },
+              {
+                "label": "Kết luận",
+                "pattern": "In conclusion, · On balance, · All things considered,"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Remote work saves commuting time. Moreover, it can improve productivity.",
+                "vi": "Làm việc từ xa tiết kiệm thời gian đi lại. Hơn nữa, nó có thể tăng năng suất.",
+                "highlight": "Moreover"
+              },
+              {
+                "en": "Owing to heavy rain, the match was postponed.",
+                "vi": "Do mưa lớn, trận đấu bị hoãn.",
+                "highlight": "Owing to"
+              },
+              {
+                "en": "Admittedly, the plan is expensive. Even so, it is worth considering.",
+                "vi": "Phải thừa nhận kế hoạch này tốn kém. Dù vậy, nó đáng để cân nhắc.",
+                "highlight": "Even so"
+              },
+              {
+                "en": "On balance, the benefits outweigh the drawbacks.",
+                "vi": "Cân nhắc mọi mặt, lợi ích vượt trội bất lợi.",
+                "highlight": "On balance"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "Due to it rained, we stayed inside.",
+            "right": "Due to the rain / Because it rained, we stayed inside.",
+            "explanationVi": "due to + danh từ, không + mệnh đề."
+          },
+          {
+            "wrong": "In addition to work late, she studies at night.",
+            "right": "In addition to working late, she studies at night.",
+            "explanationVi": "In addition to là giới từ → V-ing."
+          },
+          {
+            "wrong": "Moreover the cost is high.",
+            "right": "Moreover, the cost is high.",
+            "explanationVi": "Trạng từ liên kết đầu câu cần dấu phẩy."
+          },
+          {
+            "wrong": "Nevertheless the risk, they continued.",
+            "right": "Notwithstanding the risk, they continued. / The risk was high. Nevertheless, they continued.",
+            "explanationVi": "Nevertheless nối hai câu; trước cụm danh từ dùng notwithstanding/despite."
+          }
+        ],
+        "tips": [
+          "Mỗi đoạn văn chỉ cần 2–3 từ nối được chọn kỹ; dùng quá nhiều làm văn nặng nề."
+        ],
+        "summary": [
+          "Phân biệt từ nối + câu, + mệnh đề, + cụm danh từ.",
+          "Furthermore/However/Consequently + dấu phẩy.",
+          "owing to/due to/notwithstanding + N."
+        ]
+      }
+    },
+    {
+      "code": "C1-12",
+      "order": 12,
+      "titleVi": "Mẫu bổ ngữ phức của động từ",
+      "titleEn": "Complex verb complementation",
+      "summaryVi": "verb + object + to V/V-ing/bare infinitive; verb + preposition + V-ing; object + as/for; it làm tân ngữ giả.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Dùng đúng mẫu động từ + tân ngữ + to V/V/V-ing.",
+          "Dùng đúng giới từ cố định sau động từ.",
+          "Dùng it làm tân ngữ giả: find it difficult to V."
+        ],
+        "sections": [
+          {
+            "heading": "Động từ + tân ngữ + dạng động từ",
+            "explanationVi": "Động từ tri giác (see, hear, watch, notice) + O + V (toàn bộ hành động) hoặc V-ing (đang diễn ra). make/let + O + V nguyên mẫu; ở bị động make dùng to V.",
+            "formulas": [
+              {
+                "label": "Tri giác",
+                "pattern": "see/hear/watch + O + V / V-ing"
+              },
+              {
+                "label": "Sai khiến",
+                "pattern": "make/let/have + O + V · be made + to V"
+              },
+              {
+                "label": "+ O + to V",
+                "pattern": "allow, enable, force, urge, expect, cause"
+              }
+            ],
+            "examples": [
+              {
+                "en": "I heard her sing at the concert.",
+                "vi": "Tôi đã nghe cô ấy hát trong buổi hòa nhạc (cả bài).",
+                "highlight": "her sing"
+              },
+              {
+                "en": "I saw him crossing the road.",
+                "vi": "Tôi thấy anh ấy đang băng qua đường.",
+                "highlight": "him crossing"
+              },
+              {
+                "en": "He was made to apologise.",
+                "vi": "Anh ta bị buộc phải xin lỗi.",
+                "highlight": "made to apologise"
+              },
+              {
+                "en": "The new software enables users to work offline.",
+                "vi": "Phần mềm mới cho phép người dùng làm việc ngoại tuyến.",
+                "highlight": "enables users to work"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Giới từ cố định và it giả",
+            "explanationVi": "Nhiều động từ đi với giới từ cố định, sau giới từ là V-ing. it làm tân ngữ giả khi tân ngữ thật là to V hoặc mệnh đề that.",
+            "formulas": [
+              {
+                "label": "Động từ + giới từ",
+                "pattern": "object to · succeed in · prevent sb from · accuse sb of · congratulate sb on · insist on"
+              },
+              {
+                "label": "it giả",
+                "pattern": "find/make/consider + it + adj + to V / that clause"
+              },
+              {
+                "label": "regard … as",
+                "pattern": "regard/see/describe + O + as + N/adj"
+              }
+            ],
+            "examples": [
+              {
+                "en": "She succeeded in getting a scholarship.",
+                "vi": "Cô ấy đã giành được học bổng.",
+                "highlight": "succeeded in getting"
+              },
+              {
+                "en": "I find it hard to concentrate in open-plan offices.",
+                "vi": "Tôi thấy khó tập trung trong văn phòng mở.",
+                "highlight": "find it hard"
+              },
+              {
+                "en": "Many people regard him as a genius.",
+                "vi": "Nhiều người coi anh ấy là thiên tài.",
+                "highlight": "regard him as"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "They made him to sign.",
+            "right": "They made him sign.",
+            "explanationVi": "make + O + V nguyên mẫu (chủ động)."
+          },
+          {
+            "wrong": "I object to work late.",
+            "right": "I object to working late.",
+            "explanationVi": "to là giới từ → V-ing."
+          },
+          {
+            "wrong": "I find difficult to sleep.",
+            "right": "I find it difficult to sleep.",
+            "explanationVi": "Cần it làm tân ngữ giả."
+          },
+          {
+            "wrong": "The rain prevented us to go out.",
+            "right": "The rain prevented us from going out.",
+            "explanationVi": "prevent sb from V-ing."
+          }
+        ],
+        "tips": [
+          "Ghi chép từng động từ kèm khung: \"prevent sb from V-ing\", \"regard sb as\"."
+        ],
+        "summary": [
+          "see/hear + O + V/V-ing; make/let + O + V.",
+          "Giới từ cố định + V-ing.",
+          "find/make it + adj + to V."
+        ]
+      }
+    },
+    {
+      "code": "C1-13",
+      "order": 13,
+      "titleVi": "Nhấn mạnh",
+      "titleEn": "Emphasis",
+      "summaryVi": "do/does/did nhấn mạnh, the very, -ever (whatever, however), at all, such/so, trạng từ nhấn mạnh.",
+      "isLevelReview": false,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Nhấn mạnh động từ bằng do/does/did.",
+          "Dùng the very, at all, whatsoever, -ever.",
+          "Chọn trạng từ nhấn mạnh phù hợp với tính từ."
+        ],
+        "sections": [
+          {
+            "heading": "Cấu trúc nhấn mạnh",
+            "explanationVi": "Các công cụ này thể hiện cảm xúc mạnh, phản bác hoặc làm rõ.",
+            "formulas": [
+              {
+                "label": "Trợ động từ",
+                "pattern": "S + do/does/did + V (nhấn mạnh, phản bác)"
+              },
+              {
+                "label": "the very",
+                "pattern": "the very + N (chính, ngay)"
+              },
+              {
+                "label": "Phủ định mạnh",
+                "pattern": "not … at all · no … whatsoever"
+              },
+              {
+                "label": "-ever",
+                "pattern": "whatever/whoever/however/wherever + clause"
+              }
+            ],
+            "examples": [
+              {
+                "en": "I did lock the door — I'm sure!",
+                "vi": "Tôi ĐÃ khóa cửa mà — tôi chắc chắn!",
+                "highlight": "did lock"
+              },
+              {
+                "en": "That's the very book I was looking for.",
+                "vi": "Đó chính là quyển sách tôi đang tìm.",
+                "highlight": "the very"
+              },
+              {
+                "en": "I have no doubt whatsoever.",
+                "vi": "Tôi hoàn toàn không nghi ngờ gì.",
+                "highlight": "whatsoever"
+              },
+              {
+                "en": "However hard I try, I can't remember his name.",
+                "vi": "Dù cố đến mấy tôi cũng không nhớ nổi tên anh ấy.",
+                "highlight": "However hard"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "heading": "Trạng từ nhấn mạnh và tính từ",
+            "explanationVi": "Tính từ thường (gradable) đi với very/extremely; tính từ mạnh (extreme/non-gradable: amazing, exhausted, freezing) đi với absolutely/utterly/totally, không đi với very.",
+            "formulas": [
+              {
+                "label": "Thường",
+                "pattern": "very/extremely/really + tired, cold, good"
+              },
+              {
+                "label": "Mạnh",
+                "pattern": "absolutely/utterly/completely + exhausted, freezing, amazing"
+              }
+            ],
+            "examples": [
+              {
+                "en": "The view was absolutely stunning.",
+                "vi": "Khung cảnh đẹp tuyệt vời.",
+                "highlight": "absolutely stunning"
+              }
+            ],
+            "notes": [
+              "really đi được với cả hai nhóm."
+            ]
+          }
+        ],
+        "commonMistakes": [
+          {
+            "wrong": "I did locked the door.",
+            "right": "I did lock the door.",
+            "explanationVi": "Sau did dùng V nguyên mẫu."
+          },
+          {
+            "wrong": "It was very freezing.",
+            "right": "It was absolutely freezing.",
+            "explanationVi": "Tính từ mạnh không đi với very."
+          },
+          {
+            "wrong": "However I try hard, it fails.",
+            "right": "However hard I try, it fails.",
+            "explanationVi": "However + adj/adv + S + V."
+          }
+        ],
+        "tips": [
+          "Trong nói, nhấn giọng vào do/did để thể hiện phản bác."
+        ],
+        "summary": [
+          "do/does/did + V để nhấn mạnh.",
+          "the very, at all, whatsoever, -ever.",
+          "absolutely + tính từ mạnh; very + tính từ thường."
+        ]
+      }
+    },
+    {
+      "code": "C1-14",
+      "order": 14,
+      "titleVi": "Ôn tập C1 và kiểm tra level",
+      "titleEn": "C1 review and level test",
+      "summaryVi": "Tổng hợp đảo ngữ, câu chẻ, giả định, phân từ, danh từ hóa và diễn ngôn học thuật.",
+      "isLevelReview": true,
+      "theoryVersion": 1,
+      "theory": {
+        "objectives": [
+          "Viết lại câu bằng nhiều cấu trúc tương đương với sắc thái khác nhau.",
+          "Vận dụng văn phong trang trọng, học thuật chính xác.",
+          "Đạt từ 80% bài kiểm tra để hoàn thành C1."
+        ],
+        "sections": [
+          {
+            "heading": "Bản đồ ngữ pháp C1",
+            "explanationVi": "C1 chủ yếu là các công cụ thay đổi trọng tâm thông tin, mức độ trang trọng và sắc thái lập luận.",
+            "formulas": [
+              {
+                "label": "Đảo ngữ",
+                "pattern": "Never have I… · No sooner … than · Had I known… · Should you…"
+              },
+              {
+                "label": "Nhấn mạnh",
+                "pattern": "It is X that… · What I need is… · do/did + V · the very"
+              },
+              {
+                "label": "Giả định",
+                "pattern": "suggest/essential that + S + V · but for · provided that · in case"
+              },
+              {
+                "label": "Văn viết",
+                "pattern": "Having V3 · danh từ hóa · hedging · discourse markers"
+              },
+              {
+                "label": "Modal",
+                "pattern": "needn't have V3 · be to · bound to · might as well"
+              }
+            ],
+            "examples": [
+              {
+                "en": "Not only did the policy fail, but it also caused widespread anger.",
+                "vi": "Chính sách không những thất bại mà còn gây phẫn nộ rộng rãi.",
+                "highlight": "Not only did"
+              },
+              {
+                "en": "What concerns experts is the rapid decline in biodiversity.",
+                "vi": "Điều khiến giới chuyên gia lo ngại là sự suy giảm nhanh chóng của đa dạng sinh học.",
+                "highlight": "What concerns experts"
+              },
+              {
+                "en": "It is essential that the report be submitted by Friday.",
+                "vi": "Báo cáo bắt buộc phải được nộp trước thứ Sáu.",
+                "highlight": "be submitted"
+              }
+            ],
+            "notes": []
+          }
+        ],
+        "commonMistakes": [],
+        "tips": [
+          "Luyện viết lại một câu theo 3 cách (thường, đảo ngữ, câu chẻ) để thấy rõ sắc thái."
+        ],
+        "summary": [
+          "Đảo ngữ và câu chẻ để nhấn mạnh.",
+          "Thức giả định, điều kiện ẩn cho văn trang trọng.",
+          "Đạt ≥ 80% bài kiểm tra để mở C2."
+        ]
+      }
+    }
+  ]
+}

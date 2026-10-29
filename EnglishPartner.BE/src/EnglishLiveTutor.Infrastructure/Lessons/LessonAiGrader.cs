@@ -20,16 +20,7 @@ public sealed class LessonAiGrader : ILessonAiGrader
     private readonly IOptions<LessonAssessmentOptions> _options;
     private readonly ILogger<LessonAiGrader> _logger;
 
-    public LessonAiGrader(
-        HttpClient http,
-        IAudioRecordingRepository audioRepo,
-        ILessonMediaStorage mediaStorage,
-        IOptions<LessonAssessmentOptions> options,
-        ILogger<LessonAiGrader> logger)
-        : this(http, audioRepo, mediaStorage, null!, options, logger)
-    {
-    }
-
+    // Single constructor: typed HttpClient activation fails when several public constructors are satisfiable.
     public LessonAiGrader(
         HttpClient http,
         IAudioRecordingRepository audioRepo,

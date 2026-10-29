@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -398,6 +398,56 @@ public class ProblemDetailsGlobalExceptionHandlerTests
         Assert.Equal("Refresh token đã bị thu hồi.", problem.Detail);
         Assert.Equal("Refresh token đã bị thu hồi.", problem.Extensions["error"]);
     }
+
+    [Fact]
+    public async Task TooManyRequestsException_ShouldMapTo429TooManyRequests()
+    {
+        var (context, bodyStream) = CreateHttpContext();
+        var handler = new GlobalExceptionHandler(NullLogger<GlobalExceptionHandler>.Instance);
+        var ex = new TooManyRequestsException("grammar_daily_quota_exceeded");
+
+        bool handled = await handler.TryHandleAsync(context, ex, CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, context.Response.StatusCode);
+        Assert.StartsWith("application/problem+json", context.Response.ContentType);
+
+        using var json = ReadResponseBody(bodyStream);
+        var root = json.RootElement;
+        Assert.Equal(429, root.GetProperty("status").GetInt32());
+        Assert.Equal("grammar_daily_quota_exceeded", root.GetProperty("detail").GetString());
+        Assert.Equal("grammar_daily_quota_exceeded", root.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task UnprocessableEntityException_ShouldMapTo422UnprocessableEntity_WithExtensions()
+    {
+        var (context, bodyStream) = CreateHttpContext();
+        var handler = new GlobalExceptionHandler(NullLogger<GlobalExceptionHandler>.Instance);
+        var extensions = new Dictionary<string, object?>
+        {
+            ["rejected"] = new[]
+            {
+                new { index = 0, issues = new[] { "type_unsupported" } }
+            }
+        };
+        var ex = new UnprocessableEntityException("grammar_generation_no_valid_exercises", extensions);
+
+        bool handled = await handler.TryHandleAsync(context, ex, CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, context.Response.StatusCode);
+        Assert.StartsWith("application/problem+json", context.Response.ContentType);
+
+        using var json = ReadResponseBody(bodyStream);
+        var root = json.RootElement;
+        Assert.Equal(422, root.GetProperty("status").GetInt32());
+        Assert.Equal("grammar_generation_no_valid_exercises", root.GetProperty("detail").GetString());
+        Assert.Equal("grammar_generation_no_valid_exercises", root.GetProperty("error").GetString());
+        Assert.True(root.TryGetProperty("rejected", out var rejectedProp));
+        Assert.Equal(JsonValueKind.Array, rejectedProp.ValueKind);
+    }
+
 
     private sealed class TestOptionsMonitor<T> : IOptionsMonitor<T>
     {

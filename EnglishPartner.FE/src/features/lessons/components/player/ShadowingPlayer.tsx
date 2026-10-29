@@ -290,7 +290,7 @@ export const ShadowingPlayer: React.FC<ShadowingPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={handleSubmit}
+            data-exercise-submit onClick={handleSubmit}
             disabled={(!recordedBlob && !uploadedAssetId) || isRecording || busy}
             className="w-full gap-2 py-3 rounded-2xl"
           >

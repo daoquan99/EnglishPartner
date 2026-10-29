@@ -231,7 +231,7 @@ export const FlashcardPlayer: React.FC<FlashcardPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ ratings })}
+            data-exercise-submit onClick={() => onSubmit({ ratings })}
             disabled={!isAllRated || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >

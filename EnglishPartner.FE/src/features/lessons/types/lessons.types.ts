@@ -1,3 +1,5 @@
+import type { LessonAiExecutionConfigDto } from '@/shared/api/openapi.types';
+
 /**
  * Canonical 16 Exercise Types Enum as specified in lesson-exercises-spec.md
  */
@@ -377,11 +379,7 @@ export interface AttemptProgressDto {
   finalScore100?: number | null;
 }
 
-export interface LessonAiExecutionConfigDto {
-  apiKey?: string | null;
-  assessmentModelCode?: string | null;
-  provider?: string | null;
-}
+export type { LessonAiExecutionConfigDto };
 
 export interface DictationWordSubstitutionDto {
   expected: string;

@@ -67,7 +67,7 @@ export const ErrorCorrectionPlayer: React.FC<ErrorCorrectionPlayerProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => onSubmit({ correctedSentence: corrected.trim() })}
+            data-exercise-submit onClick={() => onSubmit({ correctedSentence: corrected.trim() })}
             disabled={corrected.trim().length === 0 || isSubmitting}
             className="w-full gap-2 py-3 rounded-2xl"
           >
