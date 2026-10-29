@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
+import { extractApiErrorMessage } from '@/shared/api/httpClient';
 import { Loader2 } from 'lucide-react';
 import { DailyLearningSettingsDialog } from '../components/DailyLearningSettingsDialog';
 import { PronunciationHistoryDialog } from '../components/PronunciationHistoryDialog';
@@ -51,6 +52,7 @@ export const DailyVocabularyPage: React.FC = () => {
   const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [aiGeneratorInitialMode, setAiGeneratorInitialMode] = useState<'direct' | 'manual' | undefined>(undefined);
+  const autoInitAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (plan?.items) {
@@ -184,20 +186,40 @@ export const DailyVocabularyPage: React.FC = () => {
     setApiKeyWarning(null);
   }, []);
 
-  const is404Uninitialized = useMemo(
-    () =>
-      Boolean(planError) &&
-      (isAxiosError(planError)
-        ? planError.response?.status === 404
-        : (planError as any)?.status === 404),
-    [planError]
-  );
+  const is404Uninitialized = useMemo(() => {
+    if (!planError) return false;
+    const status = isAxiosError(planError)
+      ? planError.response?.status
+      : (planError as any)?.status;
+    if (status !== 404) return false;
+    const code = isAxiosError(planError)
+      ? (planError.response?.data as any)?.code
+      : (planError as any)?.response?.data?.code ?? (planError as any)?.code;
+    return code === 'daily_plan_not_initialized';
+  }, [planError]);
 
-  if (isPlanLoading && cards.length === 0) {
+  useEffect(() => {
+    if (is404Uninitialized && !autoInitAttemptedRef.current && !initPlanMutation.isPending) {
+      autoInitAttemptedRef.current = true;
+      initPlanMutation.mutate(undefined, {
+        onError: (err: any) => {
+          setApiKeyWarning(extractApiErrorMessage(err));
+        },
+      });
+    }
+  }, [is404Uninitialized, initPlanMutation]);
+
+  const isInitializing = initPlanMutation.isPending && !initPlanMutation.isError;
+
+  if ((isPlanLoading || isInitializing) && cards.length === 0) {
     return (
       <div className="p-12 text-center text-sm text-slate-500 flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
-        <span>{t('vocab.loadingPlan')}</span>
+        <span>
+          {isInitializing
+            ? t('vocab.initializingPlan', 'Đang khởi tạo kế hoạch học tập hôm nay...')
+            : t('vocab.loadingPlan')}
+        </span>
       </div>
     );
   }

@@ -54,21 +54,46 @@ public sealed class GenerateVocabularyCommandHandler : ICommandHandler<GenerateV
 
         string effectiveModel = model != null ? model.GetEffectiveModelCode() : requestedModelCode;
 
-        var prompt = await _promptBuilder.BuildPromptAsync(new(req.RequestedCount, req.CefrLevel, req.Topic, req.ExcludedWords), ct);
+        var cleanTargetTerms = TargetedVocabularyHelper.CleanTargetTerms(req.TargetTerms);
+        string? cleanSourceSentence = string.IsNullOrWhiteSpace(req.SourceSentence) ? null : req.SourceSentence.Trim();
 
-        var context = new VocabularyGenerationContext(command.UserId, requestedModelCode, prompt.RequestedCount,
-            prompt.CefrLevel, prompt.Topic, req.AssignToTodayPlan);
+        var promptReq = new BuildVocabularyGenerationPromptRequest(
+            RequestedCount: req.RequestedCount,
+            CefrLevel: req.CefrLevel,
+            Topic: req.Topic,
+            ExcludedWords: req.ExcludedWords,
+            ExamplesPerSense: req.ExamplesPerSense,
+            TargetTerms: cleanTargetTerms.Count > 0 ? cleanTargetTerms : null,
+            SourceSentence: cleanSourceSentence);
+
+        var prompt = await _promptBuilder.BuildPromptAsync(promptReq, ct);
+
+        var context = new VocabularyGenerationContext(
+            UserId: command.UserId,
+            ModelCode: requestedModelCode,
+            RequestedCount: prompt.RequestedCount,
+            CefrLevel: prompt.CefrLevel,
+            Topic: prompt.Topic,
+            AssignToTodayPlan: req.AssignToTodayPlan,
+            ExamplesPerSense: req.ExamplesPerSense,
+            TargetTerms: cleanTargetTerms.Count > 0 ? cleanTargetTerms : null,
+            SourceSentence: cleanSourceSentence);
+
+        var options = new VocabularyGenerationRequestOptions(
+            ApiKey: req.ApiKey?.Trim() ?? string.Empty,
+            ModelCode: effectiveModel,
+            CefrLevel: prompt.CefrLevel,
+            Topic: prompt.Topic,
+            Count: prompt.RequestedCount,
+            ExcludedWords: prompt.ExcludedWords.ToList(),
+            Provider: req.Provider,
+            ExamplesPerSense: req.ExamplesPerSense,
+            TargetTerms: cleanTargetTerms.Count > 0 ? cleanTargetTerms : null,
+            SourceSentence: cleanSourceSentence);
+
         try
         {
-            var generated = await _aiGenerator.GenerateVocabularyAsync(
-                req.ApiKey?.Trim() ?? string.Empty,
-                effectiveModel,
-                prompt.CefrLevel,
-                prompt.Topic,
-                prompt.RequestedCount,
-                prompt.ExcludedWords.ToList(),
-                req.Provider,
-                ct);
+            var generated = await _aiGenerator.GenerateVocabularyAsync(options, ct);
             return await _writer.SaveAsync(context, generated, ct);
         }
         catch (Exception ex)

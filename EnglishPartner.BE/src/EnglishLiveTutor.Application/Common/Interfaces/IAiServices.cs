@@ -25,16 +25,23 @@ public sealed record GeneratedCollocationRaw(string PhraseEn, string MeaningVi);
 public sealed record GeneratedExampleRaw(string SentenceEn, string SentenceVi);
 public sealed record GeneratedGrammarPatternRaw(string Pattern, string Explanation, string Example);
 
+public sealed record VocabularyGenerationRequestOptions(
+    string ApiKey,
+    string ModelCode,
+    string CefrLevel,
+    string Topic,
+    int Count,
+    IReadOnlyList<string> ExcludedWords,
+    string? Provider = null,
+    int ExamplesPerSense = 2,
+    IReadOnlyList<string>? TargetTerms = null,
+    string? SourceSentence = null
+);
+
 public interface IVocabularyAiGenerator
 {
     Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(
-        string apiKey,
-        string modelCode,
-        string cefrLevel,
-        string topic,
-        int count,
-        List<string> excludedWords,
-        string? provider = null,
+        VocabularyGenerationRequestOptions options,
         CancellationToken ct = default);
 }
 

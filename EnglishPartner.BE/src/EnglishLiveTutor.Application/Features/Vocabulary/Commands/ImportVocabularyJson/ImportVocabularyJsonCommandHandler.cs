@@ -1,4 +1,4 @@
-﻿using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 
 namespace EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
@@ -13,13 +13,20 @@ public sealed class ImportVocabularyJsonCommandHandler(IVocabularyGenerationCont
         if (modelCode.Length > 64)
             throw new InvalidOperationException("Tên model không được dài quá 64 ký tự.");
 
-        var context = new VocabularyGenerationContext(command.UserId, modelCode, 0,
+        int effectiveExamples = req.ExamplesPerSense ?? 5;
+        var context = new VocabularyGenerationContext(
+            command.UserId,
+            modelCode,
+            0,
             VocabularyGenerationDefaults.NormalizeCefr(req.CefrLevel),
-            VocabularyGenerationDefaults.NormalizeTopic(req.Topic), req.AssignToTodayPlan);
+            VocabularyGenerationDefaults.NormalizeTopic(req.Topic),
+            req.AssignToTodayPlan,
+            ExamplesPerSense: effectiveExamples);
+
         try
         {
             ct.ThrowIfCancellationRequested();
-            var generated = content.ParseResponse(req.JsonText, context.CefrLevel);
+            var generated = content.ParseResponse(req.JsonText, context.CefrLevel, effectiveExamples);
             context = context with { RequestedCount = generated.Count };
             return await writer.SaveAsync(context, generated, ct);
         }

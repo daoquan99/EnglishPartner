@@ -1,4 +1,5 @@
-import { httpClient } from '@/shared/api/httpClient';
+import { toast } from '@/shared/lib/toast';
+import { httpClient, extractApiErrorMessage } from '@/shared/api/httpClient';
 import type {
   SynthesizePronunciationAudioRequestDto,
   SynthesizePronunciationAudioResponseDto,
@@ -152,11 +153,31 @@ export const vocabularyApi = {
     if (timeZoneId) {
       params.timeZoneId = timeZoneId;
     }
-    const { data } = await httpClient.get<any>(
-      '/api/learning/flashcards/today',
-      { params }
-    );
-    return mapPlanResponse(data);
+    try {
+      const { data } = await httpClient.get<any>(
+        '/api/learning/flashcards/today',
+        { params, skipErrorToast: true } as any
+      );
+      return mapPlanResponse(data);
+    } catch (err: any) {
+      const isDailyNotInitialized =
+        err?.response?.status === 404 &&
+        (err?.response?.data?.code === 'daily_plan_not_initialized' ||
+          err?.response?.data?.error === 'daily_plan_not_initialized');
+
+      if (!isDailyNotInitialized) {
+        const errorMsg = extractApiErrorMessage(err);
+        const status = err?.response?.status;
+        const title = status ? `Lỗi API (${status})` : 'Lỗi kết nối';
+        const toastKey = `api-err-${status ?? 'net'}-${errorMsg.slice(0, 50)}`;
+        toast.error(errorMsg, {
+          id: toastKey,
+          title,
+        });
+      }
+
+      throw err;
+    }
   },
 
   async initializeTodayPlan(): Promise<DailyVocabularyPlanResponseDto> {
@@ -179,34 +200,51 @@ export const vocabularyApi = {
   },
 
   async generateVocabularyWithAi(
-    payload: GenerateVocabularyRequestDto
+    payload: GenerateVocabularyRequestDto,
+    options?: { skipErrorToast?: boolean }
   ): Promise<VocabularyFlashcardDto[]> {
     const { data } = await httpClient.post<VocabularyFlashcardDto[]>(
       '/api/vocabularies/generate',
       payload,
       // Allow one minute beyond the backend's 3000-second generation timeout.
-      { timeout: 3_060_000 }
+      { timeout: 3_060_000, skipErrorToast: options?.skipErrorToast } as any
     );
     return data;
   },
 
   async buildGenerationPrompt(
-    payload: BuildVocabularyGenerationPromptRequestDto
+    payload: BuildVocabularyGenerationPromptRequestDto,
+    options?: { skipErrorToast?: boolean }
   ): Promise<VocabularyGenerationPromptDto> {
-    const { data } = await httpClient.post<VocabularyGenerationPromptDto>(
-      '/api/vocabularies/generation/prompt',
-      payload
-    );
+    const config = options?.skipErrorToast !== undefined ? { skipErrorToast: options.skipErrorToast } : undefined;
+    const { data } = config
+      ? await httpClient.post<VocabularyGenerationPromptDto>(
+          '/api/vocabularies/generation/prompt',
+          payload,
+          config as any
+        )
+      : await httpClient.post<VocabularyGenerationPromptDto>(
+          '/api/vocabularies/generation/prompt',
+          payload
+        );
     return data;
   },
 
   async importVocabularyJson(
-    payload: ImportVocabularyJsonRequestDto
+    payload: ImportVocabularyJsonRequestDto,
+    options?: { skipErrorToast?: boolean }
   ): Promise<VocabularyFlashcardDto[]> {
-    const { data } = await httpClient.post<VocabularyFlashcardDto[]>(
-      '/api/vocabularies/generation/import',
-      payload
-    );
+    const config = options?.skipErrorToast !== undefined ? { skipErrorToast: options.skipErrorToast } : undefined;
+    const { data } = config
+      ? await httpClient.post<VocabularyFlashcardDto[]>(
+          '/api/vocabularies/generation/import',
+          payload,
+          config as any
+        )
+      : await httpClient.post<VocabularyFlashcardDto[]>(
+          '/api/vocabularies/generation/import',
+          payload
+        );
     return data;
   },
 

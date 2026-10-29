@@ -23,3 +23,10 @@ export type {
   VocabularyGenerationPromptDto,
   ImportVocabularyJsonRequestDto,
 } from './types/vocabulary.types';
+export { SelectionVocabularyMenu } from './components/SelectionVocabularyMenu';
+export { TargetedVocabularyDialog } from './components/TargetedVocabularyDialog';
+export { normalizeTargetText, countWords, isSentenceMode } from './lib/targetedVocabulary';
+export type {
+  GenerateVocabularyRequestDto,
+} from './types/vocabulary.types';
+

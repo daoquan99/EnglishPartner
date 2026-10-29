@@ -1,6 +1,5 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
 using System.Net.Http.Json;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace EnglishLiveTutor.Infrastructure.Ai;
@@ -22,31 +21,32 @@ public sealed class GeminiVocabularyAiGenerator : IVocabularyAiGenerator
     }
 
     public async Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(
-        string apiKey,
-        string modelCode,
-        string cefrLevel,
-        string topic,
-        int count,
-        List<string> excludedWords,
-        string? provider = null,
+        VocabularyGenerationRequestOptions options,
         CancellationToken ct = default)
     {
-        bool isAgy = string.Equals(provider, "agy", StringComparison.OrdinalIgnoreCase) ||
-                     (_agyRunner?.IsAgyModel(modelCode) ?? false);
+        bool isAgy = string.Equals(options.Provider, "agy", StringComparison.OrdinalIgnoreCase) ||
+                     (_agyRunner?.IsAgyModel(options.ModelCode) ?? false);
 
-        string prompt = _content.BuildPrompt(cefrLevel, topic, count, excludedWords);
+        string prompt = _content.BuildPrompt(new VocabularyPromptOptions(
+            CefrLevel: options.CefrLevel,
+            Topic: options.Topic,
+            Count: options.Count,
+            ExcludedWords: options.ExcludedWords,
+            ExamplesPerSense: options.ExamplesPerSense,
+            TargetTerms: options.TargetTerms,
+            SourceSentence: options.SourceSentence));
 
         if (isAgy)
         {
             if (_agyRunner == null)
                 throw new InvalidOperationException("Antigravity CLI runner is not configured.");
 
-            string effectiveAgyModel = _agyRunner.NormalizeModel(modelCode);
+            string effectiveAgyModel = _agyRunner.NormalizeModel(options.ModelCode);
             string jsonResult = await _agyRunner.ExecutePromptAsync(prompt, effectiveAgyModel, ct);
-            return _content.ParseResponse(jsonResult, cefrLevel);
+            return _content.ParseResponse(jsonResult, options.CefrLevel, options.ExamplesPerSense, options.TargetTerms);
         }
 
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelCode}:generateContent?key={Uri.EscapeDataString(apiKey.Trim())}";
+        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{options.ModelCode}:generateContent?key={Uri.EscapeDataString(options.ApiKey.Trim())}";
 
         var payload = new
         {
@@ -87,6 +87,6 @@ public sealed class GeminiVocabularyAiGenerator : IVocabularyAiGenerator
             throw new InvalidOperationException("AI không trả về dữ liệu JSON hợp lệ.");
         }
 
-        return _content.ParseResponse(jsonText, cefrLevel);
+        return _content.ParseResponse(jsonText, options.CefrLevel, options.ExamplesPerSense, options.TargetTerms);
     }
 }

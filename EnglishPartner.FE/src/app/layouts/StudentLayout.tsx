@@ -21,6 +21,7 @@ import { useTutorSessionStore } from '@/features/tutor';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
 import { toast } from '@/shared/lib/toast';
+import { SelectionVocabularyMenu } from '@/features/vocabulary/components/SelectionVocabularyMenu';
 
 const ADMIN_ANY_PERMISSIONS = [
   'users.read',
@@ -493,6 +494,9 @@ export const StudentLayout: React.FC = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* Global Right-Click Targeted Vocabulary Selection Menu */}
+      <SelectionVocabularyMenu />
     </div>
   );
 };

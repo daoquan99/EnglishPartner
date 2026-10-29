@@ -1,4 +1,4 @@
-﻿namespace EnglishLiveTutor.Application.Common.Models;
+namespace EnglishLiveTutor.Application.Common.Models;
 
 public sealed record PronunciationVariantDto(
     Guid Id,
@@ -125,7 +125,10 @@ public sealed record GenerateVocabularyRequest(
     string? Topic = null,
     List<string>? ExcludedWords = null,
     bool AssignToTodayPlan = true,
-    string? Provider = null
+    string? Provider = null,
+    int ExamplesPerSense = 2,
+    List<string>? TargetTerms = null,
+    string? SourceSentence = null
 );
 
 public sealed record SubmitVocabularyReviewRequest(

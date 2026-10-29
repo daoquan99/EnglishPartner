@@ -2,6 +2,8 @@ using System.Text.RegularExpressions;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
+using EnglishLiveTutor.Application.Features.Learning.Services;
+using EnglishLiveTutor.Application.Features.Vocabulary.Services;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Vocabulary;
 using EnglishLiveTutor.Domain.Vocabulary.Enums;
@@ -10,40 +12,124 @@ using Microsoft.Extensions.Logging;
 
 namespace EnglishLiveTutor.Application.Features.Vocabulary;
 
-public sealed record VocabularyGenerationContext(string UserId, string ModelCode, int RequestedCount, string CefrLevel, string Topic, bool AssignToTodayPlan);
+public sealed record VocabularyGenerationContext(
+    string UserId,
+    string ModelCode,
+    int RequestedCount,
+    string CefrLevel,
+    string Topic,
+    bool AssignToTodayPlan,
+    int ExamplesPerSense = 2,
+    List<string>? TargetTerms = null,
+    string? SourceSentence = null);
 
-public sealed class VocabularyGenerationWriter(
-    IAppDbContext db,
-    IUnitOfWork uow,
-    IAppDbContextFactory dbFactory,
-    ILogger<VocabularyGenerationWriter> logger)
+public sealed class VocabularyGenerationWriter
 {
-    public async Task<List<VocabularyFlashcardDto>> SaveAsync(VocabularyGenerationContext context,
-        List<GeneratedVocabularyRawSense> generatedSenses, CancellationToken ct = default)
+    private readonly IAppDbContext _db;
+    private readonly IUnitOfWork _uow;
+    private readonly IAppDbContextFactory _dbFactory;
+    private readonly IDailyVocabularyPlanInitializer _planInitializer;
+    private readonly ILogger<VocabularyGenerationWriter> _logger;
+
+    public VocabularyGenerationWriter(
+        IAppDbContext db,
+        IUnitOfWork uow,
+        IAppDbContextFactory dbFactory,
+        IDailyVocabularyPlanInitializer planInitializer,
+        ILogger<VocabularyGenerationWriter> logger)
+    {
+        _db = db;
+        _uow = uow;
+        _dbFactory = dbFactory;
+        _planInitializer = planInitializer;
+        _logger = logger;
+    }
+
+    public async Task<List<VocabularyFlashcardDto>> SaveAsync(
+        VocabularyGenerationContext context,
+        List<GeneratedVocabularyRawSense> generatedSenses,
+        CancellationToken ct = default)
     {
         string userId = context.UserId;
         string cefr = context.CefrLevel;
         string topic = context.Topic;
-        var audit = new VocabularyGenerationAuditEntity(userId, context.ModelCode,
-            VocabularyGenerationDefaults.PromptVersion, context.RequestedCount);
+        var audit = new VocabularyGenerationAuditEntity(
+            userId,
+            context.ModelCode,
+            VocabularyGenerationDefaults.PromptVersion,
+            context.RequestedCount);
+
+        // Branch SourceSentence (L4): Cap items to RequestedCount and insert original sentence as first example if absent
+        if (!string.IsNullOrWhiteSpace(context.SourceSentence))
+        {
+            if (generatedSenses.Count > context.RequestedCount)
+            {
+                generatedSenses = generatedSenses.Take(context.RequestedCount).ToList();
+            }
+
+            string normalizedSource = TargetedVocabularyHelper.NormalizeTerm(context.SourceSentence);
+            for (int i = 0; i < generatedSenses.Count; i++)
+            {
+                var s = generatedSenses[i];
+                bool hasSourceSentence = s.Examples.Any(e =>
+                    string.Equals(
+                        TargetedVocabularyHelper.NormalizeTerm(e.SentenceEn),
+                        normalizedSource,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (!hasSourceSentence)
+                {
+                    var updatedExamples = new List<GeneratedExampleRaw>(s.Examples);
+                    updatedExamples.Insert(0, new GeneratedExampleRaw(context.SourceSentence.Trim(), string.Empty));
+                    generatedSenses[i] = s with { Examples = updatedExamples };
+                }
+            }
+        }
+
         var resultSenseIds = new List<(Guid VocabId, Guid SenseId)>();
-        var normalizedWords = generatedSenses.Select(s => VocabularyEntity.NormalizeWord(s.Word)).Distinct().ToList();
-        var existingVocabularies = await db.Vocabularies.Include(v => v.Senses)
-            .Where(v => v.LanguageCode == "en" && normalizedWords.Contains(v.NormalizedWord)).ToListAsync(ct);
-        var vocabularies = existingVocabularies.GroupBy(v => v.NormalizedWord)
+        var normalizedWords = generatedSenses
+            .Select(s => VocabularyEntity.NormalizeWord(s.Word))
+            .Distinct()
+            .ToList();
+
+        var existingVocabularies = await _db.Vocabularies
+            .Include(v => v.Senses)
+            .Where(v => v.LanguageCode == "en" && normalizedWords.Contains(v.NormalizedWord))
+            .ToListAsync(ct);
+
+        var vocabularies = existingVocabularies
+            .GroupBy(v => v.NormalizedWord)
             .ToDictionary(g => g.Key, g => g.OrderBy(v => v.CreatedAtUtc).ThenBy(v => v.Id).First());
 
+        HashSet<string>? allowedTerms = null;
+        if (context.TargetTerms != null && context.TargetTerms.Count > 0)
+        {
+            allowedTerms = context.TargetTerms
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(TargetedVocabularyHelper.NormalizeTerm)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var matchedTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int accepted = 0;
         int rejected = 0;
         int senseOrderCounter = 1;
+        int maxExamples = Math.Clamp(context.ExamplesPerSense, 1, 5);
 
         foreach (var rawSense in generatedSenses)
         {
             string wordRaw = rawSense.Word;
+            string normTerm = TargetedVocabularyHelper.NormalizeTerm(wordRaw);
             string normWord = VocabularyEntity.NormalizeWord(wordRaw);
             if (string.IsNullOrWhiteSpace(normWord) || normWord.Length < 2)
             {
                 rejected++;
+                continue;
+            }
+
+            // TargetTerms filter: discard items not matching any target term
+            if (allowedTerms != null && !allowedTerms.Contains(normTerm))
+            {
                 continue;
             }
 
@@ -86,7 +172,7 @@ public sealed class VocabularyGenerationWriter(
                     }
                 }
 
-                db.Vocabularies.Add(vocab);
+                _db.Vocabularies.Add(vocab);
                 vocabularies[normWord] = vocab;
             }
             else
@@ -100,6 +186,7 @@ public sealed class VocabularyGenerationWriter(
                 s.PartOfSpeech == partOfSpeech && s.CefrLevel == level &&
                 string.Equals(s.DefinitionEn, rawSense.DefinitionEn.Trim(), StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(s.MeaningVi, rawSense.MeaningVi.Trim(), StringComparison.OrdinalIgnoreCase));
+
             if (duplicateSense is not null)
             {
                 if (!resultSenseIds.Contains((vocab.Id, duplicateSense.Id)))
@@ -143,7 +230,7 @@ public sealed class VocabularyGenerationWriter(
             }
 
             int exOrder = 1;
-            foreach (var ex in rawSense.Examples)
+            foreach (var ex in rawSense.Examples.Take(maxExamples))
             {
                 if (!string.IsNullOrWhiteSpace(ex.SentenceEn))
                 {
@@ -161,83 +248,202 @@ public sealed class VocabularyGenerationWriter(
 
             if (existingVocab is not null)
             {
-                db.VocabularySenses.Add(sense);
+                _db.VocabularySenses.Add(sense);
             }
 
             resultSenseIds.Add((vocab.Id, sense.Id));
+            if (allowedTerms != null && allowedTerms.Contains(normTerm))
+            {
+                matchedTerms.Add(normTerm);
+            }
             accepted++;
         }
 
-        // Optional: assign to today's plan if plan already exists and has available quota
+        // L6: Đếm rejected đúng theo số term không có mục khớp (không trừ theo RequestedCount - accepted)
+        if (context.TargetTerms != null && context.TargetTerms.Count > 0)
+        {
+            var cleanTerms = context.TargetTerms
+                .Select(TargetedVocabularyHelper.NormalizeTerm)
+                .Where(t => !string.IsNullOrEmpty(t))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            rejected = cleanTerms.Count(t => !matchedTerms.Contains(t));
+        }
+
+        // L6: Có TargetTerms/SourceSentence mà sau lọc không còn mục nào -> ném InvalidOperationException
+        bool isTargetedOrSource = (context.TargetTerms != null && context.TargetTerms.Count > 0) ||
+                                  !string.IsNullOrWhiteSpace(context.SourceSentence);
+
+        if (isTargetedOrSource && accepted == 0)
+        {
+            throw new InvalidOperationException("AI không trả về từ vựng khớp với chữ đã chọn. Vui lòng thử lại.");
+        }
+
+        DailyVocabularyPlanEntity? todayPlan = null;
+        bool isNewPlan = false;
+
+        // Assign to today's plan if requested
         if (context.AssignToTodayPlan && resultSenseIds.Count > 0)
         {
-            var user = await db.Users
-                .AsNoTracking()
-                .Where(u => u.Id.ToString() == userId || u.Username == userId)
-                .Select(u => new { u.TimeZoneId })
-                .FirstOrDefaultAsync(ct);
+            var excludedVocabIds = resultSenseIds.Select(r => r.VocabId).Distinct();
+            var excludedSenseIds = resultSenseIds.Select(r => r.SenseId).Distinct();
 
-            string userTz = string.IsNullOrWhiteSpace(user?.TimeZoneId) ? "Asia/Ho_Chi_Minh" : user.TimeZoneId;
-            string today = DailyVocabularyPlanEntity.ResolveLocalLearningDate(userTz);
+            (todayPlan, isNewPlan) = await _planInitializer.PrepareTodayPlanAsync(
+                userId: userId,
+                reservedQuota: resultSenseIds.Count,
+                excludedVocabularyIds: excludedVocabIds,
+                excludedSenseIds: excludedSenseIds,
+                ct: ct);
 
-            var todayPlan = await db.DailyVocabularyPlans
-                .Include(p => p.Items)
-                .FirstOrDefaultAsync(p => p.UserId == userId && p.LearningDate == today, ct);
+            int firstLearningAssigned = todayPlan.Items.Count(i => i.ItemType is "New" or "CarryOver");
+            int availableQuota = Math.Max(0, todayPlan.NewVocabularyTarget - firstLearningAssigned);
 
-            if (todayPlan is not null)
+            if (availableQuota > 0)
             {
-                int firstLearningAssigned = todayPlan.Items.Count(i => i.ItemType is "New" or "CarryOver");
-                int availableQuota = Math.Max(0, todayPlan.NewVocabularyTarget - firstLearningAssigned);
-
-                if (availableQuota > 0)
+                int nextOrder = todayPlan.Items.Count == 0 ? 1 : todayPlan.Items.Max(i => i.DisplayOrder) + 1;
+                foreach (var (vId, sId) in resultSenseIds)
                 {
-                    int nextOrder = todayPlan.Items.Count == 0 ? 1 : todayPlan.Items.Max(i => i.DisplayOrder) + 1;
-                    foreach (var (vId, sId) in resultSenseIds)
-                    {
-                        if (availableQuota <= 0) break;
+                    if (availableQuota <= 0) break;
 
-                        if (!todayPlan.Items.Any(i => i.VocabularyId == vId || i.SenseId == sId))
-                        {
-                            var addedItem = todayPlan.AddItem(vId, sId, "New", nextOrder++, DateTimeOffset.UtcNow);
-                            db.DailyVocabularyItems.Add(addedItem);
-                            availableQuota--;
-                        }
+                    if (!todayPlan.Items.Any(i => i.VocabularyId == vId || i.SenseId == sId))
+                    {
+                        var addedItem = todayPlan.AddItem(vId, sId, "New", nextOrder++, DateTimeOffset.UtcNow);
+                        _db.DailyVocabularyItems.Add(addedItem);
+                        availableQuota--;
                     }
                 }
             }
         }
 
         audit.MarkCompleted(accepted, rejected);
-        db.VocabularyGenerationAudits.Add(audit);
+        _db.VocabularyGenerationAudits.Add(audit);
 
-        // Vocabulary graphs, today's plan and the audit are committed together via IUnitOfWork.
-        await uow.CommitChangesAsync(ct);
+        try
+        {
+            await _uow.CommitChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (isNewPlan && todayPlan is not null && IsUniqueConstraintViolation(ex))
+        {
+            _logger.LogInformation(ex, "Trùng khóa khởi tạo DailyVocabularyPlan cho user {UserId}. Đang nạp lại plan đã tồn tại và gán từ vựng.", userId);
+
+            // 1. Detach newly created plan and its staged items
+            if (_db is DbContext efDb)
+            {
+                efDb.Entry(todayPlan).State = EntityState.Detached;
+                foreach (var item in todayPlan.Items)
+                {
+                    efDb.Entry(item).State = EntityState.Detached;
+                }
+
+                var stagedSettings = efDb.ChangeTracker.Entries<UserLearningSettingsEntity>()
+                    .FirstOrDefault(e => e.Entity.UserId == userId);
+                if (stagedSettings is not null)
+                {
+                    var existingSettings = await _db.UserLearningSettings.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId, ct);
+                    if (existingSettings is not null)
+                    {
+                        stagedSettings.State = EntityState.Detached;
+                    }
+                }
+            }
+
+            // 2. Reload the winner plan created concurrently
+            var winnerPlan = await _db.DailyVocabularyPlans
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.LearningDate == todayPlan.LearningDate, ct);
+
+            if (winnerPlan is not null)
+            {
+                // 3. Assign to winner plan according to available quota
+                int firstAssigned = winnerPlan.Items.Count(i => i.ItemType is "New" or "CarryOver");
+                int quota = Math.Max(0, winnerPlan.NewVocabularyTarget - firstAssigned);
+
+                if (quota > 0)
+                {
+                    int nextOrder = winnerPlan.Items.Count == 0 ? 1 : winnerPlan.Items.Max(i => i.DisplayOrder) + 1;
+                    foreach (var (vId, sId) in resultSenseIds)
+                    {
+                        if (quota <= 0) break;
+
+                        if (!winnerPlan.Items.Any(i => i.VocabularyId == vId || i.SenseId == sId))
+                        {
+                            var addedItem = winnerPlan.AddItem(vId, sId, "New", nextOrder++, DateTimeOffset.UtcNow);
+                            _db.DailyVocabularyItems.Add(addedItem);
+                            quota--;
+                        }
+                    }
+                }
+
+                await _uow.CommitChangesAsync(ct);
+            }
+            else
+            {
+                throw;
+            }
+        }
 
         var resultDtos = new List<VocabularyFlashcardDto>();
         foreach (var (vId, sId) in resultSenseIds)
         {
-            var card = await VocabularyProjectionHelper.GetFlashcardByVocabularyIdAsync(db, vId, sId, userId, ct);
+            var card = await VocabularyProjectionHelper.GetFlashcardByVocabularyIdAsync(_db, vId, sId, userId, ct);
             if (card is not null) resultDtos.Add(card);
         }
 
         return resultDtos;
     }
 
+    public static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        for (Exception? cur = ex; cur != null; cur = cur.InnerException)
+        {
+            var prop = cur.GetType().GetProperty("Number");
+            if (prop != null && prop.PropertyType == typeof(int))
+            {
+                int num = (int)prop.GetValue(cur)!;
+                if (num is 2601 or 2627)
+                    return true;
+            }
+
+            if (cur is ArgumentException argEx &&
+                argEx.Message.Contains("same key has already been added", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            string msg = cur.Message;
+            if (msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("Primary key constraint violation", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("cannot insert duplicate key", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("violation of unique key", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("violation of primary key", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public async Task RecordFailureAsync(VocabularyGenerationContext context, Exception error)
     {
         try
         {
-            // A separate context ensures that saving an audit failure never commits any partially tracked vocabulary entities on failure.
-            await using var isolatedDb = await dbFactory.CreateDbContextAsync(CancellationToken.None);
-            var audit = new VocabularyGenerationAuditEntity(context.UserId, context.ModelCode,
-                VocabularyGenerationDefaults.PromptVersion, context.RequestedCount);
+            await using var isolatedDb = await _dbFactory.CreateDbContextAsync(CancellationToken.None);
+            var audit = new VocabularyGenerationAuditEntity(
+                context.UserId,
+                context.ModelCode,
+                VocabularyGenerationDefaults.PromptVersion,
+                context.RequestedCount);
+
             audit.MarkFailed(SanitizeErrorMessage(error));
             isolatedDb.VocabularyGenerationAudits.Add(audit);
             await isolatedDb.SaveChangesAsync(CancellationToken.None);
         }
         catch (Exception auditError)
         {
-            logger.LogWarning(auditError, "Unable to save the failed vocabulary generation audit.");
+            _logger.LogWarning(auditError, "Unable to save the failed vocabulary generation audit.");
         }
     }
 
@@ -248,8 +454,6 @@ public sealed class VocabularyGenerationWriter(
         string exType = error.GetType().Name;
         string rawMsg = error.Message ?? string.Empty;
 
-        // Strip API keys: query string (?key=, %3D-encoded), x-goog-api-key header, JSON "key" fields,
-        // bearer tokens and bare Google keys.
         string cleaned = Regex.Replace(
             rawMsg,
             @"(?i)(?<=[?&]|\b)(?:api[-_]?key|key)(?:=|%3D)[^&\s]+",

@@ -2,6 +2,7 @@ using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
 using EnglishLiveTutor.Application.Features.Learning.Commands.InitializeDailyVocabularyPlan;
+using EnglishLiveTutor.Application.Features.Learning.Services;
 using EnglishLiveTutor.Application.Features.Learning.Commands.SubmitVocabularyReview;
 using EnglishLiveTutor.Application.Features.Learning.Commands.UpdateLearningSettings;
 using EnglishLiveTutor.Application.Features.Learning.Queries.GetDailyVocabularyPlan;
@@ -153,7 +154,7 @@ public class DailyVocabularyLearningTests
             await SeedVocabularyAsync(db, $"word-b1-{i:D2}", cefrLevel: "B1", frequencyRank: i);
         }
 
-        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(db, time);
+        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(new DailyVocabularyPlanInitializer(db, time));
 
         // Day 1: Target = 20 B1
         var day1Plan = await initHandler.HandleAsync(new InitializeDailyVocabularyPlanCommand(
@@ -226,7 +227,7 @@ public class DailyVocabularyLearningTests
         await SeedUserAsync(db, "idempotent-user", preferredCefr: "B1");
         await SeedVocabularyAsync(db, "test-word-1", cefrLevel: "B1");
 
-        var handler = new InitializeDailyVocabularyPlanCommandHandler(db, time);
+        var handler = new InitializeDailyVocabularyPlanCommandHandler(new DailyVocabularyPlanInitializer(db, time));
 
         var first = await handler.HandleAsync(new InitializeDailyVocabularyPlanCommand("idempotent-user", new InitializeDailyPlanRequest()));
         var second = await handler.HandleAsync(new InitializeDailyVocabularyPlanCommand("idempotent-user", new InitializeDailyPlanRequest()));
@@ -243,7 +244,7 @@ public class DailyVocabularyLearningTests
         await SeedUserAsync(db, "retry-user", preferredCefr: "B1");
         var vocab = await SeedVocabularyAsync(db, "idempotent-word", cefrLevel: "B1");
 
-        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(db, time);
+        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(new DailyVocabularyPlanInitializer(db, time));
         var plan = await initHandler.HandleAsync(new InitializeDailyVocabularyPlanCommand("retry-user", new InitializeDailyPlanRequest()));
         var card = plan.Flashcards.First();
 
@@ -283,7 +284,7 @@ public class DailyVocabularyLearningTests
         await SeedVocabularyAsync(db, "c1-word-2", cefrLevel: "C1");
         await SeedVocabularyAsync(db, "c1-word-3", cefrLevel: "C1");
 
-        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(db, time);
+        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(new DailyVocabularyPlanInitializer(db, time));
         var plan = await initHandler.HandleAsync(new InitializeDailyVocabularyPlanCommand("shortfall-user", new InitializeDailyPlanRequest()));
 
         Assert.Equal(3, plan.TotalAssignedCount);
@@ -305,7 +306,7 @@ public class DailyVocabularyLearningTests
         }
 
         // Day 1: target 20, assigned 15 (shortfall 5), user reviewed 0
-        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(db, time);
+        var initHandler = new InitializeDailyVocabularyPlanCommandHandler(new DailyVocabularyPlanInitializer(db, time));
         await initHandler.HandleAsync(new InitializeDailyVocabularyPlanCommand("overflow-user", new InitializeDailyPlanRequest()));
 
         // User reduces target to 10 for Day 2

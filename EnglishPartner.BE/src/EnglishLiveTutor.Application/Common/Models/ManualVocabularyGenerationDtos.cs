@@ -4,7 +4,10 @@ public sealed record BuildVocabularyGenerationPromptRequest(
     int RequestedCount = 5,
     string CefrLevel = "B1",
     string? Topic = null,
-    List<string>? ExcludedWords = null
+    List<string>? ExcludedWords = null,
+    int ExamplesPerSense = 2,
+    List<string>? TargetTerms = null,
+    string? SourceSentence = null
 );
 
 public sealed record VocabularyGenerationPromptDto(
@@ -21,5 +24,6 @@ public sealed record ImportVocabularyJsonRequest(
     string ModelCode = "manual-web-ai",
     string CefrLevel = "B1",
     string? Topic = null,
-    bool AssignToTodayPlan = true
+    bool AssignToTodayPlan = true,
+    int? ExamplesPerSense = null
 );

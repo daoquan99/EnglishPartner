@@ -80,13 +80,15 @@ export function useSubmitVocabularyReviewMutation() {
   });
 }
 
-export function useGenerateVocabularyMutation() {
+export function useGenerateVocabularyMutation(options?: { skipErrorToast?: boolean }) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: GenerateVocabularyRequestDto) =>
-      vocabularyApi.generateVocabularyWithAi(payload),
+      vocabularyApi.generateVocabularyWithAi(payload, options),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'today-plan'] });
+      void queryClient.invalidateQueries({ queryKey: VOCAB_QUERY_KEYS.todayPlan() });
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'vocabularies'] });
     },
   });
 }
@@ -108,20 +110,22 @@ export function useSynthesizePronunciationMutation() {
   });
 }
 
-export function useBuildVocabularyGenerationPromptMutation() {
+export function useBuildVocabularyGenerationPromptMutation(options?: { skipErrorToast?: boolean }) {
   return useMutation({
     mutationFn: (payload: BuildVocabularyGenerationPromptRequestDto) =>
-      vocabularyApi.buildGenerationPrompt(payload),
+      vocabularyApi.buildGenerationPrompt(payload, options),
   });
 }
 
-export function useImportVocabularyJsonMutation() {
+export function useImportVocabularyJsonMutation(options?: { skipErrorToast?: boolean }) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: ImportVocabularyJsonRequestDto) =>
-      vocabularyApi.importVocabularyJson(payload),
+      vocabularyApi.importVocabularyJson(payload, options),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['vocabulary', 'today-plan'] });
+      void queryClient.invalidateQueries({ queryKey: VOCAB_QUERY_KEYS.todayPlan() });
+      void queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'vocabularies'] });
     },
   });
 }

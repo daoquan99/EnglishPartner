@@ -3,6 +3,7 @@ using System.Text.Json;
 using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
+using EnglishLiveTutor.Application.Features.Learning.Services;
 using EnglishLiveTutor.Application.Features.Vocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.ImportVocabularyJson;
@@ -44,7 +45,7 @@ public class ManualVocabularyGenerationTests
     {
         var db = factory.Create();
         var uow = new UnitOfWork(db);
-        return new(new VocabularyGenerationContent(), new VocabularyGenerationWriter(db, uow, factory, NullLogger<VocabularyGenerationWriter>.Instance));
+        return new(new VocabularyGenerationContent(), new VocabularyGenerationWriter(db, uow, factory, new DailyVocabularyPlanInitializer(db), NullLogger<VocabularyGenerationWriter>.Instance));
     }
 
     [Theory]
@@ -150,12 +151,12 @@ public class ManualVocabularyGenerationTests
     }
 
     [Fact]
-    public async Task Import_WithoutTodaysPlan_DoesNotCreateOne()
+    public async Task Import_WithAssignToTodayPlanFalse_DoesNotCreateDailyPlan()
     {
         // Since 2556ae4 the plan is built only by InitializeDailyVocabularyPlan (settings, carry-over, due reviews);
         // generation/import just fills free quota of an existing plan.
         var factory = new TestDbFactory();
-        Assert.Single(await Importer(factory).HandleAsync(new("learner-a", new(Sample, CefrLevel: "B2"))));
+        Assert.Single(await Importer(factory).HandleAsync(new("learner-a", new(Sample, CefrLevel: "B2", AssignToTodayPlan: false))));
         await using var db = factory.Create();
         Assert.Single(await db.Vocabularies.ToListAsync());
         Assert.Empty(await db.DailyVocabularyPlans.ToListAsync());
@@ -198,11 +199,11 @@ public class ManualVocabularyGenerationTests
     private sealed class FakeGenerator : IVocabularyAiGenerator
     {
         public int Calls { get; private set; }
-        public Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(string apiKey, string modelCode,
-            string cefrLevel, string topic, int count, List<string> excludedWords, string? provider = null, CancellationToken ct = default)
+        public Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(
+            VocabularyGenerationRequestOptions options, CancellationToken ct = default)
         {
             Calls++;
-            return Task.FromResult(new VocabularyGenerationContent().ParseResponse(Sample, cefrLevel));
+            return Task.FromResult(new VocabularyGenerationContent().ParseResponse(Sample, options.CefrLevel));
         }
     }
 
@@ -232,7 +233,7 @@ public class ManualVocabularyGenerationTests
         var uow = new UnitOfWork(dbInstance);
         var handler = new GenerateVocabularyCommandHandler(dbInstance, generator,
             new VocabularyPromptBuilder(factory, new VocabularyGenerationContent()),
-            new VocabularyGenerationWriter(dbInstance, uow, factory, NullLogger<VocabularyGenerationWriter>.Instance));
+            new VocabularyGenerationWriter(dbInstance, uow, factory, new DailyVocabularyPlanInitializer(dbInstance), NullLogger<VocabularyGenerationWriter>.Instance));
         var result = await handler.HandleAsync(new("learner-a", new("test-key", "test-model", CefrLevel: "B2")));
         Assert.Single(result);
         Assert.Equal(1, generator.Calls);
@@ -260,8 +261,9 @@ public class ManualVocabularyGenerationTests
         using var http = new HttpClient(transport);
         var content = new VocabularyGenerationContent();
         var generator = new GeminiVocabularyAiGenerator(http, content);
-        var result = await generator.GenerateVocabularyAsync("test-key", "test-model", "B2", "Work", 3, ["known"]);
-        Assert.Equal(content.BuildPrompt("B2", "Work", 3, ["known"]), transport.Prompt);
+        var options = new VocabularyGenerationRequestOptions("test-key", "test-model", "B2", "Work", 3, ["known"]);
+        var result = await generator.GenerateVocabularyAsync(options);
+        Assert.Equal(content.BuildPrompt(new VocabularyPromptOptions("B2", "Work", 3, ["known"])), transport.Prompt);
         Assert.Equal("resilient", Assert.Single(result).Word);
     }
 }

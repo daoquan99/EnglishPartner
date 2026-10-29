@@ -1,6 +1,14 @@
+import { toast } from '@/shared/lib/toast';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { vocabularyApi, mapPlanResponse } from '../api/vocabularyApi';
 import { httpClient } from '@/shared/api/httpClient';
+
+vi.mock('@/shared/lib/toast', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 vi.mock('@/shared/api/httpClient', () => ({
   httpClient: {
@@ -8,6 +16,7 @@ vi.mock('@/shared/api/httpClient', () => ({
     put: vi.fn(),
     post: vi.fn(),
   },
+  extractApiErrorMessage: vi.fn((err: any) => err?.response?.data?.detail || err?.message || 'Lỗi kết nối'),
 }));
 
 describe('Daily Learning API & Adapters', () => {
@@ -139,7 +148,10 @@ describe('Daily Learning API & Adapters', () => {
 
       const result = await vocabularyApi.getTodayPlan();
 
-      expect(httpClient.get).toHaveBeenCalledWith('/api/learning/flashcards/today', { params: {} });
+      expect(httpClient.get).toHaveBeenCalledWith('/api/learning/flashcards/today', {
+        params: {},
+        skipErrorToast: true,
+      });
       expect(result.targetWordCount).toBe(20);
       expect(result.targetCefrLevel).toBe('B2');
     });
@@ -151,7 +163,36 @@ describe('Daily Learning API & Adapters', () => {
 
       expect(httpClient.get).toHaveBeenCalledWith('/api/learning/flashcards/today', {
         params: { timeZoneId: 'America/New_York' },
+        skipErrorToast: true,
       });
+    });
+
+    it('does not toast error when 404 code is daily_plan_not_initialized', async () => {
+      const notFoundError = {
+        response: {
+          status: 404,
+          data: { code: 'daily_plan_not_initialized', error: 'Daily plan not initialized yet' },
+        },
+      };
+
+      (httpClient.get as any).mockRejectedValueOnce(notFoundError);
+
+      await expect(vocabularyApi.getTodayPlan()).rejects.toEqual(notFoundError);
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it('toasts error when error is 500 or non-daily_plan_not_initialized', async () => {
+      const serverError = {
+        response: {
+          status: 500,
+          data: { detail: 'Internal Server Error' },
+        },
+      };
+
+      (httpClient.get as any).mockRejectedValueOnce(serverError);
+
+      await expect(vocabularyApi.getTodayPlan()).rejects.toEqual(serverError);
+      expect(toast.error).toHaveBeenCalled();
     });
 
     it('propagates 404 error without mock fallback', async () => {

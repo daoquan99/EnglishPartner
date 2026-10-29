@@ -338,3 +338,37 @@ export interface PaginationQueryParams {
   search?: string;
   paged?: boolean;
 }
+
+// --- Vocabulary Generation Contracts ---
+export interface GenerateVocabularyRequestDto {
+  apiKey?: string;
+  cefrLevel: CefrLevel;
+  topic?: string | null;
+  requestedCount: number;
+  modelCode: string;
+  provider?: string;
+  assignToTodayPlan?: boolean;
+  examplesPerSense?: number;
+  targetTerms?: string[];
+  sourceSentence?: string;
+}
+
+export interface BuildVocabularyGenerationPromptRequestDto {
+  requestedCount: number;
+  cefrLevel: CefrLevel;
+  topic?: string | null;
+  excludedWords?: string[];
+  examplesPerSense?: number;
+  targetTerms?: string[];
+  sourceSentence?: string;
+}
+
+export interface ImportVocabularyJsonRequestDto {
+  jsonText: string;
+  modelCode?: string;
+  cefrLevel: CefrLevel;
+  topic?: string | null;
+  assignToTodayPlan?: boolean;
+  examplesPerSense?: number;
+}
+

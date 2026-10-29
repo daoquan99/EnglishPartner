@@ -60,6 +60,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
     const [isPromptCopied, setIsPromptCopied] = useState(false);
     const [manualJsonInput, setManualJsonInput] = useState<string>('');
     const [assignToTodayPlan, setAssignToTodayPlan] = useState(true);
+    const [examplesPerSense, setExamplesPerSense] = useState<number>(2);
     const [manualError, setManualError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -88,9 +89,11 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
           apiKey: isAgy ? undefined : apiKey.trim(),
           cefrLevel: genCefr,
           topic: genTopic || 'Software Engineering & Daily Workplace',
-          count: genCount,
+          requestedCount: genCount,
           modelCode: isAgy ? agyModelCode : selectedVocabModel,
           provider: isAgy ? 'agy' : 'gemini',
+          assignToTodayPlan,
+          examplesPerSense,
         });
         if (generated && generated.length > 0) {
           onSuccess(generated);
@@ -112,6 +115,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
           requestedCount: genCount,
           cefrLevel: genCefr,
           topic: genTopic || 'General English',
+          examplesPerSense,
         });
         setManualPrompt(res.prompt);
       } catch (err: any) {
@@ -147,6 +151,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
           topic: genTopic || 'General English',
           modelCode: 'manual-web-ai',
           assignToTodayPlan,
+          examplesPerSense,
         });
         if (imported && imported.length > 0) {
           onSuccess(imported);
@@ -283,7 +288,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                     {t('vocab.cefrLevelLabel')}
@@ -315,6 +320,22 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
                     <option value={10}>{t('vocab.intensiveWords', { count: 10 })}</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    {t('vocab.examplesPerSenseLabel', 'Số câu ví dụ mỗi nghĩa')}
+                  </label>
+                  <select
+                    value={examplesPerSense}
+                    onChange={(e) => setExamplesPerSense(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-semibold"
+                  >
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <option key={num} value={num}>
+                        {t('vocab.examplesCountOption', { count: num, defaultValue: `${num} câu ví dụ` })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <TopicCreatablePicker
@@ -325,10 +346,20 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
                 placeholder={t('vocab.genTopicPlaceholder')}
                 helperText={t('vocab.genTopicHelper')}
               />
+
+              <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={assignToTodayPlan}
+                  onChange={(e) => setAssignToTodayPlan(e.target.checked)}
+                  className="w-4 h-4 rounded-sm border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                {t('vocab.assignToTodayCheckbox')}
+              </label>
             </>
           ) : (
             <div className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                     {t('vocab.cefrLevelLabel')}
@@ -358,6 +389,22 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
                     <option value={3}>{t('vocab.wordsSimple', { count: 3 })}</option>
                     <option value={5}>{t('vocab.wordsSimple', { count: 5 })}</option>
                     <option value={10}>{t('vocab.wordsSimple', { count: 10 })}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
+                    {t('vocab.examplesPerSenseLabel', 'Số câu ví dụ mỗi nghĩa')}
+                  </label>
+                  <select
+                    value={examplesPerSense}
+                    onChange={(e) => setExamplesPerSense(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-xs"
+                  >
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <option key={num} value={num}>
+                        {t('vocab.examplesCountOption', { count: num, defaultValue: `${num} câu ví dụ` })}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

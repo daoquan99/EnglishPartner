@@ -1,5 +1,6 @@
 using EnglishLiveTutor.Application.Common.Behaviors;
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Learning.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Services;
 using EnglishLiveTutor.Application.Features.Lessons.Validation;
 using EnglishLiveTutor.Application.Features.Pronunciation;
@@ -50,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ILessonDetailBuilder, LessonDetailBuilder>();
         services.AddScoped<ILessonRubricDetailBuilder, LessonRubricDetailBuilder>();
         services.AddScoped<IVocabularyPromptBuilder, VocabularyPromptBuilder>();
+        services.AddScoped<IDailyVocabularyPlanInitializer, DailyVocabularyPlanInitializer>();
 
         return services;
     }

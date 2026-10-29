@@ -3,6 +3,7 @@ using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Application.Common.Persistence;
+using EnglishLiveTutor.Application.Features.Learning.Services;
 using EnglishLiveTutor.Application.Features.Pronunciation.Commands.AssessPronunciation;
 using EnglishLiveTutor.Application.Features.Vocabulary;
 using EnglishLiveTutor.Application.Features.Vocabulary.Commands.GenerateVocabulary;
@@ -120,13 +121,7 @@ public class AiCommandsUnitOfWorkTests
         }
 
         public async Task<List<GeneratedVocabularyRawSense>> GenerateVocabularyAsync(
-            string apiKey,
-            string modelCode,
-            string cefrLevel,
-            string topic,
-            int count,
-            List<string> excludedWords,
-            string? provider = null,
+            VocabularyGenerationRequestOptions options,
             CancellationToken ct = default)
         {
             if (_handler != null)
@@ -137,7 +132,7 @@ public class AiCommandsUnitOfWorkTests
                 new(
                     Word: "innovative",
                     PartOfSpeech: "adjective",
-                    CefrLevel: cefrLevel,
+                    CefrLevel: options.CefrLevel,
                     DefinitionEn: "Featuring new methods or advanced ideas.",
                     MeaningVi: "Đổi mới, sáng tạo",
                     DescriptionEn: "Common in business and tech contexts",
@@ -335,7 +330,7 @@ public class AiCommandsUnitOfWorkTests
 
         var generator = new FakeVocabularyAiGenerator();
         var promptBuilder = new VocabularyPromptBuilder(dbFactory, new VocabularyGenerationContent());
-        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, NullLogger<VocabularyGenerationWriter>.Instance);
+        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, new DailyVocabularyPlanInitializer(db), NullLogger<VocabularyGenerationWriter>.Instance);
 
         var handler = new GenerateVocabularyCommandHandler(db, generator, promptBuilder, writer);
         var cmd = new GenerateVocabularyCommand("learner-user-1", new GenerateVocabularyRequest(
@@ -384,7 +379,7 @@ public class AiCommandsUnitOfWorkTests
             throw new HttpRequestException($"Provider failed connecting to https://generativelanguage.googleapis.com/v1beta/models/gemini?key={leakedSecret}&alt=json (403 Forbidden)"));
 
         var promptBuilder = new VocabularyPromptBuilder(dbFactory, new VocabularyGenerationContent());
-        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, NullLogger<VocabularyGenerationWriter>.Instance);
+        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, new DailyVocabularyPlanInitializer(db), NullLogger<VocabularyGenerationWriter>.Instance);
 
         var handler = new GenerateVocabularyCommandHandler(db, failingGenerator, promptBuilder, writer);
         var cmd = new GenerateVocabularyCommand("learner-user-2", new GenerateVocabularyRequest(
@@ -439,7 +434,7 @@ public class AiCommandsUnitOfWorkTests
             seedDb.DailyVocabularyPlans.Add(new DailyVocabularyPlanEntity("learner-user-3", today, newVocabularyTarget: 10));
             await seedDb.SaveChangesAsync();
         }
-        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, NullLogger<VocabularyGenerationWriter>.Instance);
+        var writer = new VocabularyGenerationWriter(db, countingUow, dbFactory, new DailyVocabularyPlanInitializer(db), NullLogger<VocabularyGenerationWriter>.Instance);
         var handler = new ImportVocabularyJsonCommandHandler(new VocabularyGenerationContent(), writer);
 
         string sampleJson = """

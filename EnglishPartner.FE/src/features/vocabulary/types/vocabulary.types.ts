@@ -103,21 +103,11 @@ export interface DailyVocabularyPlanResponseDto {
   items: VocabularyFlashcardDto[];
 }
 
-export interface GenerateVocabularyRequestDto {
-  apiKey?: string;
-  cefrLevel: CefrLevel;
-  topic: string;
-  count: number;
-  modelCode: string;
-  provider?: string;
-}
-
-export interface BuildVocabularyGenerationPromptRequestDto {
-  requestedCount: number;
-  cefrLevel: CefrLevel;
-  topic?: string | null;
-  excludedWords?: string[];
-}
+export type {
+  GenerateVocabularyRequestDto,
+  BuildVocabularyGenerationPromptRequestDto,
+  ImportVocabularyJsonRequestDto,
+} from '@/shared/api/openapi.types';
 
 export interface VocabularyGenerationPromptDto {
   prompt: string;
@@ -128,13 +118,6 @@ export interface VocabularyGenerationPromptDto {
   excludedWords: string[];
 }
 
-export interface ImportVocabularyJsonRequestDto {
-  jsonText: string;
-  modelCode?: string;
-  cefrLevel: CefrLevel;
-  topic?: string | null;
-  assignToTodayPlan?: boolean;
-}
 
 export interface SubmitVocabularyReviewRequestDto {
   vocabularyId?: string;
