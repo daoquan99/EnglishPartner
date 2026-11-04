@@ -1,6 +1,6 @@
 ---
 name: feature-cqrs
-description: Design, implement or review feature-based commands, queries and DTO contracts in EnglishLiveTutor.Application, including aggregate writes and pragmatic EF read projections.
+description: Design, implement or review feature-based commands, queries and DTO contracts in the module Application projects (src/Modules/<X>/EnglishLiveTutor.Modules.<X>.Application, contracts in .Contracts), including aggregate writes and pragmatic EF read projections.
 ---
 
 # Feature-based CQRS

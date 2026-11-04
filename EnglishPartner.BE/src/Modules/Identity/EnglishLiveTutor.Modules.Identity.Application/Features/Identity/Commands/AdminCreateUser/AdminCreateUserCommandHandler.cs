@@ -1,0 +1,68 @@
+using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Application.Common.Persistence;
+using EnglishLiveTutor.Application.Modules.Identity;
+using EnglishLiveTutor.Domain.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace EnglishLiveTutor.Application.Features.Identity.Commands.AdminCreateUser;
+
+public sealed class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateUserCommand, UserProfileDto>
+{
+    private readonly IIdentityDbContext _db;
+    private readonly IUnitOfWork _uow;
+    private readonly IPasswordHasher _hasher;
+
+    public AdminCreateUserCommandHandler(IIdentityDbContext db, IUnitOfWork uow, IPasswordHasher hasher)
+    {
+        _db = db;
+        _uow = uow;
+        _hasher = hasher;
+    }
+
+    public async Task<UserProfileDto> HandleAsync(AdminCreateUserCommand command, CancellationToken ct = default)
+    {
+        var req = command.Request;
+        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
+            throw new InvalidOperationException("Username, Email và Password là bắt buộc.");
+
+        if (req.Password.Length < 8)
+            throw new InvalidOperationException("Mật khẩu phải có ít nhất 8 ký tự.");
+
+        string cleanUsername = req.Username.Trim();
+        string normEmail = UserEntity.NormalizeEmail(req.Email);
+
+        if (await _db.Users.AnyAsync(u => u.Username == cleanUsername || u.NormalizedEmail == normEmail, ct))
+            throw new InvalidOperationException("Username hoặc Email đã tồn tại.");
+
+        var user = UserEntity.Create(
+            cleanUsername,
+            req.Email.Trim(),
+            string.IsNullOrWhiteSpace(req.FullName) ? cleanUsername : req.FullName.Trim(),
+            _hasher.HashPassword(req.Password),
+            req.PreferredCefrLevel,
+            req.PreferredVoiceName);
+
+        if (!req.IsActive)
+        {
+            user.Deactivate();
+        }
+
+        var roleCodes = req.RoleCodes is { Count: > 0 }
+            ? req.RoleCodes.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim().ToUpperInvariant()).Distinct().ToList()
+            : new List<string> { "LEARNER" };
+
+        var roles = await _db.Roles
+            .AsNoTracking()
+            .Where(r => roleCodes.Contains(r.Code) && r.IsActive)
+            .ToListAsync(ct);
+
+        user.SetRoles(roles.Select(r => r.Id));
+
+        _db.Users.Add(user);
+        await _uow.CommitChangesAsync(ct);
+
+        var (assignedRoleCodes, permissionCodes) = await IdentityProjectionHelper.ResolveUserRolesAndPermissionsAsync(_db, user.Id, ct);
+        return IdentityProjectionHelper.MapToProfileDto(user, assignedRoleCodes, permissionCodes);
+    }
+}

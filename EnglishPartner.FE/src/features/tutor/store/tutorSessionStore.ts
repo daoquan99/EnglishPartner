@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { CefrLevel, ConversationModeCode, TeacherVoiceName } from '@/shared/api/openapi.types';
+import { isAgyLocalEnabled } from '@/shared/config/features';
+import { AGY_LOCAL_MODELS } from '@/features/catalog/api/catalogDefaults';
 
 export const API_KEY_STORAGE_KEY = 'lingomint_api_key';
 const TTS_MODEL_STORAGE_KEY = 'lingomint_tts_model';
@@ -69,6 +71,7 @@ export function initApiKeyStorage(): { apiKey: string; rememberApiKey: boolean }
 
 
 function loadInitialAiProvider(): AiProvider {
+  if (!isAgyLocalEnabled) return 'gemini';
   try {
     const val = localStorage.getItem(AI_PROVIDER_STORAGE_KEY);
     if (val === 'agy' || val === 'gemini') return val;
@@ -112,7 +115,10 @@ function loadInitialTtsAccent(): 'US' | 'UK' {
 
 function loadInitialAssessmentModel(): string {
   try {
-    return localStorage.getItem(ASSESSMENT_MODEL_STORAGE_KEY) || 'gemini-3.8-flash';
+    const stored = localStorage.getItem(ASSESSMENT_MODEL_STORAGE_KEY);
+    // A model saved while AGY Local was available must not be reused once the feature is disabled.
+    if (stored && (isAgyLocalEnabled || !AGY_LOCAL_MODELS.some((m) => m.code === stored))) return stored;
+    return 'gemini-3.8-flash';
   } catch {
     // ignore
   }
@@ -270,6 +276,7 @@ export const useTutorSessionStore = create<TutorSessionUiState>((set, get) => {
   },
   toggleShowApiKey: () => set((s) => ({ showApiKey: !s.showApiKey })),
   setAiProvider: (aiProvider) => {
+    if (!isAgyLocalEnabled && aiProvider === 'agy') return;
     try {
       localStorage.setItem(AI_PROVIDER_STORAGE_KEY, aiProvider);
     } catch {

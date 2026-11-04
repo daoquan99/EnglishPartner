@@ -15,6 +15,7 @@ export interface ThreeHubStates {
   tutorHub: HubConnectionState;
   transcribeHub: HubConnectionState;
   translateHub: HubConnectionState;
+  grammarHub?: HubConnectionState;
 }
 
 export interface BilingualTurnItem {
@@ -47,6 +48,9 @@ export interface GrammarCorrectionItem {
   overallTipVi: string;
   errors: GrammarErrorDetail[];
   timestamp: number;
+  status?: 'has_errors' | 'can_improve' | 'already_natural' | 'analysis_failed' | string;
+  improvedText?: string;
+  issues?: Array<{ original: string; fix: string; category: string; explanationVi: string }>;
 }
 
 export interface ConversationSummaryDto {
@@ -91,6 +95,10 @@ export interface PersistedCorrectionDto {
   errorsJson?: string;
   createdAtUtc?: string;
   timestamp?: string | number;
+  status?: string;
+  improvedText?: string;
+  issues?: Array<{ original: string; fix: string; category: string; explanationVi: string }>;
+  issuesJson?: string;
 }
 
 export interface ConversationDetailDto {
@@ -153,6 +161,30 @@ export function normalizeGrammarCorrection(raw: unknown): GrammarCorrectionItem 
     }
   }
 
+  const status = String(r.status ?? r.Status ?? '').trim();
+  const improvedText = String(r.improvedText ?? r.ImprovedText ?? '').trim();
+
+  let parsedIssues: Array<{ original: string; fix: string; category: string; explanationVi: string }> = [];
+  if (Array.isArray(r.issues)) {
+    parsedIssues = r.issues;
+  } else if (Array.isArray(r.Issues)) {
+    parsedIssues = r.Issues;
+  } else if (typeof r.issuesJson === 'string' && r.issuesJson.trim()) {
+    try {
+      const p = JSON.parse(r.issuesJson);
+      if (Array.isArray(p)) parsedIssues = p;
+    } catch {
+      parsedIssues = [];
+    }
+  } else if (typeof r.IssuesJson === 'string' && r.IssuesJson.trim()) {
+    try {
+      const p = JSON.parse(r.IssuesJson);
+      if (Array.isArray(p)) parsedIssues = p;
+    } catch {
+      parsedIssues = [];
+    }
+  }
+
   let ts = Date.now();
   const rawTime = r.timestamp ?? r.Timestamp ?? r.createdAtUtc ?? r.CreatedAtUtc;
   if (typeof rawTime === 'number' && Number.isFinite(rawTime)) {
@@ -167,6 +199,14 @@ export function normalizeGrammarCorrection(raw: unknown): GrammarCorrectionItem 
       ? r.hasErrors
       : Boolean(originalSentence || correctedSentence);
 
+  const finalStatus =
+    status ||
+    (parsedIssues.length > 0 || (correctedSentence && correctedSentence !== originalSentence)
+      ? 'has_errors'
+      : improvedText
+        ? 'can_improve'
+        : 'already_natural');
+
   return {
     id: r.id ? String(r.id) : r.Id ? String(r.Id) : `corr_${turnId}`,
     conversationId: r.conversationId ? String(r.conversationId) : r.ConversationId ? String(r.ConversationId) : undefined,
@@ -177,10 +217,13 @@ export function normalizeGrammarCorrection(raw: unknown): GrammarCorrectionItem 
     errorCategory,
     explanationVi,
     cefrTip,
-    naturalAlternative,
+    naturalAlternative: naturalAlternative || improvedText,
     overallTipVi: explanationVi,
     errors: parsedErrors,
     timestamp: ts,
+    status: finalStatus,
+    improvedText: improvedText || naturalAlternative || undefined,
+    issues: parsedIssues,
   };
 }
 

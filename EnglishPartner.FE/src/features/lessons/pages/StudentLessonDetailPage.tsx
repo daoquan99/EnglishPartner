@@ -60,17 +60,18 @@ export const StudentLessonDetailPage: React.FC = () => {
   const totalPoints = exercises.reduce((sum: number, e: ExerciseLearnerDto) => sum + (e.maxPoints || 0), 0);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4 py-2">
+    <div className="max-w-4xl mx-auto space-y-6 py-2">
       {/* Back button & Action */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => navigate('/student/lessons')}
-          className="rounded-full gap-1.5 text-xs text-slate-600"
+          className="rounded-full gap-1.5 text-xs text-slate-600 self-start sm:self-auto whitespace-nowrap shrink-0"
         >
-          <ArrowLeft className="w-4 h-4" /> Danh sách bài học
+          <ArrowLeft className="w-4 h-4 shrink-0" />
+          <span>Danh sách bài học</span>
         </Button>
 
         <Button
@@ -78,15 +79,15 @@ export const StudentLessonDetailPage: React.FC = () => {
           variant="primary"
           onClick={handleStart}
           disabled={startAttemptMutation.isPending || exercises.length === 0}
-          className="rounded-2xl gap-2 shadow-xs px-6 py-2.5 text-sm"
+          className="rounded-2xl gap-2 shadow-xs px-6 py-2.5 text-sm w-full sm:w-auto justify-center whitespace-nowrap shrink-0"
         >
-          <Play className="w-4 h-4 fill-current" />
-          {startAttemptMutation.isPending ? 'Đang khởi tạo...' : 'Bắt đầu làm bài'}
+          <Play className="w-4 h-4 fill-current shrink-0" />
+          <span>{startAttemptMutation.isPending ? 'Đang khởi tạo...' : 'Bắt đầu làm bài'}</span>
         </Button>
       </div>
 
       {/* Hero Overview Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-8 shadow-2xs space-y-5">
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="outline" className="font-extrabold text-emerald-700 bg-emerald-50 border-emerald-200 text-sm">
             CEFR {lesson.cefrLevel}
@@ -118,7 +119,7 @@ export const StudentLessonDetailPage: React.FC = () => {
         </div>
 
         {lesson.content && (
-          <p className="text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-4 rounded-2xl border border-slate-100 font-medium">
+          <p className="text-sm text-slate-700 leading-relaxed bg-slate-50/80 p-3 sm:p-4 rounded-2xl border border-slate-100 font-medium">
             {lesson.content}
           </p>
         )}
@@ -126,7 +127,7 @@ export const StudentLessonDetailPage: React.FC = () => {
         {/* Objectives & Targets */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           {lesson.learningObjectives?.length > 0 && (
-            <div className="p-4 bg-emerald-50/40 border border-emerald-100 rounded-2xl space-y-1.5">
+            <div className="p-3 sm:p-4 bg-emerald-50/40 border border-emerald-100 rounded-2xl space-y-1.5">
               <span className="text-xs font-bold text-emerald-900 block flex items-center gap-1">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Mục tiêu bài học
               </span>
@@ -139,7 +140,7 @@ export const StudentLessonDetailPage: React.FC = () => {
           )}
 
           {lesson.targetVocabulary?.length > 0 && (
-            <div className="p-4 bg-sky-50/40 border border-sky-100 rounded-2xl space-y-1.5">
+            <div className="p-3 sm:p-4 bg-sky-50/40 border border-sky-100 rounded-2xl space-y-1.5">
               <span className="text-xs font-bold text-sky-900 block flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-sky-600" /> Từ vựng trọng tâm
               </span>
@@ -157,7 +158,7 @@ export const StudentLessonDetailPage: React.FC = () => {
           )}
 
           {lesson.targetGrammar?.length > 0 && (
-            <div className="p-4 bg-amber-50/40 border border-amber-100 rounded-2xl space-y-1.5">
+            <div className="p-3 sm:p-4 bg-amber-50/40 border border-amber-100 rounded-2xl space-y-1.5">
               <span className="text-xs font-bold text-amber-900 block flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5 text-amber-600" /> Ngữ pháp trọng tâm
               </span>
@@ -189,7 +190,7 @@ export const StudentLessonDetailPage: React.FC = () => {
             return (
               <div
                 key={ex.id}
-                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4"
+                className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-7 h-7 rounded-xl bg-slate-100 text-slate-600 font-mono font-bold text-xs flex items-center justify-center shrink-0">

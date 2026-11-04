@@ -386,20 +386,20 @@ export const StudentLessonPlayerPage: React.FC = () => {
   const isFinished = progress.completedExercisesCount === progress.totalExercisesCount && progress.totalExercisesCount > 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4 py-3">
+    <div className="max-w-4xl mx-auto space-y-6 py-3">
       {/* Top Bar: Title, Pinned Version & Exit */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-black text-slate-900 truncate">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 pb-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 break-words min-w-0">
               {attempt.lessonTitle}
             </h2>
-            <span className="text-[11px] font-mono font-bold text-slate-400">
+            <span className="text-[11px] font-mono font-bold text-slate-400 shrink-0">
               (v{attempt.pinnedLessonVersion})
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium mt-0.5">
+          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium mt-0.5 flex-wrap">
             <span>
               Đã làm: <strong>{progress.completedExercisesCount}/{progress.totalExercisesCount}</strong>
             </span>
@@ -410,7 +410,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -532,7 +532,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none" role="tablist" aria-label="Danh sách bài tập">
+      <div className="flex items-center gap-2 overflow-x-auto px-1.5 py-1.5 scrollbar-none" role="tablist" aria-label="Danh sách bài tập">
         {visibleExercises.length === 0 ? (
           <div className="text-xs text-slate-400 italic py-1">
             Không có bài tập nào phù hợp với điều kiện lọc hiện tại.
@@ -599,7 +599,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
 
       {/* Completion or Historical Banner */}
       {!isAttemptInProgress && (
-        <div className="p-5 rounded-3xl bg-slate-900 text-white shadow-md flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-slate-900 text-white shadow-md flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
@@ -642,7 +642,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
 
       {/* Completion Banner (if all finished during InProgress) */}
       {isAttemptInProgress && isFinished && (
-        <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md flex items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md flex items-center justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-base font-extrabold flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-300" />
@@ -667,7 +667,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
 
       {/* Exercise Active Box or Empty Filter State */}
       {visibleExercises.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 sm:p-12 text-center space-y-4 shadow-2xs">
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-12 text-center space-y-4 shadow-2xs">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 mx-auto flex items-center justify-center">
             <Filter className="w-6 h-6" />
           </div>
@@ -695,7 +695,7 @@ export const StudentLessonPlayerPage: React.FC = () => {
       ) : (
         <div
           ref={exerciseContainerRef}
-          className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6"
+          className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-2xs space-y-6"
         >
           {/* Exercise Header */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">

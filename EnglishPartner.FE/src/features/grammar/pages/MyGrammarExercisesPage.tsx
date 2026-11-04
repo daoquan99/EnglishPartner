@@ -181,7 +181,7 @@ export const MyGrammarExercisesPage: React.FC = () => {
   const items = pagedData?.items || [];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
@@ -263,7 +263,7 @@ export const MyGrammarExercisesPage: React.FC = () => {
       {isLoading ? (
         <LoadingState message={t('grammar.loadingMyExercises')} />
       ) : error ? (
-        <div className="p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2">
+        <div className="p-4 sm:p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2">
           <div className="font-bold text-sm">{t('grammar.loadMyExercisesError')}</div>
           <div>{getGrammarErrorMessage(error, t)}</div>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>

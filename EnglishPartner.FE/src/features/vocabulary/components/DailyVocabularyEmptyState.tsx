@@ -32,7 +32,7 @@ export const DailyVocabularyEmptyState: React.FC<DailyVocabularyEmptyStateProps>
 
     if (is404Uninitialized) {
       return (
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-xs">
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-8 shadow-xs">
           <EmptyState
             illustration="no-plan"
             title={t('vocab.uninitializedPlanTitle')}
@@ -77,7 +77,7 @@ export const DailyVocabularyEmptyState: React.FC<DailyVocabularyEmptyStateProps>
 
     if (planError) {
       return (
-        <div className="bg-white rounded-3xl border border-rose-200 p-8 shadow-xs text-center space-y-4">
+        <div className="bg-white rounded-3xl border border-rose-200 p-4 sm:p-8 shadow-xs text-center space-y-4">
           <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
           <h2 className="text-base font-extrabold text-slate-900">
             {t('vocab.loadErrorTitle', 'Không thể tải kế hoạch học tập')}
@@ -95,7 +95,7 @@ export const DailyVocabularyEmptyState: React.FC<DailyVocabularyEmptyStateProps>
     }
 
     return (
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-xs">
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-8 shadow-xs">
         <EmptyState
           illustration="no-plan"
           title={t('vocab.emptyPlanTitle', 'Chưa có kế hoạch từ vựng cho hôm nay')}

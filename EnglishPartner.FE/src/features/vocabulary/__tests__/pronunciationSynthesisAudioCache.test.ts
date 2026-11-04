@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import { httpClient } from '@/shared/api/httpClient';
 import { vocabularyApi } from '../api/vocabularyApi';
 import type {
@@ -49,7 +50,7 @@ describe('Pronunciation synthesis audio cache client contracts', () => {
 
     const res = await vocabularyApi.synthesizePronunciationAudio(payload);
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/pronunciation/synthesize', payload);
+    expect(httpClient.post).toHaveBeenCalledWith('/api/pronunciation/synthesize', payload, { timeout: AI_REQUEST_TIMEOUT_MS });
     expect(res).toEqual(mockResponse);
   });
 
@@ -73,7 +74,7 @@ describe('Pronunciation synthesis audio cache client contracts', () => {
 
     await vocabularyApi.synthesizePronunciationAudio(payload);
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/pronunciation/synthesize', payload);
+    expect(httpClient.post).toHaveBeenCalledWith('/api/pronunciation/synthesize', payload, { timeout: AI_REQUEST_TIMEOUT_MS });
   });
 
   it('queries GET /api/pronunciation/audio for cache-only lookup', async () => {

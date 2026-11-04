@@ -1,0 +1,103 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="AGENTS.md" />
+    <File Path="CLAUDE.md" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/EnglishLiveTutor.Api/EnglishLiveTutor.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/EnglishLiveTutor.Shared.Application/EnglishLiveTutor.Shared.Application.csproj" />
+    <Project Path="src/Shared/EnglishLiveTutor.Shared.Domain/EnglishLiveTutor.Shared.Domain.csproj" />
+    <Project Path="src/Shared/EnglishLiveTutor.Shared.Infrastructure/EnglishLiveTutor.Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/EnglishLiveTutor.Shared.Presentation/EnglishLiveTutor.Shared.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Domain/EnglishLiveTutor.Modules.Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Application/EnglishLiveTutor.Modules.Catalog.Application.csproj" />
+    <Project Path="src/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Infrastructure/EnglishLiveTutor.Modules.Catalog.Infrastructure.csproj" />
+    <Project Path="src/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Presentation/EnglishLiveTutor.Modules.Catalog.Presentation.csproj" />
+    <Project Path="src/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Contracts/EnglishLiveTutor.Modules.Catalog.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Grammar/">
+    <Project Path="src/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Domain/EnglishLiveTutor.Modules.Grammar.Domain.csproj" />
+    <Project Path="src/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Application/EnglishLiveTutor.Modules.Grammar.Application.csproj" />
+    <Project Path="src/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Infrastructure/EnglishLiveTutor.Modules.Grammar.Infrastructure.csproj" />
+    <Project Path="src/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Presentation/EnglishLiveTutor.Modules.Grammar.Presentation.csproj" />
+    <Project Path="src/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Contracts/EnglishLiveTutor.Modules.Grammar.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/EnglishLiveTutor.Modules.Identity.Domain/EnglishLiveTutor.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/EnglishLiveTutor.Modules.Identity.Application/EnglishLiveTutor.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/EnglishLiveTutor.Modules.Identity.Infrastructure/EnglishLiveTutor.Modules.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/EnglishLiveTutor.Modules.Identity.Presentation/EnglishLiveTutor.Modules.Identity.Presentation.csproj" />
+    <Project Path="src/Modules/Identity/EnglishLiveTutor.Modules.Identity.Contracts/EnglishLiveTutor.Modules.Identity.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Lessons/">
+    <Project Path="src/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Domain/EnglishLiveTutor.Modules.Lessons.Domain.csproj" />
+    <Project Path="src/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Application/EnglishLiveTutor.Modules.Lessons.Application.csproj" />
+    <Project Path="src/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Infrastructure/EnglishLiveTutor.Modules.Lessons.Infrastructure.csproj" />
+    <Project Path="src/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Presentation/EnglishLiveTutor.Modules.Lessons.Presentation.csproj" />
+    <Project Path="src/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Contracts/EnglishLiveTutor.Modules.Lessons.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/LiveTutor/">
+    <Project Path="src/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Domain/EnglishLiveTutor.Modules.LiveTutor.Domain.csproj" />
+    <Project Path="src/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Application/EnglishLiveTutor.Modules.LiveTutor.Application.csproj" />
+    <Project Path="src/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Infrastructure/EnglishLiveTutor.Modules.LiveTutor.Infrastructure.csproj" />
+    <Project Path="src/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Presentation/EnglishLiveTutor.Modules.LiveTutor.Presentation.csproj" />
+    <Project Path="src/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Contracts/EnglishLiveTutor.Modules.LiveTutor.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Speech/">
+    <Project Path="src/Modules/Speech/EnglishLiveTutor.Modules.Speech.Domain/EnglishLiveTutor.Modules.Speech.Domain.csproj" />
+    <Project Path="src/Modules/Speech/EnglishLiveTutor.Modules.Speech.Application/EnglishLiveTutor.Modules.Speech.Application.csproj" />
+    <Project Path="src/Modules/Speech/EnglishLiveTutor.Modules.Speech.Infrastructure/EnglishLiveTutor.Modules.Speech.Infrastructure.csproj" />
+    <Project Path="src/Modules/Speech/EnglishLiveTutor.Modules.Speech.Presentation/EnglishLiveTutor.Modules.Speech.Presentation.csproj" />
+    <Project Path="src/Modules/Speech/EnglishLiveTutor.Modules.Speech.Contracts/EnglishLiveTutor.Modules.Speech.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Vocabulary/">
+    <Project Path="src/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Domain/EnglishLiveTutor.Modules.Vocabulary.Domain.csproj" />
+    <Project Path="src/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Application/EnglishLiveTutor.Modules.Vocabulary.Application.csproj" />
+    <Project Path="src/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Infrastructure/EnglishLiveTutor.Modules.Vocabulary.Infrastructure.csproj" />
+    <Project Path="src/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Presentation/EnglishLiveTutor.Modules.Vocabulary.Presentation.csproj" />
+    <Project Path="src/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Contracts/EnglishLiveTutor.Modules.Vocabulary.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Progress/">
+    <Project Path="src/Modules/Progress/EnglishLiveTutor.Modules.Progress.Contracts/EnglishLiveTutor.Modules.Progress.Contracts.csproj" />
+    <Project Path="src/Modules/Progress/EnglishLiveTutor.Modules.Progress.Application/EnglishLiveTutor.Modules.Progress.Application.csproj" />
+    <Project Path="src/Modules/Progress/EnglishLiveTutor.Modules.Progress.Presentation/EnglishLiveTutor.Modules.Progress.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnglishLiveTutor.Api.IntegrationTests/EnglishLiveTutor.Api.IntegrationTests.csproj" />
+    <Project Path="tests/EnglishLiveTutor.ArchitectureTests/EnglishLiveTutor.ArchitectureTests.csproj" />
+    <Project Path="tests/EnglishLiveTutor.Tests.Common/EnglishLiveTutor.Tests.Common.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/" />
+  <Folder Name="/tests/Modules/Catalog/">
+    <Project Path="tests/Modules/Catalog/EnglishLiveTutor.Modules.Catalog.Tests/EnglishLiveTutor.Modules.Catalog.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Grammar/">
+    <Project Path="tests/Modules/Grammar/EnglishLiveTutor.Modules.Grammar.Tests/EnglishLiveTutor.Modules.Grammar.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Identity/">
+    <Project Path="tests/Modules/Identity/EnglishLiveTutor.Modules.Identity.Tests/EnglishLiveTutor.Modules.Identity.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Lessons/">
+    <Project Path="tests/Modules/Lessons/EnglishLiveTutor.Modules.Lessons.Tests/EnglishLiveTutor.Modules.Lessons.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/LiveTutor/">
+    <Project Path="tests/Modules/LiveTutor/EnglishLiveTutor.Modules.LiveTutor.Tests/EnglishLiveTutor.Modules.LiveTutor.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Speech/">
+    <Project Path="tests/Modules/Speech/EnglishLiveTutor.Modules.Speech.Tests/EnglishLiveTutor.Modules.Speech.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Vocabulary/">
+    <Project Path="tests/Modules/Vocabulary/EnglishLiveTutor.Modules.Vocabulary.Tests/EnglishLiveTutor.Modules.Vocabulary.Tests.csproj" />
+  </Folder>
+</Solution>

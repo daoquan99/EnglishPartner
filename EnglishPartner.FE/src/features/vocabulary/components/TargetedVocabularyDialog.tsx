@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicker';
 import { cn } from '@/shared/lib/cn';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import { toast } from '@/shared/lib/toast';
 import { extractApiErrorMessage } from '@/shared/api/httpClient';
 import {
@@ -63,7 +64,8 @@ export const TargetedVocabularyDialog: React.FC<TargetedVocabularyDialogProps> =
     const isTermTooLong = !isSentence && normalizedText.length > 80;
     const isTermInvalid = isTermEmpty || isTermTooLong;
 
-    const hasDirectAi = aiProvider === 'agy' || Boolean(apiKey.trim());
+    const isAgyActive = isAgyLocalEnabled && aiProvider === 'agy';
+    const hasDirectAi = isAgyActive || Boolean(apiKey.trim());
 
     const [genMode, setGenMode] = useState<'direct' | 'manual'>('direct');
     const [genCefr, setGenCefr] = useState<CefrLevel>('B1');
@@ -124,7 +126,7 @@ export const TargetedVocabularyDialog: React.FC<TargetedVocabularyDialogProps> =
 
     const handleGenerateDirect = async () => {
       if (isTermInvalid) return;
-      const isAgy = aiProvider === 'agy';
+      const isAgy = isAgyActive;
       if (!isAgy && !apiKey.trim()) {
         setGenMode('manual');
         requestFocusLeftMenuApiKey();
@@ -251,7 +253,7 @@ export const TargetedVocabularyDialog: React.FC<TargetedVocabularyDialogProps> =
               >
                 <Sparkles className="w-4 h-4" />
                 {generateMutation.isPending
-                  ? t('vocab.creatingWithModel', { model: aiProvider === 'agy' ? agyModelCode : selectedVocabModel })
+                  ? t('vocab.creatingWithModel', { model: isAgyActive ? agyModelCode : selectedVocabModel })
                   : assignToTodayPlan
                   ? t('vocab.createAndAddToDaily', 'Tạo và thêm vào Daily hôm nay…')
                   : t('vocab.createVocabulary', 'Tạo từ vựng…')}
@@ -439,7 +441,7 @@ export const TargetedVocabularyDialog: React.FC<TargetedVocabularyDialogProps> =
 
           {genMode === 'direct' ? (
             <div id="panel-direct" role="tabpanel" aria-labelledby="tab-direct" className="space-y-3 pt-1">
-              {aiProvider === 'agy' ? (
+              {isAgyActive ? (
                 <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium flex items-center justify-between">
                   <span>{t('vocab.agyPortActive', { defaultValue: 'Đang dùng cổng Antigravity CLI Local (Model: {{model}})', model: agyModelCode })}</span>
                   <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold">{t('vocab.noApiKeyNeeded', 'Không cần API Key')}</span>

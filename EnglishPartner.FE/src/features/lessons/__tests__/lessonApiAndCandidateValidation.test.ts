@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import { lessonApi } from '../api/lessonApi';
 import { httpClient } from '@/shared/api/httpClient';
 
@@ -132,7 +133,8 @@ describe('Lesson API Client & Candidate Operations', () => {
 
     expect(httpClient.post).toHaveBeenCalledWith(
       '/api/lesson-attempts/att-1/answers',
-      submitReq
+      submitReq,
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     expect(res.attemptRevision).toBe(4);
     expect(res.score100).toBe(100);
@@ -160,7 +162,8 @@ describe('Lesson API Client & Candidate Operations', () => {
       {
         attemptRevision: 2,
         aiConfig: { apiKey: 'test-key', assessmentModelCode: 'gemini-3.8-flash' },
-      }
+      },
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     expect(res.status).toBe('Completed');
   });
@@ -186,7 +189,7 @@ describe('Lesson API Client & Candidate Operations', () => {
     expect(httpClient.post).toHaveBeenCalledWith(
       '/api/lesson-attempts/att-1/answers/ans-1/ai-review',
       { aiConfig: { apiKey: 'key-1' } },
-      { headers: { 'X-Operation-Key': 'op-key-123' } }
+      { headers: { 'X-Operation-Key': 'op-key-123' }, timeout: AI_REQUEST_TIMEOUT_MS }
     );
     expect(res.status).toBe('Completed');
     expect(res.missingWords).toContain('the');

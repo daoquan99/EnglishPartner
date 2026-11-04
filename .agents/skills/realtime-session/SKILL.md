@@ -10,7 +10,7 @@ description: Thiết kế, sửa hoặc review luồng realtime của Live Tutor
 ## Bản đồ
 
 - Hub: `EnglishPartner.BE/src/EnglishLiveTutor.Api/Hubs/{TutorConversation,TranscribeLive,TranslateLive}Hub.cs`, map tại `/hubs/tutor|transcribe|translate` trong `Program.cs`.
-- Điều phối: `Infrastructure/Realtime/GeminiLiveConnectionManager.cs` (Singleton, giữ `_bridges`, `_turnStates`, `_sessionApiKeys`), `GeminiLiveSessionBridge.cs` (WebSocket tới Gemini Live).
+- Điều phối: `Infrastructure/Realtime/GeminiLiveConnectionManager.cs` (Singleton, giữ `_bridges`, `_turnStates`, `_sessionApiKeys`), `Infrastructure/Ai/GeminiLiveSessionBridge.cs` (WebSocket tới Gemini Live; Shared Kernel từ 2026-11-01 vì TTS của Speech cũng dùng).
 - Lưu transcript: `Infrastructure/Repositories/ConversationRepository.cs`.
 - Thông báo client: `Api/Realtime/SignalRLiveSessionRealtimeNotifier.cs`.
 - FE: `src/features/tutor/hooks/useThreeHubLiveSession.ts`, `src/features/tutor/store/tutorSessionStore.ts`.

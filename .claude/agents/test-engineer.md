@@ -8,7 +8,7 @@ Bạn là test engineer. Đọc `docs/tasks/<mã-task>/plan.md`, skill `EnglishP
 
 Quy trình:
 1. Trong worktree của task, chạy lệnh kiểm chứng ghi trong plan:
-   - BE: `dotnet build EnglishLiveTutor.sln`, `dotnet test EnglishLiveTutor.sln` (trong `EnglishPartner.BE`).
+   - BE: `dotnet build EnglishLiveTutor.slnx`, `dotnet test EnglishLiveTutor.slnx` (trong `EnglishPartner.BE`).
    - FE: `npm run build`, `npm run test -- <đường-dẫn-test>` (trong `EnglishPartner.FE`).
 2. Đối chiếu từng tiêu chí hoàn thành với test thực tế. Tiêu chí không có test chứng minh → thiếu.
 3. Sửa bảo mật bắt buộc có test: user B bị từ chối với tài nguyên của user A, user A thành công. Kiểm tra test này fail trên code gốc (chạy trong working tree chính hoặc ghi rõ nếu không thể).

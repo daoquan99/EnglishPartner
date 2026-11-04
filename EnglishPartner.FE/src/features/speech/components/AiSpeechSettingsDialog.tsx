@@ -5,6 +5,7 @@ import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import { useTeacherVoicesQuery, useSpeechSpeedsQuery, usePronunciationModelsQuery } from '@/features/catalog';
 import { useTutorSessionStore } from '@/features/tutor';
 import type { SynthesizePronunciationAudioResponseDto, TeacherVoiceName } from '@/shared/api/openapi.types';
@@ -59,6 +60,7 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
   const setAiProvider = useTutorSessionStore((s) => s.setAiProvider);
   const agyModelCode = useTutorSessionStore((s) => s.agyModelCode);
   const setAgyModelCode = useTutorSessionStore((s) => s.setAgyModelCode);
+  const isAgyActive = isAgyLocalEnabled && aiProvider === 'agy';
 
   const handleOpenApiKeyMenu = () => {
     onClose();
@@ -118,12 +120,15 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
               <Cpu className="w-4 h-4 text-emerald-600" />
               Cổng AI Model hệ thống (Sinh nội dung & Chấm điểm)
             </label>
-            <Badge variant={aiProvider === 'agy' ? 'emerald' : 'sky'}>
-              {aiProvider === 'agy' ? 'AGY Local Active' : 'Google API Active'}
+            <Badge variant={isAgyActive ? 'emerald' : 'sky'}>
+              {isAgyActive ? 'AGY Local Active' : 'Google API Active'}
             </Badge>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 text-xs font-bold">
+          <div className={cn(
+            'grid gap-2 p-1 rounded-xl bg-slate-200/70 text-xs font-bold',
+            isAgyLocalEnabled ? 'grid-cols-2' : 'grid-cols-1'
+          )}>
             <button
               type="button"
               onClick={() => setAiProvider('gemini')}
@@ -136,21 +141,23 @@ export const AiSpeechSettingsDialog: React.FC<AiSpeechSettingsDialogProps> = ({
             >
               Google Gemini API (Cloud)
             </button>
-            <button
-              type="button"
-              onClick={() => setAiProvider('agy')}
-              className={cn(
-                'py-2 rounded-lg transition-all cursor-pointer text-center',
-                aiProvider === 'agy'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              )}
-            >
-              Antigravity CLI (Local máy)
-            </button>
+            {isAgyLocalEnabled && (
+              <button
+                type="button"
+                onClick={() => setAiProvider('agy')}
+                className={cn(
+                  'py-2 rounded-lg transition-all cursor-pointer text-center',
+                  isAgyActive
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                )}
+              >
+                Antigravity CLI (Local máy)
+              </button>
+            )}
           </div>
 
-          {aiProvider === 'agy' ? (
+          {isAgyActive ? (
             <div className="space-y-1.5 pt-1">
               <label className="block text-xs font-bold text-slate-700">
                 Model Antigravity CLI Local được chọn:

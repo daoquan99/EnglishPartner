@@ -60,12 +60,12 @@ export const TopicCreatablePicker: React.FC<TopicCreatablePickerProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-          <Tag className="w-3.5 h-3.5 text-emerald-600" />
-          {label}
+          <Tag className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span>{label}</span>
         </label>
-        <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+        <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full self-start sm:self-auto whitespace-nowrap shrink-0">
           {t('common.dbSuggestions')} ({topics.length}) + {t('common.customInput')}
         </span>
       </div>

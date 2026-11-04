@@ -1,0 +1,54 @@
+using EnglishLiveTutor.Application.Modules.Catalog;
+using EnglishLiveTutor.Domain.AiCatalog;
+using EnglishLiveTutor.Domain.AiCatalog.Repositories;
+using EnglishLiveTutor.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace EnglishLiveTutor.Infrastructure.Repositories;
+
+public sealed class AiModelCatalogRepository : IAiModelCatalogRepository
+{
+    private readonly ICatalogDbContext _db;
+
+    public AiModelCatalogRepository(ICatalogDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<AiModelConfigEntity?> GetByModelCodeAsync(string modelCode, CancellationToken ct = default)
+    {
+        return await _db.AiModelCatalog
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.ModelCode == modelCode, ct);
+    }
+
+    public Task<AiModelConfigEntity?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        _db.AiModelCatalog.FirstOrDefaultAsync(m => m.Id == id, ct);
+
+    public Task AddAsync(AiModelConfigEntity model, CancellationToken ct = default)
+    {
+        _db.AiModelCatalog.Add(model);
+        return Task.CompletedTask;
+    }
+
+    public async Task SaveChangesAsync(CancellationToken ct = default) =>
+        await _db.SaveChangesAsync(ct);
+
+    public async Task<List<AiModelConfigEntity>> ListTextGenerationModelsAsync(CancellationToken ct = default)
+    {
+        return await _db.AiModelCatalog
+            .AsNoTracking()
+            .Where(m => m.SupportsTextGeneration && !m.SupportsLiveAudio)
+            .OrderBy(m => m.DisplayOrder)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<AiModelConfigEntity>> ListNonLiveAudioModelsAsync(CancellationToken ct = default)
+    {
+        return await _db.AiModelCatalog
+            .AsNoTracking()
+            .Where(m => !m.SupportsLiveAudio)
+            .OrderBy(m => m.DisplayOrder)
+            .ToListAsync(ct);
+    }
+}

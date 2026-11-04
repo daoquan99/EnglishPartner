@@ -6,6 +6,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicker';
 import { cn } from '@/shared/lib/cn';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import {
   useTopicsQuery,
   useVocabularyGenerationModelsQuery,
@@ -44,6 +45,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
       onlyActive: true,
       supportsVocabulary: true,
     });
+    const isAgyActive = isAgyLocalEnabled && aiProvider === 'agy';
 
     const generateMutation = useGenerateVocabularyMutation();
     const buildPromptMutation = useBuildVocabularyGenerationPromptMutation();
@@ -76,7 +78,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
     }, [vocabModels, selectedVocabModel]);
 
     const handleGenerateMoreWords = async () => {
-      const isAgy = aiProvider === 'agy';
+      const isAgy = isAgyActive;
       if (!isAgy && !apiKey.trim()) {
         onClose();
         onSetApiKeyWarning(t('vocab.apiKeyMissingNotice'));
@@ -221,33 +223,33 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
       >
         <div className="space-y-4 text-xs">
           {/* Mode Switch Tabs */}
-          <div className="flex border-b border-slate-200 mb-2 gap-2">
+          <div className="flex border-b border-slate-200 mb-2 gap-2 overflow-x-auto pb-0.5 scrollbar-none">
             <button
               type="button"
               onClick={() => setGenMode('direct')}
               className={cn(
-                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer',
+                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap',
                 genMode === 'direct'
                   ? 'border-emerald-600 text-emerald-700'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               )}
             >
-              <Cpu className="w-3.5 h-3.5" />
-              {t('vocab.genModeDirect')}
+              <Cpu className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('vocab.genModeDirect')}</span>
             </button>
             <button
               type="button"
               onClick={() => setGenMode('manual')}
               className={cn(
-                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer',
+                'flex items-center gap-1.5 pb-2.5 px-3 font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap',
                 genMode === 'manual'
                   ? 'border-emerald-600 text-emerald-700'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               )}
             >
-              <FileText className="w-3.5 h-3.5" />
-              {t('vocab.genModeManual')}
-              <Badge variant="emerald" className="text-[10px] py-0 px-1.5 ml-1">
+              <FileText className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('vocab.genModeManual')}</span>
+              <Badge variant="emerald" className="text-[10px] py-0 px-1.5 ml-1 shrink-0 whitespace-nowrap">
                 {t('vocab.freeBadge')}
               </Badge>
             </button>
@@ -255,7 +257,7 @@ export const AiVocabularyGeneratorDialog: React.FC<AiVocabularyGeneratorDialogPr
 
           {genMode === 'direct' ? (
             <>
-              {aiProvider === 'agy' && (
+              {isAgyActive && (
                 <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium flex items-center justify-between">
                   <span>Đang dùng cổng Antigravity CLI Local (Model: <strong>{agyModelCode}</strong>)</span>
                   <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold">Không cần API Key</span>

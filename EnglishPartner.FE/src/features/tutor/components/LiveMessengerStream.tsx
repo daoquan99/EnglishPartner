@@ -55,7 +55,7 @@ export const LiveMessengerStream: React.FC<LiveMessengerStreamProps> = ({
         <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
           {t(
             'tutor.readyDesc',
-            'Nhập Google AI Studio API Key ở cột Thiết lập bên trái rồi nhấn Bắt đầu luyện nói để kết nối đồng thời 3 SignalR Hubs: Hub 1 (Giọng nói AI 24kHz), Hub 2 (Phụ đề Tiếng Anh + Sửa ngữ pháp Realtime), và Hub 3 (Dịch Tiếng Việt tức thì).'
+            'Nhập Google AI Studio API Key ở cột Thiết lập bên trái rồi nhấn Bắt đầu luyện nói để kết nối đồng thời 4 SignalR Hubs: Hub 1 (Giọng nói AI 24kHz), Hub 2 (Phụ đề Tiếng Anh realtime), Hub 3 (Dịch Tiếng Việt tức thì), và Hub 4 (Sửa ngữ pháp & từ vựng realtime).'
           )}
         </p>
       </div>

@@ -8,7 +8,9 @@ import type {
   TeacherVoiceDto,
   TopicDto,
 } from '@/shared/api/openapi.types';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import {
+  AGY_LOCAL_MODELS,
   DEFAULT_AI_MODELS,
   DEFAULT_CEFR_PROMPTS,
   DEFAULT_CONVERSATION_MODES,
@@ -17,6 +19,13 @@ import {
   DEFAULT_TEACHER_VOICES,
   DEFAULT_TOPICS,
 } from './catalogDefaults';
+
+const AGY_LOCAL_MODEL_CODES = new Set<string>(AGY_LOCAL_MODELS.map((m) => m.code));
+
+/** AGY Local models are hidden (also from the offline fallback list) unless VITE_ENABLE_AGY_LOCAL=true. */
+export function withoutDisabledAgyModels<T extends { modelCode: string }>(models: T[]): T[] {
+  return isAgyLocalEnabled ? models : models.filter((m) => !AGY_LOCAL_MODEL_CODES.has(m.modelCode));
+}
 
 export function filterVocabularyGenerationModels(models: AiModelOptionDto[]): AiModelOptionDto[] {
   return models
@@ -102,24 +111,24 @@ export const catalogApi = {
     try {
       const { data } = await httpClient.get<AiModelOptionDto[]>('/api/vocabularies/models/generation');
       if (Array.isArray(data) && data.length > 0) {
-        return filterVocabularyGenerationModels(data);
+        return filterVocabularyGenerationModels(withoutDisabledAgyModels(data));
       }
     } catch {
       // fallback
     }
-    return filterVocabularyGenerationModels(DEFAULT_AI_MODELS);
+    return filterVocabularyGenerationModels(withoutDisabledAgyModels(DEFAULT_AI_MODELS));
   },
 
   async getPronunciationModels(): Promise<AiModelOptionDto[]> {
     try {
       const { data } = await httpClient.get<AiModelOptionDto[]>('/api/pronunciation/models');
       if (Array.isArray(data) && data.length > 0) {
-        return filterAudioPronunciationModels(data);
+        return filterAudioPronunciationModels(withoutDisabledAgyModels(data));
       }
     } catch {
       // fallback
     }
-    return filterAudioPronunciationModels(DEFAULT_AI_MODELS);
+    return filterAudioPronunciationModels(withoutDisabledAgyModels(DEFAULT_AI_MODELS));
   },
 
   async getActiveScoringRubric(): Promise<ScoringRubricDto> {

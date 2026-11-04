@@ -15,6 +15,7 @@ import { Dialog } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { useTutorSessionStore } from '@/features/tutor';
 import { useVocabularyGenerationModelsQuery } from '@/features/catalog';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import {
   useGenerateGrammarExercisesMutation,
   useBuildGrammarExercisePromptMutation,
@@ -73,7 +74,7 @@ export const GenerateGrammarExercisesDialog: React.FC<GenerateGrammarExercisesDi
   const { apiKey, requestFocusLeftMenuApiKey, aiProvider, agyModelCode } = useTutorSessionStore();
   const { data: models = [] } = useVocabularyGenerationModelsQuery();
 
-  const isAgy = aiProvider === 'agy';
+  const isAgy = isAgyLocalEnabled && aiProvider === 'agy';
   const hasKey = Boolean(apiKey.trim()) || isAgy;
   const maxCount = isAdminMode ? 20 : 10;
 

@@ -57,10 +57,10 @@ export const VocabularyFlashcard: React.FC<VocabularyFlashcardProps> = React.mem
     const { t } = useTranslation();
 
     return (
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-5">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-4 sm:p-6 space-y-5">
         {/* Card Navigation & Flip Bar */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
             <Badge variant="emerald">{currentCard.cefrLevel}</Badge>
             {currentCard.itemType === 'CarryOver' ? (
               <Badge variant="amber">{t('vocab.carryOverBadge')}</Badge>
@@ -83,30 +83,35 @@ export const VocabularyFlashcard: React.FC<VocabularyFlashcardProps> = React.mem
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto shrink-0">
             <Button
               variant="outline"
               size="sm"
               disabled={currentIndex === 0}
               onClick={onPrevCard}
+              className="shrink-0"
+              aria-label={t('vocab.prevCard', 'Thẻ trước')}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 shrink-0" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={onToggleFlip}
+              className="whitespace-nowrap shrink-0 flex items-center gap-1.5"
             >
-              <RotateCw className="w-3.5 h-3.5" />
-              {isFlipped ? t('vocab.cardFront') : t('vocab.cardBack')}
+              <RotateCw className="w-3.5 h-3.5 shrink-0" />
+              <span>{isFlipped ? t('vocab.cardFront') : t('vocab.cardBack')}</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               disabled={currentIndex >= totalCards - 1}
               onClick={onNextCard}
+              className="shrink-0"
+              aria-label={t('vocab.nextCard', 'Thẻ tiếp')}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 shrink-0" />
             </Button>
           </div>
         </div>
@@ -157,7 +162,7 @@ export const VocabularyFlashcard: React.FC<VocabularyFlashcardProps> = React.mem
             </p>
 
             {currentCard.examples[0] && (
-              <div className="max-w-xl mx-auto p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-left space-y-2">
+              <div className="max-w-xl mx-auto p-3 sm:p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-left space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-semibold text-emerald-950">
                     &ldquo;{currentCard.examples[0].sentenceEn}&rdquo;

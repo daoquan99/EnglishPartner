@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { getAccessToken, resolveBackendBaseUrl } from '@/shared/api/httpClient';
-import type { CefrLevel, ConversationModeCode, TeacherVoiceName } from '@/shared/api/openapi.types';
+import type { CefrLevel, ConversationModeCode, FeedbackAudioResponseDto, TeacherVoiceName } from '@/shared/api/openapi.types';
 import {
   buildClientGrammarCorrectionFallback,
   normalizeGrammarCorrection,
@@ -11,6 +11,7 @@ import {
   type SessionPhase,
   type ThreeHubStates,
 } from '../types/tutor.types';
+import { useTutorSessionStore } from '../store/tutorSessionStore';
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -59,6 +60,7 @@ export function useThreeHubLiveSession() {
     tutorHub: 'disconnected',
     transcribeHub: 'disconnected',
     translateHub: 'disconnected',
+    grammarHub: 'disconnected',
   });
   const [turns, setTurns] = useState<BilingualTurnItem[]>([]);
   const [corrections, setCorrections] = useState<GrammarCorrectionItem[]>([]);
@@ -71,6 +73,7 @@ export function useThreeHubLiveSession() {
   const tutorConnRef = useRef<signalR.HubConnection | null>(null);
   const transcribeConnRef = useRef<signalR.HubConnection | null>(null);
   const translateConnRef = useRef<signalR.HubConnection | null>(null);
+  const grammarConnRef = useRef<signalR.HubConnection | null>(null);
 
   const captureCtxRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -336,7 +339,7 @@ export function useThreeHubLiveSession() {
   );
 
   /**
-   * Triggers Grammar & Vocabulary analysis for a specific turn via TutorConversationHub
+   * Triggers Grammar & Vocabulary analysis for a specific turn via GrammarCorrectionHub
    * ('AnalyzeTurnGrammar'), with automatic client-side fallback if SignalR does not emit
    * 'ReceiveLanguageCorrection' within 1.6s.
    */
@@ -345,7 +348,9 @@ export function useThreeHubLiveSession() {
       const cleaned = sanitizeLiveTranscriptText(transcriptText);
       if (!cleaned || cleaned.split(/\s+/).length < 2) return;
 
-      if (!forceReanalyze && receivedCorrectionTurnsRef.current.has(turnId)) {
+      if (forceReanalyze) {
+        receivedCorrectionTurnsRef.current.delete(turnId);
+      } else if (receivedCorrectionTurnsRef.current.has(turnId)) {
         return;
       }
 
@@ -354,21 +359,27 @@ export function useThreeHubLiveSession() {
       const cefr = activeCefrRef.current;
       const apiKey = activeApiKeyRef.current;
 
-      const hub = tutorConnRef.current;
+      const hub = grammarConnRef.current;
       if (hub && hub.state === signalR.HubConnectionState.Connected) {
         try {
           await hub.invoke('AnalyzeTurnGrammar', convId, turnId, cleaned, cefr);
-          setTimeout(() => {
-            if (!receivedCorrectionTurnsRef.current.has(turnId)) {
-              void analyzeWithGeminiClientFallback(turnId, cleaned, cefr, apiKey);
-            } else {
-              setIsAnalyzingGrammar(false);
-            }
-          }, 1600);
+          // The server awaits the analysis before completing the invocation, so any correction has already been
+          // pushed. When it skipped (same text already analysed / in flight) nothing arrives, so clear the spinner here.
+          setIsAnalyzingGrammar(false);
           return;
         } catch {
           // Fall through to client fallback if Hub invoke fails
         }
+      }
+
+      // If hub is Reconnecting or Connecting, do NOT call Gemini client fallback because server is still analyzing
+      if (
+        hub &&
+        (hub.state === signalR.HubConnectionState.Reconnecting ||
+          hub.state === signalR.HubConnectionState.Connecting)
+      ) {
+        setIsAnalyzingGrammar(false);
+        return;
       }
 
       await analyzeWithGeminiClientFallback(turnId, cleaned, cefr, apiKey);
@@ -388,18 +399,34 @@ export function useThreeHubLiveSession() {
         clearTimeout(prevTimer);
       }
 
+      // Requirement 8: Server automatically analyzes grammar after each user turn.
+      // FE does NOT call AnalyzeTurnGrammar automatically when grammar hub is connected or reconnecting.
+      const hubState = grammarConnRef.current?.state;
+      if (
+        hubState === signalR.HubConnectionState.Connected ||
+        hubState === signalR.HubConnectionState.Reconnecting ||
+        hubState === signalR.HubConnectionState.Connecting
+      ) {
+        return;
+      }
+
       const delayMs = isFinal ? 450 : 1250;
       const timer = setTimeout(() => {
         grammarTimersByTurnRef.current.delete(turnId);
         const latestText = latestUserTextByTurnRef.current.get(turnId) || cleaned;
         if (!receivedCorrectionTurnsRef.current.has(turnId)) {
-          void analyzeTurnGrammar(turnId, latestText, false);
+          void analyzeWithGeminiClientFallback(
+            turnId,
+            latestText,
+            activeCefrRef.current,
+            activeApiKeyRef.current
+          );
         }
       }, delayMs);
 
       grammarTimersByTurnRef.current.set(turnId, timer);
     },
-    [analyzeTurnGrammar]
+    [analyzeWithGeminiClientFallback]
   );
 
   const flushPlaybackQueue = useCallback(() => {
@@ -599,16 +626,19 @@ export function useThreeHubLiveSession() {
       tutorConnRef.current?.stop().catch(() => {}),
       transcribeConnRef.current?.stop().catch(() => {}),
       translateConnRef.current?.stop().catch(() => {}),
+      grammarConnRef.current?.stop().catch(() => {}),
     ]);
 
     tutorConnRef.current = null;
     transcribeConnRef.current = null;
     translateConnRef.current = null;
+    grammarConnRef.current = null;
 
     setHubStates({
       tutorHub: 'disconnected',
       transcribeHub: 'disconnected',
       translateHub: 'disconnected',
+      grammarHub: 'disconnected',
     });
     setIsAnalyzingGrammar(false);
     setMicLevel(0);
@@ -651,10 +681,109 @@ export function useThreeHubLiveSession() {
       const tutorHub = buildHub('/hubs/tutor');
       const transcribeHub = buildHub('/hubs/transcribe');
       const translateHub = buildHub('/hubs/translate');
+      const grammarHub = buildHub('/hubs/grammar');
 
       tutorConnRef.current = tutorHub;
       transcribeConnRef.current = transcribeHub;
       translateConnRef.current = translateHub;
+      grammarConnRef.current = grammarHub;
+
+      // Reconnection & connection state management (Performance M1)
+      grammarHub.onreconnecting(() => {
+        setHubStates((prev) => ({ ...prev, grammarHub: 'reconnecting' }));
+      });
+      grammarHub.onclose(() => {
+        setHubStates((prev) => ({ ...prev, grammarHub: 'disconnected' }));
+      });
+      grammarHub.onreconnected(async () => {
+        setHubStates((prev) => ({ ...prev, grammarHub: 'connected' }));
+        const currentConvId = sessionIdRef.current;
+        if (currentConvId) {
+          try {
+            await grammarHub.invoke('InitializeGrammarSession', {
+              conversationId: currentConvId,
+              apiKey: activeApiKeyRef.current,
+            });
+          } catch (err) {
+            console.warn('Failed to reinitialize grammar session on reconnect', err);
+          }
+        }
+      });
+
+      transcribeHub.onreconnecting(() => {
+        setHubStates((prev) => ({ ...prev, transcribeHub: 'reconnecting' }));
+      });
+      transcribeHub.onclose(() => {
+        setHubStates((prev) => ({ ...prev, transcribeHub: 'disconnected' }));
+      });
+      transcribeHub.onreconnected(async () => {
+        setHubStates((prev) => ({ ...prev, transcribeHub: 'connected' }));
+        const currentConvId = sessionIdRef.current;
+        if (currentConvId) {
+          try {
+            await transcribeHub.invoke('InitializeTranscribeSession', {
+              conversationId: currentConvId,
+              apiKey: activeApiKeyRef.current,
+            });
+          } catch (err) {
+            console.warn('Failed to reinitialize transcribe session on reconnect', err);
+          }
+        }
+      });
+
+      translateHub.onreconnecting(() => {
+        setHubStates((prev) => ({ ...prev, translateHub: 'reconnecting' }));
+      });
+      translateHub.onclose(() => {
+        setHubStates((prev) => ({ ...prev, translateHub: 'disconnected' }));
+      });
+      translateHub.onreconnected(async () => {
+        setHubStates((prev) => ({ ...prev, translateHub: 'connected' }));
+        const currentConvId = sessionIdRef.current;
+        if (currentConvId) {
+          try {
+            await translateHub.invoke('InitializeTranslateSession', {
+              conversationId: currentConvId,
+              apiKey: activeApiKeyRef.current,
+            });
+          } catch (err) {
+            console.warn('Failed to reinitialize translate session on reconnect', err);
+          }
+        }
+      });
+
+      tutorHub.onreconnecting(() => {
+        setHubStates((prev) => ({ ...prev, tutorHub: 'reconnecting' }));
+        setPhase('reconnecting');
+      });
+      tutorHub.onclose(() => {
+        setHubStates((prev) => ({ ...prev, tutorHub: 'disconnected' }));
+      });
+      tutorHub.onreconnected(async () => {
+        setHubStates((prev) => ({ ...prev, tutorHub: 'connected' }));
+        setPhase('listening');
+        const currentConvId = sessionIdRef.current;
+        if (currentConvId) {
+          try {
+            await tutorHub.invoke('InitializeTutorSession', {
+              conversationId: currentConvId,
+              apiKey: params.apiKey.trim(),
+              cefrLevel: params.cefrLevel,
+              extendedThinking: params.extendedThinking,
+              thinkingLevel: 'medium',
+              voiceName: params.voiceName,
+              speechSpeed: params.speechSpeed,
+              conversationMode: params.conversationMode,
+              topic: params.topic.trim(),
+              customSystemPrompt: params.customSystemPrompt?.trim() || null,
+              accent: useTutorSessionStore.getState().ttsAccent,
+              ttsModelCode: useTutorSessionStore.getState().ttsModelCode,
+            });
+          } catch (err) {
+            console.warn('Failed to reinitialize tutor session on reconnect', err);
+          }
+        }
+      });
 
       tutorHub.on(
         'ReceiveTutorAudio',
@@ -668,7 +797,7 @@ export function useThreeHubLiveSession() {
       );
 
       // Normalize Backend LanguageCorrectionDto (originalText, correctedText, errorCategory, explanationVi, cefrTip)
-      tutorHub.on('ReceiveLanguageCorrection', (payload: unknown) => {
+      grammarHub.on('ReceiveLanguageCorrection', (payload: unknown) => {
         const normalized = normalizeGrammarCorrection(payload);
         if (normalized) {
           upsertCorrectionItem(normalized);
@@ -750,9 +879,15 @@ export function useThreeHubLiveSession() {
           tutorHub: 'connecting',
           transcribeHub: 'connecting',
           translateHub: 'connecting',
+          grammarHub: 'connecting',
         });
 
-        await Promise.all([tutorHub.start(), transcribeHub.start(), translateHub.start()]);
+        await Promise.all([
+          tutorHub.start(),
+          transcribeHub.start(),
+          translateHub.start(),
+          grammarHub.start(),
+        ]);
 
         await tutorHub.invoke('InitializeTutorSession', {
           conversationId: convId,
@@ -765,23 +900,30 @@ export function useThreeHubLiveSession() {
           conversationMode: params.conversationMode,
           topic: params.topic.trim(),
           customSystemPrompt: params.customSystemPrompt?.trim() || null,
+          accent: useTutorSessionStore.getState().ttsAccent,
+          ttsModelCode: useTutorSessionStore.getState().ttsModelCode,
         });
         setHubStates((prev) => ({ ...prev, tutorHub: 'connected' }));
 
-        await transcribeHub.invoke('InitializeTranscribeSession', {
-          conversationId: convId,
-          apiKey: params.apiKey.trim(),
-        });
-        setHubStates((prev) => ({ ...prev, transcribeHub: 'connected' }));
-
-        await translateHub.invoke('InitializeTranslateSession', {
-          conversationId: convId,
-          apiKey: params.apiKey.trim(),
-        });
+        await Promise.all([
+          transcribeHub.invoke('InitializeTranscribeSession', {
+            conversationId: convId,
+            apiKey: params.apiKey.trim(),
+          }),
+          translateHub.invoke('InitializeTranslateSession', {
+            conversationId: convId,
+            apiKey: params.apiKey.trim(),
+          }),
+          grammarHub.invoke('InitializeGrammarSession', {
+            conversationId: convId,
+            apiKey: params.apiKey.trim(),
+          }),
+        ]);
         setHubStates({
           tutorHub: 'connected',
           transcribeHub: 'connected',
           translateHub: 'connected',
+          grammarHub: 'connected',
         });
 
         playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
@@ -890,7 +1032,7 @@ export function useThreeHubLiveSession() {
       } catch (err: any) {
         setErrorBanner(
           err?.message ||
-            'Không thể kết nối 3 SignalR Hubs hoặc Google AI Studio. Hãy kiểm tra API Key và Backend (.NET) đang chạy ở cổng 5099.'
+            'Không thể kết nối 4 SignalR Hubs hoặc Google AI Studio. Hãy kiểm tra API Key và Backend (.NET) đang chạy ở cổng 5099.'
         );
         setPhase('error');
       }
@@ -936,6 +1078,24 @@ export function useThreeHubLiveSession() {
     };
   }, [stopReplayAudio, stopSession]);
 
+  const requestFeedbackAudio = useCallback(
+    async (correctionId: string, variant: 'corrected' | 'improved') => {
+      const convId = sessionIdRef.current;
+      const hub = grammarConnRef.current;
+      if (!hub || hub.state !== signalR.HubConnectionState.Connected || !convId) {
+        throw new Error('feedback_audio_session_ended');
+      }
+
+      return await hub.invoke<FeedbackAudioResponseDto>(
+        'RequestFeedbackAudio',
+        convId,
+        correctionId,
+        variant
+      );
+    },
+    []
+  );
+
   return {
     phase,
     hubStates,
@@ -951,6 +1111,7 @@ export function useThreeHubLiveSession() {
     replayTurnAudio,
     stopReplayAudio,
     analyzeTurnGrammar,
+    requestFeedbackAudio,
     loadPersistedSessionData,
     resetConversationWorkspace,
     clearError: () => setErrorBanner(null),

@@ -1,4 +1,5 @@
 import { httpClient } from '@/shared/api/httpClient';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import type {
   GrammarRoadmapDto,
   GrammarStepDetailDto,
@@ -21,9 +22,8 @@ import type {
   ListMyGrammarExercisesParams,
 } from '../types/grammar.types';
 
-// AI generation/grading can run up to the backend provider timeout (120s); wait a little longer
-// so the backend's own timeout error reaches the user instead of a client-side abort.
-export const GRAMMAR_AI_TIMEOUT_MS = 150_000;
+// AI generation/grading: shared client timeout for AI calls (see shared/config/timeouts.ts).
+export const GRAMMAR_AI_TIMEOUT_MS = AI_REQUEST_TIMEOUT_MS;
 
 export const grammarApi = {
   getRoadmap: async (): Promise<GrammarRoadmapDto> => {

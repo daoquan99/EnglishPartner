@@ -27,7 +27,7 @@
 
 ## Việc cần làm
 
-- [ ] Migration thêm `UserId` + xóa dữ liệu không có chủ.
-- [ ] Lọc theo owner trong `ConversationRepository` và các handler Conversations.
-- [ ] Owner check trong 3 hub và `GeminiLiveConnectionManager`.
-- [ ] Test cross-user cho list, get, update, delete và hub.
+- [x] Migration thêm `UserId` + xóa dữ liệu không có chủ. — `DeleteOwnerlessConversations` + `AddConversationUserId` (task `20261028-review-fix`); từ ADR-0006 P8 gộp vào migration tự chứa của `LiveTutorDbContext`.
+- [x] Lọc theo owner trong `ConversationRepository` và các handler Conversations.
+- [x] Owner check trong 3 hub và `GeminiLiveConnectionManager`. — `AssertSessionOwner` theo `_sessionOwners`, userId lấy từ claims.
+- [x] Test cross-user cho list, get, update, delete và hub. — `ConversationOwnershipAndRealtimeLifecycleTests`, `EndpointOwnershipSecurityTests`. (xác nhận 2026-11-02)

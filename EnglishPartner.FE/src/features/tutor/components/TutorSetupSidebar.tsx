@@ -175,7 +175,7 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
                 {t('tutor.cefrTargetLabel', '1. Trình độ CEFR mục tiêu')}
               </label>
-              <div className="grid grid-cols-6 gap-1.5">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {CEFR_LEVELS.map((lvl) => {
                   const active = cefrLevel === lvl.id;
                   return (
@@ -411,16 +411,28 @@ export const TutorSetupSidebar: React.FC<TutorSetupModalProps> = ({
             <Badge variant="amber">{speechSpeed.toFixed(2)}x</Badge>
           </div>
 
-          <div className="flex items-center gap-2.5 ml-auto">
-            <Button variant="outline" size="md" onClick={handleSave}>
-              <Save className="w-4 h-4" />
-              {t('tutor.saveSettings', 'Lưu thiết lập')}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto ml-auto">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={handleSave}
+              className="w-full sm:w-auto justify-center whitespace-nowrap"
+            >
+              <Save className="w-4 h-4 shrink-0" />
+              <span>{t('tutor.saveSettings', 'Lưu thiết lập')}</span>
             </Button>
-            <Button variant="primary" size="md" onClick={handleStart}>
-              <Mic className="w-4 h-4" />
-              {isSessionActive
-                ? t('tutor.applyAndRestart', 'Áp dụng & Khởi động lại phiên')
-                : t('tutor.startSpeakingBtn', 'Bắt đầu luyện nói')}
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleStart}
+              className="w-full sm:w-auto justify-center whitespace-nowrap"
+            >
+              <Mic className="w-4 h-4 shrink-0" />
+              <span>
+                {isSessionActive
+                  ? t('tutor.applyAndRestart', 'Áp dụng & Khởi động lại phiên')
+                  : t('tutor.startSpeakingBtn', 'Bắt đầu luyện nói')}
+              </span>
             </Button>
           </div>
         </div>

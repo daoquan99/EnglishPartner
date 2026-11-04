@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import { LoadingState } from '@/shared/components/ui/LoadingState';
 import { useTutorSessionStore } from '@/features/tutor';
 import { useVocabularyGenerationModelsQuery } from '@/features/catalog';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import {
   useAdminGrammarStepQuery,
   useUpdateAdminGrammarStepMutation,
@@ -106,7 +107,7 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
 
   const { apiKey, aiProvider, agyModelCode } = useTutorSessionStore();
   const { data: models = [] } = useVocabularyGenerationModelsQuery();
-  const isAgy = aiProvider === 'agy';
+  const isAgy = isAgyLocalEnabled && aiProvider === 'agy';
   const hasKey = Boolean(apiKey.trim()) || isAgy;
   const hasModels = isAgy || models.length > 0;
   const effectiveModel = isAgy
@@ -357,7 +358,7 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
         <div
           role="tablist"
           aria-label={t('admin.grammar.metadataTitle')}
-          className="flex items-center p-1 rounded-2xl bg-slate-100 border border-slate-200 gap-1"
+          className="flex items-center p-1 rounded-2xl bg-slate-100 border border-slate-200 gap-1 overflow-x-auto max-w-full scrollbar-none"
         >
           <button
             type="button"
@@ -366,13 +367,13 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
             aria-selected={activeTab === 'info'}
             aria-controls="panel-info"
             onClick={() => setActiveTab('info')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'info'
                 ? 'bg-white text-slate-900 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-4 h-4 shrink-0" />
             <span>{t('admin.grammar.tabInfo')}</span>
           </button>
           <button
@@ -382,13 +383,13 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
             aria-selected={activeTab === 'theory'}
             aria-controls="panel-theory"
             onClick={() => setActiveTab('theory')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'theory'
                 ? 'bg-white text-slate-900 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4 shrink-0" />
             <span>{t('admin.grammar.tabTheory')}</span>
           </button>
           <button
@@ -398,13 +399,13 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
             aria-selected={activeTab === 'exercises'}
             aria-controls="panel-exercises"
             onClick={() => setActiveTab('exercises')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'exercises'
                 ? 'bg-white text-slate-900 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-4 h-4" />
+            <Layers className="w-4 h-4 shrink-0" />
             <span>
               {t('admin.grammar.tabOfficialExercises', {
                 count: stepDetail.officialExercises?.length || 0,
@@ -819,7 +820,7 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 self-start sm:self-auto">
                         <Button
                           type="button"
                           variant="ghost"
@@ -827,9 +828,9 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
                           onClick={() =>
                             setPreviewingExerciseId(isPreviewing ? null : ex.id)
                           }
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 whitespace-nowrap shrink-0"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             {isPreviewing
                               ? t('admin.grammar.hidePreview')
@@ -843,9 +844,9 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
                           onClick={() =>
                             setViewAnswersExerciseId(isViewingAnswers ? null : ex.id)
                           }
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 whitespace-nowrap shrink-0"
                         >
-                          <Code2 className="w-3.5 h-3.5" />
+                          <Code2 className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             {isViewingAnswers
                               ? t('admin.grammar.hideAnswers')
@@ -860,9 +861,9 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
                             setEditingExercise(ex);
                             setIsExerciseFormOpen(true);
                           }}
-                          className="flex items-center gap-1 text-slate-700 hover:text-emerald-700"
+                          className="flex items-center gap-1 text-slate-700 hover:text-emerald-700 whitespace-nowrap shrink-0"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-3.5 h-3.5 shrink-0" />
                           <span>{t('common.edit')}</span>
                         </Button>
                         <Button
@@ -870,11 +871,11 @@ export const AdminGrammarStepEditorPage: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeletingExerciseId(ex.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 shrink-0"
                           title={t('common.delete')}
                           aria-label={t('common.delete')}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 shrink-0" />
                         </Button>
                       </div>
                     </div>

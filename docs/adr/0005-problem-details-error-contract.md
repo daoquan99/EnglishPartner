@@ -1,6 +1,6 @@
 # ADR-0005: Lỗi API theo ProblemDetails, giữ field `error` để tương thích
 
-- Trạng thái: Proposed — cần người dùng xác nhận
+- Trạng thái: Accepted (người dùng duyệt qua plan `docs/tasks/20261028-review-fix/plan.md`, 2026-10-28)
 - Ngày: 2026-10-28
 - Liên quan: review S10 (mục Trung bình về `ex.Message`), A4
 
@@ -23,6 +23,6 @@ Mỗi endpoint tự `try/catch` và trả `{ error: ex.Message }`; exception l�
 
 ## Việc cần làm
 
-- [ ] Người dùng xác nhận ADR.
-- [ ] Global handler + ProblemDetails.
-- [ ] Gỡ try/catch endpoint theo từng nhóm.
+- [x] Người dùng xác nhận ADR.
+- [x] Global handler + ProblemDetails. — `Api/Exceptions/GlobalExceptionHandler.cs`, body có extension `error`; FE `httpClient.ts` đọc `error`.
+- [x] Gỡ try/catch endpoint theo từng nhóm. — còn 12 `catch` cố ý (refresh lỗi xóa cookie → 401; `InvalidOperationException` → 409; `DailyPlanNotFoundException` → 400; media `ForbiddenException` → 404 để không lộ tồn tại): mỗi chỗ trả status khác mặc định của global handler, gỡ sẽ đổi contract. (xác nhận 2026-11-02)

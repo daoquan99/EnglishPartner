@@ -1,5 +1,6 @@
 import { toast } from '@/shared/lib/toast';
 import { httpClient, extractApiErrorMessage } from '@/shared/api/httpClient';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import type {
   SynthesizePronunciationAudioRequestDto,
   SynthesizePronunciationAudioResponseDto,
@@ -111,7 +112,8 @@ export const vocabularyApi = {
   ): Promise<SynthesizePronunciationAudioResponseDto> {
     const { data } = await httpClient.post<SynthesizePronunciationAudioResponseDto>(
       '/api/pronunciation/synthesize',
-      payload
+      payload,
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },
@@ -206,8 +208,7 @@ export const vocabularyApi = {
     const { data } = await httpClient.post<VocabularyFlashcardDto[]>(
       '/api/vocabularies/generate',
       payload,
-      // Allow one minute beyond the backend's 3000-second generation timeout.
-      { timeout: 3_060_000, skipErrorToast: options?.skipErrorToast } as any
+      { timeout: AI_REQUEST_TIMEOUT_MS, skipErrorToast: options?.skipErrorToast } as any
     );
     return data;
   },
@@ -275,7 +276,8 @@ export const vocabularyApi = {
     };
     const { data } = await httpClient.post<PronunciationAssessmentApiResultDto>(
       '/api/pronunciation/assessments',
-      request
+      request,
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return {
       assessmentId: data.assessmentId,

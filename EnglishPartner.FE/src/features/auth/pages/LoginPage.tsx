@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogIn, ShieldCheck, GraduationCap, Sparkles, Lock, User, Globe } from 'lucide-react';
+import { LogIn, Sparkles, Lock, User, Globe } from 'lucide-react';
 import { useLoginMutation } from '../hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 
@@ -31,7 +31,6 @@ export const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -61,12 +60,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  // Dev-only shortcut: fills the seeded username; passwords come from user-secrets and are never shipped in the bundle.
-  const handleQuickDemoAccount = (usernameOrEmail: string) => {
-    setValue('usernameOrEmail', usernameOrEmail);
-    setValue('password', '');
-  };
-
   const toggleLanguage = () => {
     const next = i18n.language === 'vi' ? 'en' : 'vi';
     void i18n.changeLanguage(next);
@@ -88,38 +81,29 @@ export const LoginPage: React.FC = () => {
 
       <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
         {/* Left Hero Panel */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-700 text-white p-8 flex flex-col justify-between">
-          <div className="space-y-4">
+        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-700 text-white p-5 lg:p-8 flex flex-col justify-between">
+          <div className="space-y-3 lg:space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 p-2.5 backdrop-blur-xs flex items-center justify-center shrink-0 shadow-xs">
-                <img
-                  src="/assets/brand/logo-mark.svg"
-                  alt="LingoMint"
-                  className="w-full h-full object-contain brightness-0 invert"
-                />
-              </div>
+              {/* Full-colour mark: brightness-0/invert would flatten its opaque badge into a white square. */}
+              <img
+                src="/assets/brand/logo-mark.svg"
+                alt="LingoMint"
+                className="w-10 h-10 lg:w-12 lg:h-12 shrink-0 drop-shadow-sm"
+              />
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 {t('auth.heroTag')}
               </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold leading-tight">
+            <h1 className="text-lg font-extrabold leading-snug lg:hidden">
+              {t('auth.heroTitleShort')}
+            </h1>
+            <h1 className="hidden lg:block text-2xl sm:text-3xl font-extrabold leading-tight">
               {t('auth.heroTitle')}
             </h1>
-            <p className="text-sm text-emerald-100 leading-relaxed">
+            <p className="hidden lg:block text-sm text-emerald-100 leading-relaxed">
               {t('auth.heroSubtitle')}
             </p>
-          </div>
-
-          <div className="space-y-3 pt-6 border-t border-white/15 text-xs text-emerald-100">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
-              <span>{t('auth.heroFeature1')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-amber-300 shrink-0" />
-              <span>{t('auth.heroFeature2')}</span>
-            </div>
           </div>
         </div>
 
@@ -132,45 +116,6 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Seeded account shortcuts (development builds only) */}
-          {import.meta.env.DEV && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleQuickDemoAccount('default-learner')}
-              className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/70 text-left transition-all cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-800">{t('auth.learnerDemo')}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/70 text-emerald-900">
-                  LEARNER
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 mt-1 font-mono">default-learner</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickDemoAccount('admin')}
-              className="p-3 rounded-2xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/70 text-left transition-all cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-900">{t('auth.adminDemo')}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-950">
-                  ADMIN
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 mt-1 font-mono">admin</p>
-            </button>
-          </div>
-          )}
-
-          {loginMutation.isError && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-medium text-rose-700">
-              {(loginMutation.error as Error)?.message || t('common.error')}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -182,7 +127,7 @@ export const LoginPage: React.FC = () => {
                   type="text"
                   {...register('usernameOrEmail')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                  placeholder="default-learner hoặc admin@lingomint.local"
+                  placeholder={t('auth.usernameOrEmail')}
                 />
               </div>
               {errors.usernameOrEmail && (

@@ -77,7 +77,7 @@ export const GrammarRoadmapPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs space-y-2">
           <div className="font-bold text-sm">{t('grammar.errors.generic')}</div>
           <div>{getGrammarErrorMessage(error, t)}</div>
@@ -91,7 +91,7 @@ export const GrammarRoadmapPage: React.FC = () => {
 
   if (!roadmap || !roadmap.levels || roadmap.levels.length === 0) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <EmptyState
           title={t('grammar.emptyExercises')}
           description={t('grammar.emptyExercisesDesc')}
@@ -109,7 +109,7 @@ export const GrammarRoadmapPage: React.FC = () => {
   const overallPercent = totalSteps > 0 ? Math.round((totalPassed / totalSteps) * 100) : 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Action Error Banner */}
       {actionError && (
         <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start justify-between gap-3 shadow-xs">
@@ -129,10 +129,12 @@ export const GrammarRoadmapPage: React.FC = () => {
       )}
 
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-800 via-emerald-700 to-teal-700 text-white p-6 sm:p-8 shadow-sm">
-        <div aria-hidden="true" className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/5" />
-        <div aria-hidden="true" className="absolute right-24 -bottom-20 w-48 h-48 rounded-full bg-teal-400/10" />
-        <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
+      <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-800 via-emerald-700 to-teal-700 text-white p-5 sm:p-8 shadow-sm">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute right-0 -top-16 translate-x-1/4 w-64 h-64 rounded-full bg-white/5" />
+          <div className="absolute right-24 bottom-0 translate-y-1/2 w-48 h-48 rounded-full bg-teal-400/10" />
+        </div>
+        <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center min-w-0">
           <div className="space-y-2 max-w-xl">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-50 text-xs font-semibold">
@@ -163,7 +165,7 @@ export const GrammarRoadmapPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white/10 ring-1 ring-inset ring-white/20 p-4 md:w-60 space-y-2">
+          <div className="rounded-2xl bg-white/10 ring-1 ring-inset ring-white/20 p-3 sm:p-4 md:w-60 space-y-2">
             <div className="text-xs font-semibold text-emerald-100">{t('grammar.overallProgress')}</div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold">{totalPassed}</span>
@@ -198,7 +200,7 @@ export const GrammarRoadmapPage: React.FC = () => {
         aria-labelledby={`level-tab-${selectedLevelData.level}`}
         className="rounded-3xl border border-slate-200 bg-white shadow-xs overflow-hidden"
       >
-        <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-[1fr_auto] md:items-center border-b border-slate-100">
+        <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-[1fr_auto] md:items-center border-b border-slate-100">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
@@ -234,7 +236,7 @@ export const GrammarRoadmapPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-3.5 md:w-72 space-y-2">
+          <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 p-3 sm:p-4 md:w-72 space-y-2">
             <div className="flex items-start gap-2.5">
               <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-100 text-amber-700 shrink-0">
                 <Award className="w-4 h-4" aria-hidden="true" />

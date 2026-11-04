@@ -15,4 +15,6 @@ Use Learning as the proposed repository/UoW and aggregate-write example. Migrate
 
 Verify in proportion to impact: compile/DI for moves, focused invariant/use-case checks for behavior, relational checks for SQL guarantees, transport checks for endpoint/hub contracts. Do not broaden into unrelated tests or live provider/database writes. Stop scope expansion at newly discovered unrelated defects and report them separately.
 
+For Modular Monolith work (ADR-0006: moving code into modules, Contracts, module DbContext/schema, outbox), also follow the [modular-monolith skill](../modular-monolith/SKILL.md); its phase gates and move-only rule take precedence for those tasks.
+
 For plan-only requests, deliver file/use-case mapping, order/dependencies, compatibility/schema risks, unresolved decisions and acceptance gates without source edits. For implementation, report actual diffs/check results and remaining gates; never mark a documented phase complete without implementation evidence.

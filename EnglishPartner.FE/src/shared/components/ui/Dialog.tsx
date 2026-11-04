@@ -84,7 +84,10 @@ export const Dialog: React.FC<DialogProps> = ({
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 truncate flex items-center gap-2">
+              <h2
+                className="text-base sm:text-lg font-extrabold text-slate-900 truncate"
+                title={typeof title === 'string' ? title : undefined}
+              >
                 {title}
               </h2>
               {description && (

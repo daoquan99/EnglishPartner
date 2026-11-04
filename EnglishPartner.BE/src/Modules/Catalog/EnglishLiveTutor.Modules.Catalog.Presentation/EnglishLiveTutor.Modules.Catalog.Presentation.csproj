@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EnglishLiveTutor.Modules.Catalog.Presentation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Catalog.Application\EnglishLiveTutor.Modules.Catalog.Application.csproj" />
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Catalog.Contracts\EnglishLiveTutor.Modules.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishLiveTutor.Shared.Presentation\EnglishLiveTutor.Shared.Presentation.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishLiveTutor.Shared.Application\EnglishLiveTutor.Shared.Application.csproj" />
+  </ItemGroup>
+
+</Project>

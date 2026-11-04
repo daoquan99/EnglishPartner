@@ -27,6 +27,6 @@ Làm sau các mục bảo mật S1–S4 và S2/S3, vì scale hệ thống còn l
 
 ## Việc cần làm
 
-- [ ] `OnDisconnectedAsync` + TTL dọn state (P7).
-- [ ] Bật Redis backplane theo cấu hình `Redis:ConnectionString`.
-- [ ] Tài liệu triển khai: sticky session, health check Redis.
+- [x] `OnDisconnectedAsync` + TTL dọn state (P7). — 3 hub có `OnDisconnectedAsync`; phiên idle dọn sau `IdleTimeoutMinutes` (mặc định 15).
+- [x] Bật Redis backplane theo cấu hình `Redis:ConnectionString`. — `SignalRConfigurationExtensions`.
+- [ ] Tài liệu triển khai: sticky session, health check Redis. — **còn thiếu** (xác nhận 2026-11-02): sticky session mới chỉ ghi ở `docs/tasks/20261028-review-fix/report.md` mục 5; chưa có tài liệu triển khai riêng, chưa có `AddHealthChecks`/`MapHealthChecks` cho Redis/SQL.

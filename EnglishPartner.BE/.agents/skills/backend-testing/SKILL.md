@@ -1,11 +1,19 @@
 ---
 name: backend-testing
-description: Write, extend or run backend tests in tests/EnglishLiveTutor.Domain.Tests (xUnit, EF InMemory) — domain invariants, MediatR handlers through the pipeline, endpoint behaviour, and mandatory cross-user authorization tests for security fixes. Use when a backend change needs test evidence.
+description: Write, extend or run backend tests across modular monolith test projects (xUnit, EF InMemory) — domain invariants, MediatR handlers through the pipeline, endpoint/HTTP integration, and mandatory cross-user authorization tests for security fixes. Use when a backend change needs test evidence.
 ---
 
 # Backend testing
 
-Read [AGENTS.md](../../../AGENTS.md). The only test project is `tests/EnglishLiveTutor.Domain.Tests` (xUnit 2.9, `Microsoft.EntityFrameworkCore.InMemory`, coverlet). Existing examples: `CqrsDependencyInjectionTests.cs`, `EndpointCqrsTests.cs`, `FallingWordGameCqrsPipelineTests.cs`, `DatabaseSeederAdminUserTests.cs`.
+Read [AGENTS.md](../../../AGENTS.md). The backend test suite is separated by module and architectural concerns (net10.0, xUnit 2.9, `Microsoft.EntityFrameworkCore.InMemory`, coverlet):
+
+```text
+tests/
+  EnglishLiveTutor.Tests.Common/                    class library: Infrastructure/ApiTestFactory.cs, TestDoubles/**, LessonTestDoubles.cs, helper dùng chung
+  EnglishLiveTutor.ArchitectureTests/               kiến trúc, module map, boundary scanner & allowlist, project references, persistence/migration guard
+  EnglishLiveTutor.Api.IntegrationTests/            test qua WebApplicationFactory/HTTP (endpoints, ProblemDetails, auth/JWT qua HTTP, rate limit, composition DI)
+  Modules/<X>/EnglishLiveTutor.Modules.<X>.Tests/   domain + handler + infrastructure + cross-user security của từng module X (Catalog, Grammar, Identity, Lessons, LiveTutor, Speech, Vocabulary)
+```
 
 ## What to test
 
@@ -24,8 +32,8 @@ Read [AGENTS.md](../../../AGENTS.md). The only test project is `tests/EnglishLiv
 ## Run
 
 ```bash
-dotnet test EnglishLiveTutor.sln                                  # in EnglishPartner.BE
-dotnet test EnglishLiveTutor.sln --filter "FullyQualifiedName~Ownership"
+dotnet test EnglishLiveTutor.slnx                                  # in EnglishPartner.BE
+dotnet test EnglishLiveTutor.slnx --filter "FullyQualifiedName~Ownership"
 ```
 
 ## Limits to report

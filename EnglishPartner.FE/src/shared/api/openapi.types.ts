@@ -825,3 +825,128 @@ export type GrammarGradingMode =
   | 'Composite';
 
 
+
+
+// --- Learning Progress & Daily Activity ---
+export interface ProgressDailyActivityDto {
+  date: string; // "yyyy-MM-dd", ngày địa phương của user
+  vocabularyReviews: number;
+  lessonAttempts: number;
+  grammarAttempts: number;
+  pronunciationAssessments: number;
+  tutorSessions: number;
+}
+
+export interface ProgressVocabularySummaryDto {
+  studied: number;
+  mastered: number;
+  dueForReviewNow: number;
+  averageMastery: number;
+}
+
+export interface ProgressLessonSummaryDto {
+  completedAttempts: number;
+  averageScore100: number | null;
+}
+
+export interface ProgressGrammarLevelDto {
+  level: string;
+  passedSteps: number;
+  totalSteps: number;
+}
+
+export interface ProgressGrammarSummaryDto {
+  levels: ProgressGrammarLevelDto[];
+  currentStepCode: string | null;
+}
+
+export interface ProgressSpeechSummaryDto {
+  assessments: number;
+  averageScore: number | null;
+  averageScoreInRange: number | null;
+}
+
+export interface ProgressLiveTutorSummaryDto {
+  sessions: number;
+  sessionsInRange: number;
+}
+
+export interface ProgressOverviewDto {
+  timeZoneId: string;
+  days: number;
+  currentStreakDays: number;
+  longestStreakDays: number;
+  activeDaysInRange: number;
+  activity: ProgressDailyActivityDto[];
+  vocabulary: ProgressVocabularySummaryDto;
+  lessons: ProgressLessonSummaryDto;
+  grammar: ProgressGrammarSummaryDto;
+  speech: ProgressSpeechSummaryDto;
+  liveTutor: ProgressLiveTutorSummaryDto;
+}
+
+// --- SignalR Realtime Hub Contracts ---
+
+export interface LanguageCorrectionIssueDto {
+  original: string;
+  fix: string;
+  category: string;
+  explanationVi: string;
+}
+
+export interface SignalRLanguageCorrectionDto {
+  id: string;
+  conversationId: string;
+  turnId: string;
+  originalText: string;
+  correctedText: string;
+  errorCategory: string;
+  explanationVi: string;
+  cefrTip: string;
+  timestamp: string;
+  status?: string | null;
+  improvedText?: string | null;
+  issues?: LanguageCorrectionIssueDto[] | null;
+}
+
+export interface FeedbackAudioResponseDto {
+  mimeType: string;
+  audioBase64: string;
+  durationMs: number;
+}
+
+export interface GrammarHubServerEvents {
+  ReceiveLanguageCorrection: (correction: SignalRLanguageCorrectionDto) => void;
+  GrammarHubReady: (ready: { conversationId: string }) => void;
+}
+
+export interface GrammarHubClientMethods {
+  InitializeGrammarSession: (request: { conversationId: string; apiKey?: string }) => Promise<void>;
+  AnalyzeTurnGrammar: (conversationId: string, turnId: string, transcriptText: string, cefrLevel: string) => Promise<void>;
+  RequestFeedbackAudio: (conversationId: string, correctionId: string, variant: string) => Promise<FeedbackAudioResponseDto>;
+}
+
+/** Mirrors BE `StartTutorSessionRequest` (hub `/hubs/tutor` → `InitializeTutorSession`). */
+export interface StartTutorSessionRequestDto {
+  conversationId: string;
+  apiKey: string;
+  cefrLevel?: string;
+  extendedThinking?: boolean;
+  thinkingLevel?: string;
+  voiceName?: string;
+  speechSpeed?: number;
+  conversationMode?: string;
+  topic?: string;
+  customSystemPrompt?: string | null;
+  /** TTS accent used for on-demand feedback audio (`US` | `UK`). */
+  accent?: string;
+  /** TTS model for on-demand feedback audio, e.g. `gemini-3.8-live`. */
+  ttsModelCode?: string | null;
+}
+
+export interface TutorHubClientMethods {
+  InitializeTutorSession: (request: StartTutorSessionRequestDto) => Promise<void>;
+  StreamUserAudioToTutor: (payload: { conversationId: string; speaker: string; turnId: string | null; base64Pcm16k: string }) => Promise<void>;
+  NotifyUserSpeechEnd: (conversationId: string) => Promise<void>;
+  StopSession: (conversationId: string) => Promise<void>;
+}

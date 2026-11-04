@@ -1,0 +1,1 @@
+# Module-boundary baseline for ADR-0006: only remove entries; never add new entries.

@@ -1,0 +1,86 @@
+using EnglishLiveTutor.Domain.Conversations.Entities;
+
+namespace EnglishLiveTutor.Domain.Conversations.Repositories;
+
+public interface IConversationRepository
+{
+    Task<List<ConversationSummary>> ListConversationsAsync(string userId, CancellationToken ct = default);
+
+    Task<(List<ConversationSummary> Items, int TotalCount)> ListConversationsPagedAsync(
+        string userId,
+        string? search = null,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken ct = default);
+
+    Task<ConversationEntity?> GetConversationWithHistoryAsync(string userId, string id, CancellationToken ct = default);
+    Task<ConversationDetailRecord?> GetConversationDetailAsync(string userId, string id, CancellationToken ct = default);
+    /// <summary>Last <paramref name="take"/> non-empty messages of a conversation owned by the user, oldest first.</summary>
+    Task<IReadOnlyList<ChatMessageEntity>> GetRecentMessagesAsync(string userId, string conversationId, int take, CancellationToken ct = default);
+
+    Task<ConversationEntity?> GetConversationByIdAsync(string id, CancellationToken ct = default);
+
+    Task<ConversationEntity> CreateConversationAsync(
+        string userId,
+        string? id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default);
+
+    Task<ConversationEntity?> UpdateConversationSettingsAsync(
+        string userId,
+        string id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default);
+
+    Task<ConversationEntity> CreateOrUpdateConversationAsync(
+        string userId,
+        string? id,
+        string? title,
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null,
+        CancellationToken ct = default);
+
+    Task<bool> DeleteConversationAsync(string userId, string id, CancellationToken ct = default);
+
+    Task<int> GetMaxSequenceOrderAsync(string conversationId, CancellationToken ct = default);
+
+    Task UpsertMessageTranscriptAsync(
+        string conversationId,
+        string turnId,
+        string speaker,
+        int sequenceOrder,
+        string fullTranscript,
+        bool isFinal,
+        CancellationToken ct = default);
+
+    Task UpsertMessageTranslationAsync(
+        string conversationId,
+        string turnId,
+        string speaker,
+        int sequenceOrder,
+        string fullVietnameseText,
+        CancellationToken ct = default);
+
+    Task SaveCorrectionAsync(LanguageCorrectionEntity correction, CancellationToken ct = default);
+
+    Task<LanguageCorrectionEntity?> GetCorrectionByIdAsync(string conversationId, string correctionId, CancellationToken ct = default);
+}

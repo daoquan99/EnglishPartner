@@ -22,7 +22,7 @@ export const FallingWordsHistoryPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-6">
+    <div className="max-w-4xl mx-auto py-8 flex flex-col gap-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -78,7 +78,7 @@ export const FallingWordsHistoryPage: React.FC = () => {
               Đang tải danh sách các ván chơi...
             </div>
           ) : !sessionsData || sessionsData.items.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">
+            <div className="p-6 sm:p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">
               Bạn chưa có ván chơi nào. Hãy bắt đầu một ván chơi mới!
             </div>
           ) : (
@@ -93,7 +93,7 @@ export const FallingWordsHistoryPage: React.FC = () => {
                 return (
                   <div
                     key={session.id}
-                    className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 transition"
+                    className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 transition"
                   >
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export const FallingWordsHistoryPage: React.FC = () => {
               Đang tải lịch sử từng từ...
             </div>
           ) : !wordsData || wordsData.items.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">
+            <div className="p-6 sm:p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">
               Chưa có từ nào được ghi nhận kết quả.
             </div>
           ) : (

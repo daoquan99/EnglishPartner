@@ -1,4 +1,5 @@
 import { httpClient } from '@/shared/api/httpClient';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import type {
   ActiveFallingWordRoundDto,
   CreateFallingWordSessionRequest,
@@ -134,7 +135,7 @@ export const fallingWordsApi = {
     const { data } = await httpClient.post<FallingWordAudioDto>(
       `${BASE_URL}/sessions/${sessionId}/rounds/${roundId}/synthesize`,
       payload,
-      { signal, timeout: 60_000 }
+      { signal, timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },

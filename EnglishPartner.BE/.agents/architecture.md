@@ -2,6 +2,8 @@
 
 Status: proposed implementation target, documented on 2026-10-15. Only documentation was authorized in the initial review. Existing source paths below are the baseline; proposed paths do not exist yet.
 
+> **2026-11-01:** [ADR-0006](../../docs/adr/0006-modular-monolith.md) replaces the overall shape in sections 1 and 4 (four projects, one `AppDbContext`) with a Modular Monolith: modules with `Contracts`, a DbContext and schema per module, and an outbox for cross-module events. Aggregate, CQRS, query/command and API guidance below still applies **inside** each module.
+
 ## 1. Architectural shape
 
 Retain the four projects and one SQL Server database. This is a single backend with Clean Architecture layer dependencies, tactical DDD on the write side, and CQRS organized by feature/use case.

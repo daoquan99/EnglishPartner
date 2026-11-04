@@ -1,4 +1,5 @@
 import { httpClient } from '@/shared/api/httpClient';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import type {
   LessonSummaryDto,
   LessonDetailAuthorDto,
@@ -119,7 +120,8 @@ export const lessonApi = {
   }): Promise<LessonCandidateValidationResultDto> => {
     const { data } = await httpClient.post<LessonCandidateValidationResultDto>(
       '/api/lessons/generation/generate',
-      payload
+      payload,
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },
@@ -226,7 +228,7 @@ export const lessonApi = {
     const { data } = await httpClient.post(
       `/api/lesson-attempts/${attemptId}/exercises/${exerciseId}/synthesize`,
       payload,
-      { signal, timeout: 180_000 }
+      { signal, timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },
@@ -253,7 +255,8 @@ export const lessonApi = {
   ): Promise<ExerciseAnswerResultDto> => {
     const { data } = await httpClient.post<ExerciseAnswerResultDto>(
       `/api/lesson-attempts/${attemptId}/answers`,
-      payload
+      payload,
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },
@@ -268,7 +271,8 @@ export const lessonApi = {
   ): Promise<ExerciseAnswerResultDto> => {
     const { data } = await httpClient.post<ExerciseAnswerResultDto>(
       `/api/lesson-attempts/${attemptId}/answers/${answerId}/retry`,
-      payload ?? { attemptRevision: 1 }
+      payload ?? { attemptRevision: 1 },
+      { timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },
@@ -283,7 +287,7 @@ export const lessonApi = {
     const { data } = await httpClient.post<import('../types/lessons.types').DictationAiReviewDto>(
       `/api/lesson-attempts/${attemptId}/answers/${answerId}/ai-review`,
       payload ?? {},
-      { headers }
+      { headers, timeout: AI_REQUEST_TIMEOUT_MS }
     );
     return data;
   },

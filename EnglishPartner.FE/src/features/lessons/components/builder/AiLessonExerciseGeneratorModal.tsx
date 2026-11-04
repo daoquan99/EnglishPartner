@@ -26,6 +26,7 @@ import { TopicCreatablePicker } from '@/shared/components/ui/TopicCreatablePicke
 import { useTopicsQuery, useVocabularyGenerationModelsQuery } from '@/features/catalog/hooks/useCatalogQueries';
 import { AGY_LOCAL_MODELS } from '@/features/catalog/api/catalogDefaults';
 import { useTutorSessionStore } from '@/features/tutor';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import { toast } from '@/shared/lib/toast';
 import {
   ExerciseType,
@@ -125,6 +126,7 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
     setAiProvider,
     setAgyModelCode,
   } = useTutorSessionStore();
+  const isAgyActive = isAgyLocalEnabled && aiProvider === 'agy';
 
   const validateMutation = useValidateCandidateMutation();
   const commitMutation = useCommitLessonImportMutation();
@@ -161,7 +163,7 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
   };
 
   const handleDirectAiGenerate = async () => {
-    const isAgy = aiProvider === 'agy';
+    const isAgy = isAgyActive;
     const keyToUse = apiKeyInput.trim() || apiKey.trim();
     if (!isAgy && !keyToUse) {
       toast.error('Vui lòng nhập Google AI Studio API Key để sinh bài tập AI.');
@@ -520,22 +522,24 @@ export const AiLessonExerciseGeneratorModal: React.FC<AiLessonExerciseGeneratorM
                   >
                     Google API (Cloud)
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setAiProvider('agy')}
-                    className={`px-2.5 py-1 rounded-md font-semibold text-[11px] flex items-center gap-1 transition-all ${
-                      aiProvider === 'agy'
-                        ? 'bg-purple-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Terminal className="w-3 h-3" />
-                    AGY CLI (Local)
-                  </button>
+                  {isAgyLocalEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setAiProvider('agy')}
+                      className={`px-2.5 py-1 rounded-md font-semibold text-[11px] flex items-center gap-1 transition-all ${
+                        isAgyActive
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Terminal className="w-3 h-3" />
+                      AGY CLI (Local)
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {aiProvider === 'agy' ? (
+              {isAgyActive ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
                   <div>
                     <label className="block font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center gap-1.5 text-[11px]">

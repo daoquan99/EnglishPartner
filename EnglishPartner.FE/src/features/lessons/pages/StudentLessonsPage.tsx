@@ -17,7 +17,7 @@ export const StudentLessonsPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto px-4 py-2">
+    <div className="space-y-6 max-w-6xl mx-auto py-2">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
@@ -74,7 +74,7 @@ export const StudentLessonsPage: React.FC = () => {
           Đang tải danh sách bài học...
         </div>
       ) : !lessons || lessons.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-12 text-center space-y-3">
           <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-800">Không có bài học nào được tìm thấy</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -87,7 +87,7 @@ export const StudentLessonsPage: React.FC = () => {
             <div
               key={lesson.id}
               onClick={() => navigate(`/student/lessons/${lesson.id}`)}
-              className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+              className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

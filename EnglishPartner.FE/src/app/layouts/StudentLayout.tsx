@@ -15,13 +15,17 @@ import {
   Eye,
   EyeOff,
   Cpu,
+  Menu,
+  X,
 } from 'lucide-react';
 import { CanAccess, useCurrentUser, useLogoutMutation } from '@/features/auth';
 import { useTutorSessionStore } from '@/features/tutor';
 import { Badge } from '@/shared/components/ui/Badge';
 import { cn } from '@/shared/lib/cn';
+import { isAgyLocalEnabled } from '@/shared/config/features';
 import { toast } from '@/shared/lib/toast';
 import { SelectionVocabularyMenu } from '@/features/vocabulary/components/SelectionVocabularyMenu';
+import { useMobileDrawer, useIsDesktop } from '@/shared/hooks/useMobileDrawer';
 
 const ADMIN_ANY_PERMISSIONS = [
   'users.read',
@@ -62,7 +66,9 @@ export const isStudentGrammarGroupRoute = (pathname: string): boolean => {
 /**
  * Student Portal App Shell:
  * - Outer container: `h-screen w-full overflow-hidden flex` (prevents body scroll)
- * - Left Menu (`aside`): `h-screen shrink-0 overflow-y-auto` fixed on the left, collapsible to icon-only (`w-20`)
+ * - Mobile (< lg): off-canvas drawer `fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw]`
+ * - Desktop (>= lg): fixed static sidebar `h-screen shrink-0 overflow-y-auto`
+ * - Mobile sticky top bar in `main` with hamburger button, brand logo, and portal title
  * - Main Content (`main`): `flex-1 h-screen overflow-y-auto` scrolls independently
  * - Houses the single Google AI Studio API Key input for the entire Student Portal
  */
@@ -73,6 +79,9 @@ export const StudentLayout: React.FC = () => {
   const { user } = useCurrentUser();
   const logoutMutation = useLogoutMutation();
   const leftMenuApiKeyRef = useRef<HTMLInputElement | null>(null);
+
+  const mobileDrawer = useMobileDrawer();
+  const isDesktop = useIsDesktop();
 
   const isLessonGroupActive = isStudentLessonGroupRoute(location.pathname);
   const isFallingWordsActive = isStudentFallingWordsGroupRoute(location.pathname);
@@ -93,6 +102,19 @@ export const StudentLayout: React.FC = () => {
     setAgyModelCode,
     toggleStudentSidebar,
   } = useTutorSessionStore();
+  const isAgyActive = isAgyLocalEnabled && aiProvider === 'agy';
+
+  // On mobile (< lg), drawer is ALWAYS expanded, ignoring collapsed flag
+  const isEffectiveCollapsed = isDesktop && isStudentSidebarCollapsed;
+
+  // Auto-close mobile drawer when switching to desktop
+  const prevDesktopRef = useRef(isDesktop);
+  useEffect(() => {
+    if (!prevDesktopRef.current && isDesktop && mobileDrawer.isOpen) {
+      mobileDrawer.close();
+    }
+    prevDesktopRef.current = isDesktop;
+  }, [isDesktop, mobileDrawer.isOpen, mobileDrawer.close]);
 
   useEffect(() => {
     if (apiKeyFocusTrigger > 0) {
@@ -115,11 +137,33 @@ export const StudentLayout: React.FC = () => {
 
   return (
     <div className="h-screen w-full overflow-hidden learnerTheme bg-slate-50/70 text-slate-900 flex">
-      {/* Fixed h-screen Collapsible Left Menu (Sidebar) */}
+      {/* Mobile Drawer Backdrop Overlay */}
+      {mobileDrawer.isOpen && (
+        <div
+          role="presentation"
+          aria-hidden="true"
+          onClick={mobileDrawer.close}
+          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden backdrop-blur-[1px] transition-opacity cursor-pointer"
+        />
+      )}
+
+      {/* Off-canvas Mobile Drawer (< lg) / Fixed Collapsible Sidebar (>= lg) */}
       <aside
+        id="student-sidebar"
+        ref={mobileDrawer.drawerRef}
+        tabIndex={-1}
+        inert={!isDesktop && !mobileDrawer.isOpen ? true : undefined}
+        role={!isDesktop && mobileDrawer.isOpen ? 'dialog' : undefined}
+        aria-modal={!isDesktop && mobileDrawer.isOpen ? 'true' : undefined}
+        aria-label={!isDesktop && mobileDrawer.isOpen ? t('studentPortal') : undefined}
         className={cn(
-          'h-screen shrink-0 bg-white border-r border-slate-200/90 flex flex-col justify-between transition-all duration-200 select-none overflow-y-auto overflow-x-hidden z-30 shadow-2xs',
-          isStudentSidebarCollapsed ? 'w-20 px-2.5 py-4' : 'w-64 sm:w-72 px-4 py-5'
+          'h-screen bg-white border-r border-slate-200/90 flex flex-col justify-between select-none overflow-y-auto overflow-x-hidden shadow-2xs outline-none',
+          // Mobile (< lg): off-canvas drawer
+          'fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transition-transform duration-200 ease-in-out px-4 py-5',
+          mobileDrawer.isOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop (>= lg): static sidebar
+          'lg:static lg:inset-auto lg:z-30 lg:shrink-0 lg:translate-x-0 lg:max-w-none lg:transition-all',
+          isEffectiveCollapsed ? 'lg:w-20 lg:px-2.5 lg:py-4' : 'lg:w-72 lg:px-4 lg:py-5'
         )}
       >
         {/* Top Section: Brand + Collapse Toggle + Navigation Links + Single API Key Input */}
@@ -127,11 +171,12 @@ export const StudentLayout: React.FC = () => {
           <div
             className={cn(
               'flex items-center border-b border-slate-100 pb-4',
-              isStudentSidebarCollapsed ? 'justify-center flex-col gap-2' : 'justify-between gap-2 px-1'
+              isEffectiveCollapsed ? 'justify-center flex-col gap-2' : 'justify-between gap-2 px-1'
             )}
           >
             <Link
               to="/student/tutor"
+              onClick={mobileDrawer.close}
               title={`${t('appTitle')} — ${t('studentPortal')}`}
               className="flex items-center gap-2.5 min-w-0"
             >
@@ -142,7 +187,7 @@ export const StudentLayout: React.FC = () => {
                   className="w-8 h-8 object-contain"
                 />
               </div>
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0">
                   <span className="text-sm font-extrabold text-slate-900 tracking-tight block truncate">
                     {t('appTitle')}
@@ -154,21 +199,33 @@ export const StudentLayout: React.FC = () => {
               )}
             </Link>
 
+            {/* Desktop collapse toggle (hidden on mobile) */}
             <button
               type="button"
               onClick={toggleStudentSidebar}
               title={
-                isStudentSidebarCollapsed
+                isEffectiveCollapsed
                   ? t('nav.expandMenu')
                   : t('nav.collapseMenu')
               }
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+              className="hidden lg:flex p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
             >
-              {isStudentSidebarCollapsed ? (
+              {isEffectiveCollapsed ? (
                 <PanelLeftOpen className="w-4 h-4" />
               ) : (
                 <PanelLeftClose className="w-4 h-4" />
               )}
+            </button>
+
+            {/* Mobile close button (hidden on desktop) */}
+            <button
+              type="button"
+              onClick={mobileDrawer.close}
+              title={t('nav.closeMenu')}
+              aria-label={t('nav.closeMenu')}
+              className="flex lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -176,11 +233,12 @@ export const StudentLayout: React.FC = () => {
           <nav className="space-y-1.5">
             <NavLink
               to="/student/tutor"
+              onClick={mobileDrawer.close}
               title={t('nav.liveTutor')}
               className={({ isActive }) =>
                 cn(
                   'flex items-center rounded-2xl transition-all',
-                  isStudentSidebarCollapsed
+                  isEffectiveCollapsed
                     ? 'justify-center w-12 h-12 mx-auto'
                     : 'gap-3 px-3.5 py-3',
                   isActive
@@ -194,7 +252,7 @@ export const StudentLayout: React.FC = () => {
                 alt=""
                 className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
               />
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">{t('nav.liveTutor')}</div>
                   <div className="text-[10px] opacity-80 truncate">
@@ -206,11 +264,12 @@ export const StudentLayout: React.FC = () => {
 
             <NavLink
               to="/student/vocabulary"
+              onClick={mobileDrawer.close}
               title={t('nav.dailyVocab')}
               className={({ isActive }) =>
                 cn(
                   'flex items-center rounded-2xl transition-all',
-                  isStudentSidebarCollapsed
+                  isEffectiveCollapsed
                     ? 'justify-center w-12 h-12 mx-auto'
                     : 'gap-3 px-3.5 py-3',
                   isActive
@@ -224,7 +283,7 @@ export const StudentLayout: React.FC = () => {
                 alt=""
                 className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
               />
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">{t('nav.dailyVocab')}</div>
                   <div className="text-[10px] opacity-80 truncate">
@@ -236,11 +295,12 @@ export const StudentLayout: React.FC = () => {
 
             <Link
               to="/student/vocabulary-games/falling-words"
+              onClick={mobileDrawer.close}
               title="Từ vựng rơi"
               aria-current={isFallingWordsActive ? 'page' : undefined}
               className={cn(
                 'flex items-center rounded-2xl transition-all',
-                isStudentSidebarCollapsed
+                isEffectiveCollapsed
                   ? 'justify-center w-12 h-12 mx-auto'
                   : 'gap-3 px-3.5 py-3',
                 isFallingWordsActive
@@ -251,7 +311,7 @@ export const StudentLayout: React.FC = () => {
               <span className="w-5 h-5 flex items-center justify-center text-base shrink-0 select-none">
                 🎮
               </span>
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">Từ vựng rơi</div>
                   <div className="text-[10px] opacity-80 truncate">
@@ -263,11 +323,12 @@ export const StudentLayout: React.FC = () => {
 
             <Link
               to="/student/lessons"
+              onClick={mobileDrawer.close}
               title={t('nav.lessons') || 'Bài học & Luyện tập'}
               aria-current={isLessonGroupActive ? 'page' : undefined}
               className={cn(
                 'flex items-center rounded-2xl transition-all',
-                isStudentSidebarCollapsed
+                isEffectiveCollapsed
                   ? 'justify-center w-12 h-12 mx-auto'
                   : 'gap-3 px-3.5 py-3',
                 isLessonGroupActive
@@ -280,7 +341,7 @@ export const StudentLayout: React.FC = () => {
                 alt=""
                 className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
               />
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">Bài học & Luyện tập</div>
                   <div className="text-[10px] opacity-80 truncate">
@@ -292,11 +353,12 @@ export const StudentLayout: React.FC = () => {
 
             <Link
               to="/student/grammar"
+              onClick={mobileDrawer.close}
               title={t('nav.grammar')}
               aria-current={isGrammarGroupActive ? 'page' : undefined}
               className={cn(
                 'flex items-center rounded-2xl transition-all',
-                isStudentSidebarCollapsed
+                isEffectiveCollapsed
                   ? 'justify-center w-12 h-12 mx-auto'
                   : 'gap-3 px-3.5 py-3',
                 isGrammarGroupActive
@@ -309,7 +371,7 @@ export const StudentLayout: React.FC = () => {
                 alt=""
                 className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
               />
-              {!isStudentSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">{t('nav.grammar')}</div>
                   <div className="text-[10px] opacity-80 truncate">
@@ -318,16 +380,46 @@ export const StudentLayout: React.FC = () => {
                 </div>
               )}
             </Link>
+            <NavLink
+              to="/student/progress"
+              onClick={mobileDrawer.close}
+              title={t('nav.progress')}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center rounded-2xl transition-all',
+                  isEffectiveCollapsed
+                    ? 'justify-center w-12 h-12 mx-auto'
+                    : 'gap-3 px-3.5 py-3',
+                  isActive
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                )
+              }
+            >
+              <img
+                src="/assets/icons/navigation/nav-dashboard.svg"
+                alt=""
+                className="w-5 h-5 shrink-0 object-contain drop-shadow-2xs"
+              />
+              {!isEffectiveCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">{t('nav.progress')}</div>
+                  <div className="text-[10px] opacity-80 truncate">
+                    {t('nav.progressSub')}
+                  </div>
+                </div>
+              )}
+            </NavLink>
           </nav>
 
           {/* AI Model Provider & Google AI Studio API Key Setup inside Left Menu */}
-          {isStudentSidebarCollapsed ? (
+          {isEffectiveCollapsed ? (
             <div className="pt-2 border-t border-slate-100 flex justify-center">
               <button
                 type="button"
                 onClick={toggleStudentSidebar}
                 title={
-                  aiProvider === 'agy'
+                  isAgyActive
                     ? `Cổng AI: Antigravity CLI Local (${agyModelCode})`
                     : apiKey.trim()
                     ? `${t('common.apiKey')}: ${t('common.apiKeySaved')}`
@@ -335,7 +427,7 @@ export const StudentLayout: React.FC = () => {
                 }
                 className={cn(
                   'w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors cursor-pointer',
-                  aiProvider === 'agy' || apiKey.trim()
+                  isAgyActive || apiKey.trim()
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                     : 'bg-amber-50 border-amber-300 text-amber-600 animate-pulse'
                 )}
@@ -353,19 +445,22 @@ export const StudentLayout: React.FC = () => {
                 <span
                   className={cn(
                     'text-[10px] font-bold px-1.5 py-0.2 rounded-full',
-                    aiProvider === 'agy'
+                    isAgyActive
                       ? 'bg-emerald-100 text-emerald-800'
                       : apiKey.trim()
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-amber-100 text-amber-800'
                   )}
                 >
-                  {aiProvider === 'agy' ? 'AGY Local' : apiKey.trim() ? t('common.apiKeySaved') : t('common.apiKeyMissing')}
+                  {isAgyActive ? 'AGY Local' : apiKey.trim() ? t('common.apiKeySaved') : t('common.apiKeyMissing')}
                 </span>
               </div>
 
               {/* Mode switch: Google API vs AGY Local */}
-              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-slate-200/70 text-[11px] font-medium">
+              <div className={cn(
+                'grid gap-1 p-0.5 rounded-lg bg-slate-200/70 text-[11px] font-medium',
+                isAgyLocalEnabled ? 'grid-cols-2' : 'grid-cols-1'
+              )}>
                 <button
                   type="button"
                   onClick={() => setAiProvider('gemini')}
@@ -378,21 +473,23 @@ export const StudentLayout: React.FC = () => {
                 >
                   Google API
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setAiProvider('agy')}
-                  className={cn(
-                    'py-1 rounded-md transition-all cursor-pointer text-center',
-                    aiProvider === 'agy'
-                      ? 'bg-white text-emerald-700 font-bold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  )}
-                >
-                  AGY Local
-                </button>
+                {isAgyLocalEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setAiProvider('agy')}
+                    className={cn(
+                      'py-1 rounded-md transition-all cursor-pointer text-center',
+                      isAgyActive
+                        ? 'bg-white text-emerald-700 font-bold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    )}
+                  >
+                    AGY Local
+                  </button>
+                )}
               </div>
 
-              {aiProvider === 'gemini' ? (
+              {!isAgyActive ? (
                 <div className="space-y-1.5">
                   <div className="relative flex items-center">
                     <input
@@ -454,10 +551,11 @@ export const StudentLayout: React.FC = () => {
           <CanAccess anyPermissions={ADMIN_ANY_PERMISSIONS}>
             <Link
               to="/admin"
+              onClick={mobileDrawer.close}
               title={t('adminPortal')}
               className={cn(
                 'flex items-center rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs transition-colors',
-                isStudentSidebarCollapsed
+                isEffectiveCollapsed
                   ? 'justify-center w-12 h-12 mx-auto'
                   : 'gap-2.5 px-3.5 py-2.5'
               )}
@@ -467,7 +565,7 @@ export const StudentLayout: React.FC = () => {
                 alt=""
                 className="w-4 h-4 shrink-0 object-contain drop-shadow-2xs"
               />
-              {!isStudentSidebarCollapsed && <span className="truncate">{t('adminPortal')}</span>}
+              {!isEffectiveCollapsed && <span className="truncate">{t('adminPortal')}</span>}
             </Link>
           </CanAccess>
 
@@ -477,21 +575,21 @@ export const StudentLayout: React.FC = () => {
             title={`${t('common.language')}: ${i18n.language.toUpperCase()}`}
             className={cn(
               'w-full flex items-center rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer',
-              isStudentSidebarCollapsed
+              isEffectiveCollapsed
                 ? 'justify-center w-12 h-12 mx-auto'
                 : 'justify-between px-3.5 py-2'
             )}
           >
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 shrink-0 text-emerald-600" />
-              {!isStudentSidebarCollapsed && <span>{t('common.language')}</span>}
+              {!isEffectiveCollapsed && <span>{t('common.language')}</span>}
             </div>
-            {!isStudentSidebarCollapsed && (
+            {!isEffectiveCollapsed && (
               <Badge variant="default">{i18n.language.toUpperCase()}</Badge>
             )}
           </button>
 
-          {user && !isStudentSidebarCollapsed && (
+          {user && !isEffectiveCollapsed && (
             <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-slate-100/80 text-xs">
               <div className="flex items-center gap-2 min-w-0">
                 <img
@@ -511,21 +609,65 @@ export const StudentLayout: React.FC = () => {
             title={`${t('common.logout')} (${user?.username ?? ''})`}
             className={cn(
               'w-full flex items-center rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer',
-              isStudentSidebarCollapsed
+              isEffectiveCollapsed
                 ? 'justify-center w-12 h-12 mx-auto'
                 : 'gap-2.5 px-3.5 py-2.5'
             )}
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            {!isStudentSidebarCollapsed && <span className="truncate">{t('common.logout')}</span>}
+            {!isEffectiveCollapsed && <span className="truncate">{t('common.logout')}</span>}
           </button>
         </div>
       </aside>
 
       {/* Independent Scrollable Main Content */}
-      <main className="flex-1 h-screen overflow-y-auto overflow-x-hidden min-w-0 p-4 sm:p-6">
-        <div className="max-w-7xl mx-auto">
-          <Outlet />
+      <main
+        inert={!isDesktop && mobileDrawer.isOpen ? true : undefined}
+        className={cn(
+          'flex-1 h-screen min-w-0 flex flex-col',
+          mobileDrawer.isOpen && !isDesktop ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'
+        )}
+      >
+        {/* Mobile Sticky Top Bar (< lg) */}
+        <header className="lg:hidden sticky top-0 z-20 shrink-0 bg-white/95 backdrop-blur-xs border-b border-slate-200/90 px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              ref={mobileDrawer.triggerRef}
+              type="button"
+              onClick={mobileDrawer.toggle}
+              aria-label={t('nav.openMenu')}
+              aria-expanded={mobileDrawer.isOpen}
+              aria-controls="student-sidebar"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center shadow-2xs shrink-0 p-0.5">
+                <img
+                  src="/assets/brand/logo-mark.svg"
+                  alt=""
+                  className="w-7 h-7 object-contain"
+                />
+              </div>
+              <div className="min-w-0">
+                <span className="text-sm font-extrabold text-slate-900 tracking-tight block truncate">
+                  {t('appTitle')}
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-700 block truncate">
+                  {t('studentPortal')}
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Container */}
+        <div className="flex-1 p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
 

@@ -23,6 +23,6 @@ BYO-key (Bring Your Own Key): mỗi học viên nhập Google AI Studio API key 
 
 ## Việc cần làm
 
-- [ ] FE: chuyển storage key, thêm tùy chọn ghi nhớ.
-- [ ] BE: dọn `_sessionApiKeys` khi dừng phiên/disconnect; rà log không chứa key.
-- [ ] Rate limit cho endpoint AI (S7).
+- [x] FE: chuyển storage key, thêm tùy chọn ghi nhớ. — `tutorSessionStore.ts` (`sessionStorage` mặc định, cờ `lingomint_api_key_remember`).
+- [x] BE: dọn `_sessionApiKeys` khi dừng phiên/disconnect; rà log không chứa key. — `TryRemove` khi dừng phiên/idle; không lệnh log nào chứa `apiKey`.
+- [x] Rate limit cho endpoint AI (S7). — policy `ai` (theo user), `auth`, `auth-refresh`. (xác nhận 2026-11-02)

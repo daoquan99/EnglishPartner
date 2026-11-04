@@ -7,7 +7,7 @@ description: Review or change EF Core repositories, commit boundaries, auditing,
 
 Read [AGENTS.md](../../../AGENTS.md), [Infrastructure decisions](../../architecture.md#4-infrastructure) and the related items in the [2026-10-28 review](../../../../docs/reviews/2026-10-28-security-performance-architecture.md).
 
-Trace the actual DbContext instance and commit owner, not just repository names. Baseline scoped repositories, factory-per-operation Topic/Conversation repositories, and Application factory writes have different tracking semantics. New write repositories in the target share one scoped AppDbContext/UoW. A singleton session adapter creates operation scopes instead of capturing scoped repositories.
+Trace the actual DbContext instance and commit owner, not just repository names. Baseline scoped repositories, factory-per-operation Topic/Conversation repositories, and Application factory writes have different tracking semantics. New write repositories in the target share one scoped AppDbContext/UoW until phase P4 of [ADR-0006](../../../../docs/adr/0006-modular-monolith.md); from then on each module has its own DbContext, schema and migration history — see the [modular-monolith skill](../modular-monolith/SKILL.md) before splitting contexts or transferring schemas. A singleton session adapter creates operation scopes instead of capturing scoped repositories.
 
 Before namespace/folder moves, record entity mappings, IDs, table/column/index names and migration identities. Do not rewrite existing migrations or run database updates as a consequence of a structural move. Compare generated model changes deliberately; do not suppress mismatch warnings to pass a check.
 

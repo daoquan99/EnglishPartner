@@ -11,7 +11,7 @@ export const StudentLessonHistoryPage: React.FC = () => {
   const { data: attempts, isLoading } = useLearnerAttemptsQuery();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4 py-2">
+    <div className="max-w-4xl mx-auto space-y-6 py-2">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200/80 pb-5">
         <div className="flex items-center gap-3">
@@ -43,7 +43,7 @@ export const StudentLessonHistoryPage: React.FC = () => {
           Đang tải lịch sử làm bài...
         </div>
       ) : !attempts || attempts.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-12 text-center space-y-3">
           <History className="w-10 h-10 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-800">Bạn chưa có lượt làm bài nào</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -67,7 +67,7 @@ export const StudentLessonHistoryPage: React.FC = () => {
             return (
               <div
                 key={att.attemptId}
-                className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2">

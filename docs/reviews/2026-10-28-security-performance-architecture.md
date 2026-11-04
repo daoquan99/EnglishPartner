@@ -91,7 +91,7 @@ Index khá đầy đủ; `AsNoTracking`, `SplitQuery`, batch role/permission (tr
 
 ## 3. Kiến trúc
 
-- [ ] **A1. Hai thế hệ code cùng tồn tại.** Mới: `IAppDbContext` + UnitOfWork + kiểm tra owner. Cũ: `IDbContextFactory` mỗi method, repository Singleton, không owner, không transaction. Đây là gốc của S2, S3, S4, P2.
+- [x] **A1. Hai thế hệ code cùng tồn tại.** *(Đóng 2026-11-01 bởi task `20261101-modular-monolith`: mọi feature dùng `I<Module>DbContext` + UnitOfWork, không còn `IAppDbContext` trong feature — architecture test chặn.)* Mới: `IAppDbContext` + UnitOfWork + kiểm tra owner. Cũ: `IDbContextFactory` mỗi method, repository Singleton, không owner, không transaction. Đây là gốc của S2, S3, S4, P2.
 - [x] **A2. CQRS dùng MediatR 14.2 nhưng còn lối tắt bỏ qua pipeline.** `ICommand`/`IQuery`/`ICommandHandler`/`IQueryHandler` (`Application/Common/Interfaces/ICqrs.cs`) là lớp bọc mỏng trên `IRequest`/`IRequestHandler` — hợp lý. Vấn đề: `Application/DependencyInjection.cs:47-65` đăng ký thêm handler như service để inject trực tiếp, nên handler gọi handler khác (vd `StartLessonAttemptCommandHandler` → `_resumeHandler`) bỏ qua Authorization/Validation/Transaction behaviors; 5 file vẫn dùng `IRequestHandler` trực tiếp thay vì interface bọc. `AGENTS.md` BE còn ghi "không thêm mediator" — lệch với thực tế. Quyết định: giữ MediatR (ADR-001).
 - [x] **A3. Transaction không nhất quán:** có `TransactionBehavior` nhưng nhiều handler tự commit hoặc dùng repository `SaveChangesAsync` riêng.
 - [x] **A4. Business rule ở tầng API:** endpoint tự map exception → HTTP, resolve `userId` trong endpoint, hub gọi thẳng Infrastructure manager.

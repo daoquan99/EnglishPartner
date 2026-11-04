@@ -225,7 +225,7 @@ export const GrammarAttemptPage: React.FC = () => {
     const isForbidden = status === 403;
 
     return (
-      <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs space-y-3">
           <div className="font-bold text-sm">
             {isNotFound
@@ -261,8 +261,8 @@ export const GrammarAttemptPage: React.FC = () => {
     const levelPassed = completionResult?.levelPassed;
 
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm text-center space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-sm text-center space-y-6">
           <div
             className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-sm ${
               !hasCompletionResult || isPracticeKind || passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
@@ -381,10 +381,10 @@ export const GrammarAttemptPage: React.FC = () => {
       : null);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Attempt Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <Button
             variant="ghost"
             size="sm"
@@ -393,15 +393,15 @@ export const GrammarAttemptPage: React.FC = () => {
                 ? navigate(`/student/grammar/${attempt.stepCode}`)
                 : navigate('/student/grammar')
             }
-            className="p-2 text-slate-500 hover:text-slate-800"
+            className="p-2 text-slate-500 hover:text-slate-800 shrink-0 mt-0.5"
             title={t('grammar.back')}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 shrink-0" />
           </Button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="default" className="text-[10px] font-mono">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+              <Badge variant="default" className="text-[10px] font-mono whitespace-nowrap self-start">
                 {attempt.kind === 'StepCore'
                   ? `${t('grammar.coreExercises')}: ${attempt.stepCode}`
                   : attempt.kind === 'LevelTest'
@@ -410,13 +410,13 @@ export const GrammarAttemptPage: React.FC = () => {
               </Badge>
 
               {isLockedKind && (
-                <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 self-start leading-tight">
                   {t('grammar.oneTimeSubmitNotice')}
                 </span>
               )}
             </div>
 
-            <div className="text-xs text-slate-500 mt-0.5">
+            <div className="text-xs text-slate-500">
               {t('grammar.attemptProgressText', { current: currentIndex + 1, total: totalCount, answered: answeredCount })}
             </div>
           </div>
@@ -449,7 +449,7 @@ export const GrammarAttemptPage: React.FC = () => {
       </div>
 
       {/* Question Indicators Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 overflow-x-auto px-1.5 py-1.5 pb-2 scrollbar-none">
         {exercises.map((ex, idx) => {
           const ans = answersMap.get(ex.id);
           const isCurrent = idx === currentIndex;
@@ -495,7 +495,7 @@ export const GrammarAttemptPage: React.FC = () => {
       )}
 
       {/* Active Question Player */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-xs space-y-6">
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs space-y-6">
         {currentExercise?.unavailable ? (
           <div className="p-6 text-center space-y-2">
             <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
@@ -531,14 +531,14 @@ export const GrammarAttemptPage: React.FC = () => {
 
             {/* SelfAssessed result display: badge and suggested answer */}
             {isSelfAssessed && (
-              <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-950 space-y-2.5">
+              <div className="p-3 sm:p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-950 space-y-2.5">
                 <div className="flex items-center gap-2">
                   <Badge variant="amber">{t('grammar.selfAssessed')}</Badge>
                   <span className="text-xs font-bold text-amber-900">{t('grammar.selfAssessedTitle')}</span>
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed">{t('grammar.selfAssessedNotice')}</p>
                 {suggestedAnswerText && (
-                  <div className="p-3 bg-white rounded-xl border border-amber-200/70 text-xs">
+                  <div className="p-2.5 sm:p-3 bg-white rounded-xl border border-amber-200/70 text-xs">
                     <span className="font-bold text-slate-700 block mb-1">{t('grammar.referenceAnswer')}:</span>
                     <p className="font-mono text-slate-900 whitespace-pre-wrap">{suggestedAnswerText}</p>
                   </div>

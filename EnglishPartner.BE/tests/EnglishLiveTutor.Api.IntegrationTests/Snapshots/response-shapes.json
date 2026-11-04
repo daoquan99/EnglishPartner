@@ -1,0 +1,337 @@
+﻿{
+  "ai-models": [
+    {
+      "capabilityNote": null,
+      "createdAtUtc": null,
+      "createdBy": null,
+      "deletedAtUtc": null,
+      "deletedBy": null,
+      "displayName": null,
+      "displayOrder": null,
+      "id": null,
+      "isAvailable": null,
+      "isDeleted": null,
+      "isDeprecated": null,
+      "isEnabled": null,
+      "modelCode": null,
+      "routedModelCode": null,
+      "supportsAudioInput": null,
+      "supportsLiveAudio": null,
+      "supportsPronunciationAssessment": null,
+      "supportsStreaming": null,
+      "supportsStructuredOutput": null,
+      "supportsTextGeneration": null,
+      "supportsTranscription": null,
+      "supportsTranslation": null,
+      "supportsTts": null,
+      "updatedAtUtc": null,
+      "updatedBy": null
+    }
+  ],
+  "grammar-roadmap": {
+    "levels": [
+      {
+        "canTakeLevelTest": null,
+        "isPassed": null,
+        "isUnlocked": null,
+        "level": null,
+        "steps": [
+          {
+            "bestScore100": null,
+            "code": null,
+            "isLevelReview": null,
+            "order": null,
+            "passedBy": null,
+            "status": null,
+            "summaryVi": null,
+            "titleEn": null,
+            "titleVi": null
+          }
+        ]
+      }
+    ]
+  },
+  "health": {
+    "architecture": null,
+    "database": null,
+    "features": [
+      null
+    ],
+    "framework": null,
+    "hubs": [
+      null
+    ],
+    "status": null,
+    "supportedModes": null
+  },
+  "identity-auth-me": {
+    "avatarUrl": null,
+    "createdAtUtc": null,
+    "email": null,
+    "fullName": null,
+    "id": null,
+    "isActive": null,
+    "lastLoginAtUtc": null,
+    "permissions": [
+      null
+    ],
+    "preferredCefrLevel": null,
+    "preferredVoiceName": null,
+    "roles": [
+      null
+    ],
+    "timeZoneId": null,
+    "username": null
+  },
+  "lessons-list": [
+    {
+      "cefrLevel": null,
+      "content": null,
+      "estimatedMinutes": null,
+      "exerciseCount": null,
+      "id": null,
+      "publishedAtUtc": null,
+      "rowVersion": null,
+      "status": null,
+      "title": null,
+      "topic": null,
+      "totalMaxPoints": null,
+      "version": null
+    }
+  ],
+  "livetutor-conversations": [
+    {
+      "cefrLevel": null,
+      "conversationMode": null,
+      "correctionCount": null,
+      "createdAt": null,
+      "createdAtUtc": null,
+      "customSystemPrompt": null,
+      "extendedThinking": null,
+      "id": null,
+      "lastMessagePreview": null,
+      "messageCount": null,
+      "speechSpeed": null,
+      "title": null,
+      "topic": null,
+      "updatedAt": null,
+      "updatedAtUtc": null,
+      "voiceName": null
+    }
+  ],
+  "livetutor-problem-details-404": {
+    "detail": null,
+    "error": null,
+    "status": null,
+    "title": null,
+    "traceId": null,
+    "type": null
+  },
+  "problem-details-404": {
+    "detail": null,
+    "error": null,
+    "status": null,
+    "title": null,
+    "traceId": null,
+    "type": null
+  },
+  "progress-overview": {
+    "activeDaysInRange": null,
+    "activity": [
+      {
+        "date": null,
+        "grammarAttempts": null,
+        "lessonAttempts": null,
+        "pronunciationAssessments": null,
+        "tutorSessions": null,
+        "vocabularyReviews": null
+      }
+    ],
+    "currentStreakDays": null,
+    "days": null,
+    "grammar": {
+      "currentStepCode": null,
+      "levels": [
+        {
+          "level": null,
+          "passedSteps": null,
+          "totalSteps": null
+        }
+      ]
+    },
+    "lessons": {
+      "averageScore100": null,
+      "completedAttempts": null
+    },
+    "liveTutor": {
+      "sessions": null,
+      "sessionsInRange": null
+    },
+    "longestStreakDays": null,
+    "speech": {
+      "assessments": null,
+      "averageScore": null,
+      "averageScoreInRange": null
+    },
+    "timeZoneId": null,
+    "vocabulary": {
+      "averageMastery": null,
+      "dueForReviewNow": null,
+      "mastered": null,
+      "studied": null
+    }
+  },
+  "speech-active-rubric": {
+    "applicableExerciseTypes": null,
+    "assessmentScope": null,
+    "assessmentType": null,
+    "cefrLevel": null,
+    "code": null,
+    "createdAtUtc": null,
+    "createdBy": null,
+    "criteria": [
+      {
+        "code": null,
+        "createdAtUtc": null,
+        "createdBy": null,
+        "description": null,
+        "descriptorLevel0": null,
+        "descriptorLevel1": null,
+        "descriptorLevel2": null,
+        "descriptorLevel3": null,
+        "descriptorLevel4": null,
+        "displayOrder": null,
+        "id": null,
+        "isEnabled": null,
+        "maximumScore": null,
+        "minimumScore": null,
+        "name": null,
+        "rubricId": null,
+        "updatedAtUtc": null,
+        "updatedBy": null,
+        "weight": null
+      }
+    ],
+    "deletedAtUtc": null,
+    "deletedBy": null,
+    "description": null,
+    "exerciseType": null,
+    "id": null,
+    "isActive": null,
+    "isDeleted": null,
+    "name": null,
+    "subQuestionKind": null,
+    "updatedAtUtc": null,
+    "updatedBy": null,
+    "version": null
+  },
+  "topics": [
+    {
+      "category": null,
+      "code": null,
+      "description": null,
+      "displayNameVi": null,
+      "displayOrder": null,
+      "id": null,
+      "isActive": null,
+      "isFeatured": null,
+      "modeCode": null,
+      "name": null,
+      "suggestedCefrLevel": null,
+      "supportsConversation": null,
+      "supportsVocabulary": null
+    }
+  ],
+  "vocabulary-flashcards": [
+    {
+      "antonyms": [
+        null
+      ],
+      "cefrLevel": null,
+      "collocations": [
+        {
+          "displayOrder": null,
+          "id": null,
+          "meaningVi": null,
+          "phraseEn": null
+        }
+      ],
+      "dailyItemId": null,
+      "definitionEn": null,
+      "descriptionEn": null,
+      "easeFactor": null,
+      "examples": [
+        {
+          "audioUrl": null,
+          "cefrLevel": null,
+          "displayOrder": null,
+          "id": null,
+          "sentenceEn": null,
+          "sentenceVi": null
+        }
+      ],
+      "frequencyRank": null,
+      "grammarPatterns": [
+        {
+          "example": null,
+          "explanation": null,
+          "id": null,
+          "pattern": null
+        }
+      ],
+      "intervalDays": null,
+      "isDueForReview": null,
+      "isNew": null,
+      "itemStatus": null,
+      "itemType": null,
+      "latestPronunciationScore": null,
+      "learningStatus": null,
+      "masteryLevel": null,
+      "meaningVi": null,
+      "nextReviewAt": null,
+      "partOfSpeech": null,
+      "pronunciations": [
+        {
+          "accent": null,
+          "audioSource": null,
+          "audioUrl": null,
+          "id": null,
+          "ipa": null,
+          "stressPattern": null,
+          "syllableCount": null
+        }
+      ],
+      "senseId": null,
+      "synonyms": [
+        null
+      ],
+      "topicCategory": null,
+      "vocabularyId": null,
+      "word": null,
+      "wordFamilies": [
+        {
+          "id": null,
+          "partOfSpeech": null,
+          "relatedVocabularyId": null,
+          "relatedWord": null
+        }
+      ]
+    }
+  ],
+  "voices": [
+    {
+      "description": null,
+      "displayName": null,
+      "displayOrder": null,
+      "gender": null,
+      "id": null,
+      "isEnabled": null,
+      "isFeatured": null,
+      "label": null,
+      "name": null,
+      "persona": null,
+      "style": null,
+      "type": null
+    }
+  ]
+}

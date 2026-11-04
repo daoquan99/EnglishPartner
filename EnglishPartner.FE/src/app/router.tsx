@@ -94,6 +94,9 @@ const FallingWordsPlayPage = lazy(() =>
 const FallingWordsHistoryPage = lazy(() =>
   import('@/features/vocabulary-games').then((m) => ({ default: m.FallingWordsHistoryPage }))
 );
+const ProgressPage = lazy(() =>
+  import('@/features/progress').then((m) => ({ default: m.ProgressPage }))
+);
 
 export const GrammarStepRoute: React.FC = () => {
   const { code } = useParams<{ code: string }>();
@@ -215,6 +218,10 @@ export const AppRoutes: React.FC = () => {
                     <GrammarStepRoute />
                   </RequirePermission>
                 }
+              />
+              <Route
+                path="progress"
+                element={<ProgressPage />}
               />
             </Route>
 

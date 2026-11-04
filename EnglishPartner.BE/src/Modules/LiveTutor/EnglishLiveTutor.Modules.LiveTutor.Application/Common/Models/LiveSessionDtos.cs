@@ -1,0 +1,131 @@
+namespace EnglishLiveTutor.Application.Common.Models;
+
+public sealed record CreateConversationRequest(
+    string? Title,
+    string CefrLevel = "B1",
+    bool ExtendedThinking = false,
+    string VoiceName = "Aoede",
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null,
+    string Accent = "US",
+    string? TtsModelCode = null
+);
+
+public sealed record UpdateConversationSettingsRequest(
+    string? Title,
+    string CefrLevel = "B1",
+    bool ExtendedThinking = false,
+    string VoiceName = "Aoede",
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null,
+    string Accent = "US",
+    string? TtsModelCode = null
+);
+
+public sealed record StartTutorSessionRequest(
+    string ConversationId,
+    string ApiKey,
+    string CefrLevel = "B1",
+    bool ExtendedThinking = false,
+    string ThinkingLevel = "medium",
+    string VoiceName = "Aoede",
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null,
+    string Accent = "US",
+    string? TtsModelCode = null
+)
+{
+    public override string ToString() =>
+        $"StartTutorSessionRequest {{ ConversationId = {ConversationId}, ApiKey = [REDACTED], CefrLevel = {CefrLevel}, ExtendedThinking = {ExtendedThinking}, ThinkingLevel = {ThinkingLevel}, VoiceName = {VoiceName}, SpeechSpeed = {SpeechSpeed}, ConversationMode = {ConversationMode}, Topic = {Topic}, CustomSystemPrompt = {CustomSystemPrompt} }}";
+}
+
+public sealed record StartSubHubSessionRequest(
+    string ConversationId,
+    string ApiKey
+)
+{
+    public override string ToString() =>
+        $"StartSubHubSessionRequest {{ ConversationId = {ConversationId}, ApiKey = [REDACTED] }}";
+}
+
+public sealed record AudioChunkPayload(
+    string ConversationId,
+    string Speaker,
+    string? TurnId,
+    string Base64Pcm16k
+);
+
+public sealed record TranscribeEventDto(
+    string ConversationId,
+    string Speaker,
+    string TurnId,
+    int SequenceOrder,
+    string FullTranscriptText,
+    bool IsFinal,
+    DateTimeOffset Timestamp
+);
+
+public sealed record TranslateEventDto(
+    string ConversationId,
+    string Speaker,
+    string TurnId,
+    int SequenceOrder,
+    string FullVietnameseText,
+    bool IsFinal,
+    DateTimeOffset Timestamp
+);
+
+public sealed record LanguageCorrectionIssueDto(
+    string Original,
+    string Fix,
+    string Category,
+    string ExplanationVi
+);
+
+public sealed record LanguageCorrectionDto(
+    string Id,
+    string ConversationId,
+    string TurnId,
+    string OriginalText,
+    string CorrectedText,
+    string ErrorCategory,
+    string ExplanationVi,
+    string CefrTip,
+    DateTimeOffset Timestamp,
+    string? Status = null,
+    string? ImprovedText = null,
+    IReadOnlyList<LanguageCorrectionIssueDto>? Issues = null
+);
+
+public sealed record FeedbackAudioResultDto(
+    string MimeType,
+    string AudioBase64,
+    int DurationMs
+);
+
+public sealed record TutorAudioEventDto(
+    string ConversationId,
+    string TurnId,
+    string Base64Pcm24k,
+    string InteractionStatus
+);
+
+public enum LiveHubType
+{
+    Tutor,
+    Transcribe,
+    Translate,
+    Grammar
+}
+
+public sealed record LiveConnectionInfo(
+    string UserId,
+    string ConversationId,
+    LiveHubType HubType
+);

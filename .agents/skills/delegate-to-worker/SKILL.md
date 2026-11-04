@@ -11,12 +11,22 @@ description: Giao một phần việc của task EnglishPartner cho Codex CLI ho
 
 | Việc | Mặc định | Ghi chú |
 | --- | --- | --- |
-| BE (.NET, EF, migration, hub) | Codex | `--scope be` |
-| FE (React, UI, hook, test Vitest) | AGY | `--scope fe` |
-| Review chéo task rủi ro cao | Worker còn lại | mode `review`, chỉ đọc |
+| BE (.NET, EF, migration, hub) | Codex (`deepseek-flash`) | `--scope be` |
+| FE (React, UI, hook, test Vitest) | Codex (`deepseek-flash`) | `--scope fe`; AGY dự phòng |
+| Review chéo task rủi ro cao | Reviewer của Claude | `security-reviewer`, `performance-reviewer`, `code-reviewer` |
 | Việc cần chạy lệnh nhiều (test, build lặp) | Codex | AGY mặc định chỉ được sửa file; `--allow-shell` khi thật cần |
 
 Đổi phân công phải ghi lý do trong `plan.md`.
+
+### Viết prompt cho model loại flash (`deepseek-flash`)
+
+Model nhanh dễ mở rộng phạm vi hoặc "sửa cho test xanh" bằng cách đổi hành vi. Vì vậy:
+
+- Một prompt = một module hoặc một việc cơ học, tối đa khoảng 15–25 file; liệt kê **đích danh** file/thư mục.
+- Nêu rõ trạng thái baseline (số test pass/fail và tên test đang fail sẵn) để worker không "sửa" test fail có từ trước.
+- Cấm sửa test hiện có để cho pass, trừ khi prompt cho phép đích danh.
+- Yêu cầu chạy `dotnet build` sau mỗi bước lớn và dừng ngay khi lỗi không tự sửa được trong phạm vi.
+- Với việc di chuyển code: chỉ đổi `namespace`/`using`/`internal`, không đổi logic.
 
 ## Viết prompt
 

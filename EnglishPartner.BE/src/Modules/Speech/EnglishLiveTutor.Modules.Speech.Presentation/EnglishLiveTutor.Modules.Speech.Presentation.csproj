@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EnglishLiveTutor.Modules.Speech.Presentation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Speech.Application\EnglishLiveTutor.Modules.Speech.Application.csproj" />
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Speech.Domain\EnglishLiveTutor.Modules.Speech.Domain.csproj" />
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Speech.Contracts\EnglishLiveTutor.Modules.Speech.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishLiveTutor.Shared.Presentation\EnglishLiveTutor.Shared.Presentation.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishLiveTutor.Shared.Application\EnglishLiveTutor.Shared.Application.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -133,7 +133,7 @@ export const GrammarStepPage: React.FC = () => {
     const isForbidden = status === 403;
 
     return (
-      <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs space-y-3">
           <div className="font-bold text-sm">
             {isNotFound
@@ -166,48 +166,48 @@ export const GrammarStepPage: React.FC = () => {
   const levelTestState = getLevelTestButtonState(Boolean(levelInfo?.canTakeLevelTest));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Top Header / Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/student/grammar')}
-            className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900"
+            className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 whitespace-nowrap shrink-0 self-start sm:self-auto"
           >
-            <ArrowLeft className="w-4 h-4" />
-            {t('grammar.backToRoadmap')}
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span>{t('grammar.backToRoadmap')}</span>
           </Button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
                 {step.code}
               </span>
               <span className="text-xs text-slate-500 font-medium">
                 {t('grammar.levelTitle', { level: step.cefrLevel })}
               </span>
               {isStepPassed ? (
-                <Badge variant="emerald" className="text-[10px]">
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                <Badge variant="emerald" className="text-[10px] shrink-0 whitespace-nowrap">
+                  <CheckCircle2 className="w-3 h-3 mr-1 inline shrink-0" />
                   {t('grammar.passedBadge')}
                 </Badge>
               ) : isStepLocked ? (
-                <Badge variant="default" className="text-[10px] text-slate-500">
-                  <Lock className="w-2.5 h-2.5 mr-1" />
+                <Badge variant="default" className="text-[10px] text-slate-500 shrink-0 whitespace-nowrap">
+                  <Lock className="w-2.5 h-2.5 mr-1 inline shrink-0" />
                   {t('grammar.stepLockedNotice')}
                 </Badge>
               ) : (
-                <Badge variant="sky" className="text-[10px]">
+                <Badge variant="sky" className="text-[10px] shrink-0 whitespace-nowrap">
                   {t('grammar.openBadge')}
                 </Badge>
               )}
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1 break-words">
               {step.titleVi}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 italic">
+            <p className="text-xs sm:text-sm text-slate-500 italic break-words">
               {step.titleEn}
             </p>
           </div>
@@ -336,7 +336,7 @@ export const GrammarStepPage: React.FC = () => {
           aria-labelledby="grammar-tab-exercises"
           className="pt-4 max-w-2xl mx-auto space-y-6"
         >
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 text-center">
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xs space-y-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto shadow-2xs">
               <Award className="w-8 h-8" />
             </div>
@@ -350,7 +350,7 @@ export const GrammarStepPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-left">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-left">
               <div>
                 <div className="text-[11px] text-slate-500 font-medium">{t('grammar.totalExercisesCount', { count: step.coreExerciseCount })}</div>
                 <div className="text-base font-extrabold text-slate-900">
@@ -370,7 +370,7 @@ export const GrammarStepPage: React.FC = () => {
             </div>
 
             {isStepLocked && (
-              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 text-left">
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 text-left">
                 <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
                 <div>
                   <strong>{t('grammar.stepLockedNotice')}:</strong> {t('grammar.stepLockedWarning')}
@@ -506,7 +506,7 @@ export const GrammarStepPage: React.FC = () => {
           {isExercisesLoading ? (
             <LoadingState message={t('grammar.loadingExercises')} />
           ) : exercisesError ? (
-            <div className="p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2">
+            <div className="p-4 sm:p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2">
               <div className="font-bold text-sm">{t('grammar.loadPracticeExercisesError')}</div>
               <div>{getGrammarErrorMessage(exercisesError, t)}</div>
               <Button variant="outline" size="sm" onClick={() => void refetchExercises()}>
@@ -514,7 +514,7 @@ export const GrammarStepPage: React.FC = () => {
               </Button>
             </div>
           ) : !exercisesData || exercisesData.items.length === 0 ? (
-            <div className="p-8 bg-slate-50 rounded-2xl text-center border border-slate-200">
+            <div className="p-6 sm:p-8 bg-slate-50 rounded-2xl text-center border border-slate-200">
               <div className="text-slate-500 text-xs">
                 {practiceSource === 'mine'
                   ? t('grammar.noMyExercisesInStep')
@@ -527,7 +527,7 @@ export const GrammarStepPage: React.FC = () => {
                 {exercisesData.items.map((ex: GrammarExerciseLearnerDto) => (
                   <div
                     key={ex.id}
-                    className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2 flex flex-col justify-between"
+                    className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2 flex flex-col justify-between"
                   >
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-2">

@@ -361,7 +361,7 @@ export const FallingWordsPlayPage: React.FC = () => {
 
   if (sessionError || !session) {
     return (
-      <div className="max-w-md mx-auto my-12 p-6 bg-white rounded-3xl border border-slate-200 text-center flex flex-col gap-4 shadow-sm">
+      <div className="max-w-md mx-auto my-12 p-4 sm:p-6 bg-white rounded-3xl border border-slate-200 text-center flex flex-col gap-4 shadow-sm">
         <div className="text-3xl">⚠️</div>
         <h2 className="text-xl font-bold text-slate-800">Không tìm thấy ván chơi</h2>
         <p className="text-sm text-slate-500">
@@ -379,7 +379,7 @@ export const FallingWordsPlayPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-5 min-h-[calc(100vh-5rem)]">
+    <div className="max-w-3xl mx-auto py-6 flex flex-col gap-5 min-h-[calc(100vh-5rem)]">
       {/* Play Page Header Bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -421,7 +421,7 @@ export const FallingWordsPlayPage: React.FC = () => {
 
       {/* State 1: Ready to start round 1 */}
       {session.status === 'Ready' && !session.activeRound && (
-        <div className="my-auto bg-white rounded-3xl p-8 border border-slate-200 text-center flex flex-col items-center gap-4 shadow-sm">
+        <div className="my-auto bg-white rounded-3xl p-5 sm:p-8 border border-slate-200 text-center flex flex-col items-center gap-4 shadow-sm">
           <div className="text-5xl">🎯</div>
           <h2 className="text-2xl font-extrabold text-slate-800">Ván chơi đã sẵn sàng!</h2>
           <p className="text-sm text-slate-500 max-w-md">

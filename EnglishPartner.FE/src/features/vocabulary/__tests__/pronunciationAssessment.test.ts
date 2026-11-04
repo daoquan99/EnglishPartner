@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import { httpClient } from '@/shared/api/httpClient';
 import { vocabularyApi } from '../api/vocabularyApi';
 import type { PronunciationAssessmentApiResultDto } from '../types/vocabulary.types';
@@ -50,7 +51,7 @@ describe('Pronunciation assessment API contract', () => {
       base64Audio: 'AQIDBA==',
       contentType: 'audio/webm;codecs=opus',
       durationMilliseconds: 4490,
-    });
+    }, { timeout: AI_REQUEST_TIMEOUT_MS });
   });
 
   it('maps an example to Sentence and TargetId while preserving the chosen accent', async () => {
@@ -58,7 +59,7 @@ describe('Pronunciation assessment API contract', () => {
     await vocabularyApi.assessPronunciation({ ...input, exampleId: 'example-1', accent: 'UK' });
     expect(httpClient.post).toHaveBeenCalledWith('/api/pronunciation/assessments', expect.objectContaining({
       targetType: 'Sentence', targetId: 'example-1', accent: 'UK',
-    }));
+    }), { timeout: AI_REQUEST_TIMEOUT_MS });
   });
 
   it('maps BE scores, criteria and feedback to the fields rendered by the page', async () => {

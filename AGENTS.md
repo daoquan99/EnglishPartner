@@ -6,7 +6,7 @@ File này là **nguồn luật duy nhất** cho Claude Code, Codex và AGY (Anti
 
 | Thư mục | Nội dung | Build / test |
 | --- | --- | --- |
-| `EnglishPartner.BE` | .NET 10, solution `EnglishLiveTutor.sln` (Api, Application, Domain, Infrastructure), SQL Server, SignalR, Gemini | `dotnet build EnglishPartner.BE/EnglishLiveTutor.sln` · `dotnet test EnglishPartner.BE/EnglishLiveTutor.sln` |
+| `EnglishPartner.BE` | .NET 10, solution `EnglishLiveTutor.slnx` (Modular Monolith: `src/Modules/<X>` × 5 project, `src/Shared`, host Api; ADR-0006), SQL Server, SignalR, Gemini | `dotnet build EnglishPartner.BE/EnglishLiveTutor.slnx` · `dotnet test EnglishPartner.BE/EnglishLiveTutor.slnx` |
 | `EnglishPartner.FE` | React 19, Vite, TanStack Query, Zustand, Tailwind 4 | `npm run build` · `npm run test -- <đường-dẫn-test>` (chạy trong `EnglishPartner.FE`) |
 | `docs/reviews` | Báo cáo review có checklist | |
 | `docs/adr` | Quyết định kiến trúc đã chốt | |
@@ -27,10 +27,15 @@ File này là **nguồn luật duy nhất** cho Claude Code, Codex và AGY (Anti
 8. Không gọi provider AI bên trong SQL transaction; không dùng lock toàn cục cho dữ liệu nhiều người dùng.
 
 **Kiến trúc**
-9. Code mới theo pattern mới: MediatR (ADR-0001), `IAppDbContext` + UnitOfWork, owner check. Không sao chép pattern cũ (repository Singleton, `IDbContextFactory` trong từng method, handler gọi handler khác).
+9. Code mới theo pattern mới: MediatR (ADR-0001), `I<Module>DbContext` của module + UnitOfWork, owner check (ADR-0006). Không sao chép pattern cũ (repository Singleton, `IDbContextFactory` trong từng method, handler gọi handler khác).
 10. Đổi contract (route, DTO, field JSON, header phân trang, hub method/event) phải sửa đồng bộ BE DTO, `EnglishPartner.FE/src/shared/api/openapi.types.ts`, API adapter và query keys FE trong cùng task.
 11. Endpoint mỏng: bind → `ISender.Send` → map kết quả. Lỗi đi qua global exception handler/ProblemDetails (ADR-0005).
 12. Migration xóa hoặc biến đổi dữ liệu thật phải là migration riêng, có ghi chú backup và chỉ chạy trên DB thật khi người dùng xác nhận.
+
+**Modular Monolith** (ADR-0006, áp dụng cho BE)
+13. Module chỉ dùng phần `Contracts` của module khác. Không dùng entity, repository, handler, service nội bộ hay `DbSet` của module khác; không join bảng của module khác. Phụ thuộc mới giữa module phải có trong bảng module của ADR-0006 và không tạo vòng.
+14. Không transaction xuyên module. Hiệu ứng phụ sang module khác đi qua outbox event với handler idempotent; đọc đồng bộ qua interface trong `Contracts`.
+15. Refactor cấu trúc là **chỉ di chuyển**: giữ nguyên route, field JSON, hub method/event, tên bảng/cột, ID và lịch sử migration; không trộn sửa hành vi vào cùng diff. Build và toàn bộ test phải giữ nguyên kết quả so với baseline.
 
 ## Vai trò trong quy trình
 
@@ -40,7 +45,7 @@ File này là **nguồn luật duy nhất** cho Claude Code, Codex và AGY (Anti
 | Worker | Codex (`codex exec`), AGY (`agy --print`) | Sửa đúng file trong phạm vi prompt, chạy kiểm tra được phép, viết report | Tự mở rộng phạm vi, sửa migration/contract ngoài prompt, commit/push/merge |
 | Người quyết định | Người dùng | Duyệt plan, chốt ADR, xác nhận thao tác phá hủy dữ liệu, merge | |
 
-Phân công mặc định: **Codex** làm BE, **AGY** làm FE; task rủi ro cao (auth, ownership, migration) có thể được AI còn lại review chéo. Khi chỉ có một worker khả dụng (hiện tại: chỉ AGY, model `gemini-3.8-flash-high`), worker đó làm cả BE và FE, còn review chéo do các reviewer của Claude đảm nhận. Orchestrator có thể đổi phân công trong `plan.md`.
+Phân công mặc định (từ 2026-11-01): **Codex** với model `deepseek-flash` (mặc định trong cấu hình Codex, không cần `--model`) làm cả BE và FE; review chéo do các reviewer của Claude đảm nhận sau mỗi lần worker chạy. AGY là worker dự phòng. Orchestrator có thể đổi phân công trong `plan.md`.
 
 ## Quy trình một task
 

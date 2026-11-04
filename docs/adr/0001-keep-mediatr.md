@@ -22,6 +22,6 @@ Application dùng MediatR 14.2 (`EnglishLiveTutor.Application.csproj`). `IComman
 
 ## Việc cần làm
 
-- [ ] Bỏ vòng đăng ký handler bằng reflection trong `Application/DependencyInjection.cs:47-65` và sửa các handler đang inject handler khác (ví dụ `StartLessonAttemptCommandHandler`).
-- [ ] Chuyển 5 handler dùng `IRequestHandler` trực tiếp sang interface bọc.
-- [ ] Gỡ `MediatR:LicenseKey` khỏi `appsettings.json` (review S5).
+- [x] Bỏ vòng đăng ký handler bằng reflection trong `Application/DependencyInjection.cs:47-65` và sửa các handler đang inject handler khác (ví dụ `StartLessonAttemptCommandHandler`). — task `20261028-review-fix` B7: tách Application service; không còn handler inject handler.
+- [x] Chuyển 5 handler dùng `IRequestHandler` trực tiếp sang interface bọc. — chỉ `ICqrs.cs` còn kế thừa `IRequestHandler`.
+- [x] Gỡ `MediatR:LicenseKey` khỏi `appsettings.json` (review S5). — không còn trong `appsettings*.json`; đọc từ cấu hình ngoài/biến môi trường. (xác nhận 2026-11-02)

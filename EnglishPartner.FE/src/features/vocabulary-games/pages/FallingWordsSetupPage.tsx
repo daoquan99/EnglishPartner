@@ -79,7 +79,7 @@ export const FallingWordsSetupPage: React.FC = () => {
       'DailyPlanNotFound';
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-8">
+    <div className="max-w-3xl mx-auto py-8 flex flex-col gap-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -104,7 +104,7 @@ export const FallingWordsSetupPage: React.FC = () => {
       </div>
 
       {/* Main Settings Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col gap-6">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col gap-6">
         {/* Source Selection */}
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -114,7 +114,7 @@ export const FallingWordsSetupPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSource('VocabularyCatalog')}
-              className={`p-4 rounded-2xl border-2 text-left transition ${
+              className={`p-3 sm:p-4 rounded-2xl border-2 text-left transition ${
                 source === 'VocabularyCatalog'
                   ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 font-bold'
                   : 'border-slate-200 hover:border-slate-300 text-slate-700'
@@ -129,7 +129,7 @@ export const FallingWordsSetupPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSource('DailyVocabulary')}
-              className={`p-4 rounded-2xl border-2 text-left transition ${
+              className={`p-3 sm:p-4 rounded-2xl border-2 text-left transition ${
                 source === 'DailyVocabulary'
                   ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 font-bold'
                   : 'border-slate-200 hover:border-slate-300 text-slate-700'
@@ -143,7 +143,7 @@ export const FallingWordsSetupPage: React.FC = () => {
           </div>
 
           {isDailyNotFound && (
-            <div className="mt-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center justify-between gap-3">
+            <div className="mt-3 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center justify-between gap-3">
               <span>Bạn chưa khởi tạo kế hoạch Daily Vocabulary hôm nay.</span>
               <button
                 type="button"
@@ -257,7 +257,7 @@ export const FallingWordsSetupPage: React.FC = () => {
         </div>
 
         {/* Available Pool Status Banner */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-sm">
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="text-slate-500 font-medium">Số từ hợp lệ:</span>
             {isLoadingPool ? (
@@ -279,7 +279,7 @@ export const FallingWordsSetupPage: React.FC = () => {
         </div>
 
         {errorMessage && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+          <div className="p-3 sm:p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
             {errorMessage}
           </div>
         )}

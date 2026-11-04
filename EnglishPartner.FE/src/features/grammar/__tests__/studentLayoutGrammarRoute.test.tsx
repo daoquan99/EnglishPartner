@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,6 +8,9 @@ import { StudentLayout, isStudentGrammarGroupRoute } from '@/app/layouts/Student
 import { AppRoutes } from '@/app/router';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import type { UserProfileDto } from '@/shared/api/openapi.types';
+
+// Pin the AGY Local flag so a developer .env cannot change what the layout renders.
+vi.mock('@/shared/config/features', () => ({ isAgyLocalEnabled: false }));
 
 const mockLearner: UserProfileDto = {
   id: 'learner-1',
@@ -85,6 +88,13 @@ describe('Student Menu "Ngữ pháp" & Real Router Verification', () => {
       expect(html).toContain('href="/student/grammar"');
       expect(html).toContain('aria-current="page"');
       expect(html).toContain('bg-emerald-600');
+    });
+
+    it('hides the AGY Local provider selector when the feature flag is disabled', () => {
+      const html = renderLayout('/student/grammar');
+
+      expect(html).toContain('Google API');
+      expect(html).not.toContain('AGY Local');
     });
 
     it('renders real StudentLayout with active styling on /student/grammar/A1-01', () => {

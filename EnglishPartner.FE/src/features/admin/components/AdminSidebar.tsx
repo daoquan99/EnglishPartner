@@ -15,12 +15,21 @@ import {
   LogOut,
   BookOpen,
   Globe,
+  X,
 } from 'lucide-react';
 import { hasAnyPermission, useCurrentUser, useLogoutMutation } from '@/features/auth';
 import { useTutorSessionStore } from '@/features/tutor';
 import type { UserProfileDto } from '@/shared/api/openapi.types';
 import { cn } from '@/shared/lib/cn';
 import { toast } from '@/shared/lib/toast';
+import { useIsDesktop } from '@/shared/hooks/useMobileDrawer';
+
+export interface AdminSidebarProps {
+  id?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
+  drawerRef?: React.Ref<HTMLElement>;
+}
 
 export interface AdminNavItem {
   to: string;
@@ -208,13 +217,20 @@ function renderIcon(name: AdminNavItem['iconName']) {
  * - Automatically filters navigation items by user's RBAC permissions
  * - Has a toggle button to collapse/expand: when collapsed, ONLY shows icons!
  */
-export const AdminSidebar: React.FC = () => {
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  id,
+  isOpen = false,
+  onClose,
+  drawerRef,
+}) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useCurrentUser();
   const logoutMutation = useLogoutMutation();
   const { isAdminSidebarCollapsed, toggleAdminSidebar } = useTutorSessionStore();
   const visibleMenu = filterAdminMenuByUserPermissions(user);
+  const isDesktop = useIsDesktop();
+  const isEffectiveCollapsed = isDesktop && isAdminSidebarCollapsed;
 
   const toggleLanguage = () => {
     const next = i18n.language === 'vi' ? 'en' : 'vi';
@@ -229,9 +245,21 @@ export const AdminSidebar: React.FC = () => {
 
   return (
     <aside
+      id={id}
+      ref={drawerRef}
+      tabIndex={-1}
+      inert={!isDesktop && !isOpen ? true : undefined}
+      role={!isDesktop && isOpen ? 'dialog' : undefined}
+      aria-modal={!isDesktop && isOpen ? 'true' : undefined}
+      aria-label={!isDesktop && isOpen ? t('adminPortal') : undefined}
       className={cn(
-        'h-screen shrink-0 bg-slate-900 text-slate-100 border-r border-slate-800 flex flex-col justify-between transition-all duration-200 select-none overflow-y-auto overflow-x-hidden z-30',
-        isAdminSidebarCollapsed ? 'w-20 px-2.5 py-4' : 'w-72 px-4 py-5'
+        'h-screen bg-slate-900 text-slate-100 border-r border-slate-800 flex flex-col justify-between select-none overflow-y-auto overflow-x-hidden shadow-2xs outline-none',
+        // Mobile (< lg): off-canvas drawer
+        'fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transition-transform duration-200 ease-in-out px-4 py-5',
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop (>= lg): static sidebar
+        'lg:static lg:inset-auto lg:z-30 lg:shrink-0 lg:translate-x-0 lg:max-w-none lg:transition-all',
+        isEffectiveCollapsed ? 'lg:w-20 lg:px-2.5 lg:py-4' : 'lg:w-72 lg:px-4 lg:py-5'
       )}
     >
       {/* Top Brand + Collapse Toggle + Filtered Navigation Items */}
@@ -239,21 +267,17 @@ export const AdminSidebar: React.FC = () => {
         <div
           className={cn(
             'flex items-center border-b border-slate-800 pb-4',
-            isAdminSidebarCollapsed ? 'justify-center flex-col gap-2' : 'justify-between gap-2 px-1'
+            isEffectiveCollapsed ? 'justify-center flex-col gap-2' : 'justify-between gap-2 px-1'
           )}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div
+            <img
+              src="/assets/brand/logo-mark.svg"
+              alt="Admin"
               title={`${t('appTitle')} Admin Portal`}
-              className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-2 flex items-center justify-center font-extrabold shrink-0 shadow-md shadow-emerald-500/20"
-            >
-              <img
-                src="/assets/brand/logo-mark.svg"
-                alt="Admin"
-                className="w-full h-full object-contain brightness-0 invert"
-              />
-            </div>
-            {!isAdminSidebarCollapsed && (
+              className="w-10 h-10 shrink-0 drop-shadow-md"
+            />
+            {!isEffectiveCollapsed && (
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-white truncate">{t('admin.portalTitle')}</div>
                 <div className="text-[11px] text-emerald-400 font-semibold truncate">
@@ -263,11 +287,12 @@ export const AdminSidebar: React.FC = () => {
             )}
           </div>
 
+          {/* Desktop Collapse Toggle */}
           <button
             type="button"
             onClick={toggleAdminSidebar}
             title={isAdminSidebarCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+            className="hidden lg:flex p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
           >
             {isAdminSidebarCollapsed ? (
               <PanelLeftOpen className="w-4 h-4" />
@@ -275,6 +300,18 @@ export const AdminSidebar: React.FC = () => {
               <PanelLeftClose className="w-4 h-4" />
             )}
           </button>
+
+          {/* Mobile Drawer Close Button */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('nav.closeMenu')}
+              className="flex lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Dynamic Permission-Filtered Menu Items */}
@@ -284,11 +321,12 @@ export const AdminSidebar: React.FC = () => {
               key={item.to}
               to={item.to}
               end={item.to === '/admin' || item.to === '/admin/grammar'}
+              onClick={onClose}
               title={`${item.labelKey ? t(item.labelKey) : item.label} — ${item.descriptionKey ? t(item.descriptionKey) : item.description}`}
               className={({ isActive }) =>
                 cn(
                   'flex items-center rounded-2xl transition-all',
-                  isAdminSidebarCollapsed
+                  isEffectiveCollapsed
                     ? 'justify-center w-12 h-12 mx-auto'
                     : 'gap-3 px-3.5 py-2.5',
                   isActive
@@ -298,7 +336,7 @@ export const AdminSidebar: React.FC = () => {
               }
             >
               <div className="shrink-0">{renderIcon(item.iconName)}</div>
-              {!isAdminSidebarCollapsed && (
+              {!isEffectiveCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">
                     {item.labelKey ? t(item.labelKey) : item.label}
@@ -321,14 +359,14 @@ export const AdminSidebar: React.FC = () => {
           title={`${t('common.language')}: ${i18n.language.toUpperCase()}`}
           className={cn(
             'w-full flex items-center rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors cursor-pointer',
-            isAdminSidebarCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'justify-between px-3.5 py-2.5'
+            isEffectiveCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'justify-between px-3.5 py-2.5'
           )}
         >
           <div className="flex items-center gap-2.5">
             <Globe className="w-4 h-4 shrink-0 text-emerald-400" />
-            {!isAdminSidebarCollapsed && <span>{t('common.language')}</span>}
+            {!isEffectiveCollapsed && <span>{t('common.language')}</span>}
           </div>
-          {!isAdminSidebarCollapsed && (
+          {!isEffectiveCollapsed && (
             <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-slate-900 text-emerald-400 border border-slate-700">
               {i18n.language.toUpperCase()}
             </span>
@@ -337,10 +375,11 @@ export const AdminSidebar: React.FC = () => {
 
         <Link
           to="/student/tutor"
+          onClick={onClose}
           title={t('common.backToStudent')}
           className={cn(
             'flex items-center rounded-2xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs transition-colors',
-            isAdminSidebarCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'gap-2.5 px-3.5 py-2.5'
+            isEffectiveCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'gap-2.5 px-3.5 py-2.5'
           )}
         >
           <img
@@ -348,7 +387,7 @@ export const AdminSidebar: React.FC = () => {
             alt=""
             className="w-4 h-4 shrink-0 object-contain drop-shadow-2xs"
           />
-          {!isAdminSidebarCollapsed && <span className="truncate">{t('common.backToStudent')}</span>}
+          {!isEffectiveCollapsed && <span className="truncate">{t('common.backToStudent')}</span>}
         </Link>
 
         <button
@@ -357,11 +396,11 @@ export const AdminSidebar: React.FC = () => {
           title={`${t('common.logout')} (${user?.username ?? ''})`}
           className={cn(
             'w-full flex items-center rounded-2xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-bold text-xs transition-colors cursor-pointer',
-            isAdminSidebarCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'gap-2.5 px-3.5 py-2.5'
+            isEffectiveCollapsed ? 'justify-center w-12 h-12 mx-auto' : 'gap-2.5 px-3.5 py-2.5'
           )}
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {!isAdminSidebarCollapsed && (
+          {!isEffectiveCollapsed && (
             <span className="truncate">
               {t('common.logout')} ({user?.username})
             </span>

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AI_REQUEST_TIMEOUT_MS } from '@/shared/config/timeouts';
 import { httpClient } from '@/shared/api/httpClient';
 import { vocabularyApi } from '../api/vocabularyApi';
 import type {
@@ -76,7 +77,7 @@ describe('Pronunciation examples selection & history contracts', () => {
       base64Audio: 'UklGRi4AAABXQVZF',
       contentType: 'audio/webm;codecs=opus',
       durationMilliseconds: 4200,
-    });
+    }, { timeout: AI_REQUEST_TIMEOUT_MS });
 
     expect(result.vocabularyId).toBe(payload.vocabularyId);
     expect(result.senseId).toBe(payload.senseId);

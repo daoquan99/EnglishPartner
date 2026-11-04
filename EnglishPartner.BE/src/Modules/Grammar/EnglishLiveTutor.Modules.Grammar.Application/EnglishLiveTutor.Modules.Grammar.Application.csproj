@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EnglishLiveTutor.Modules.Grammar.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Grammar.Domain\EnglishLiveTutor.Modules.Grammar.Domain.csproj" />
+    <ProjectReference Include="..\EnglishLiveTutor.Modules.Grammar.Contracts\EnglishLiveTutor.Modules.Grammar.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\EnglishLiveTutor.Modules.Identity.Contracts\EnglishLiveTutor.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Lessons\EnglishLiveTutor.Modules.Lessons.Contracts\EnglishLiveTutor.Modules.Lessons.Contracts.csproj" />
+    <ProjectReference Include="..\..\Speech\EnglishLiveTutor.Modules.Speech.Contracts\EnglishLiveTutor.Modules.Speech.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\EnglishLiveTutor.Shared.Application\EnglishLiveTutor.Shared.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.2.0" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+  </ItemGroup>
+
+</Project>

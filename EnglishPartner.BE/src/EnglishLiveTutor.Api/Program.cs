@@ -16,6 +16,7 @@ using EnglishLiveTutor.Application.Features.Identity.Commands.RefreshToken;
 using EnglishLiveTutor.Infrastructure;
 using EnglishLiveTutor.Infrastructure.Ai;
 using EnglishLiveTutor.Infrastructure.Identity;
+using EnglishLiveTutor.Infrastructure.Observability;
 using EnglishLiveTutor.Infrastructure.Persistence;
 using EnglishLiveTutor.Infrastructure.Storage;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -24,6 +25,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddEnglishPartnerObservability();
 
 // Current User & HttpContext Accessor
 builder.Services.AddHttpContextAccessor();
@@ -35,6 +37,8 @@ builder.Services.AddApplicationServices(builder.Configuration["MediatR:LicenseKe
 
 // Register Realtime Notifier Adapter for SignalR (Singleton to match IHubContext and GeminiLiveConnectionManager)
 builder.Services.AddSingleton<ILiveSessionRealtimeNotifier, SignalRLiveSessionRealtimeNotifier>();
+builder.Services.AddSingleton<IGrammarHubRateLimiter, GrammarHubRateLimiter>();
+builder.Services.AddSingleton<EnglishLiveTutor.Application.Features.Conversations.Ports.IFeedbackAudioSynthesizer, EnglishLiveTutor.Api.Services.LiveFeedbackAudioSynthesizer>();
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
@@ -131,38 +135,64 @@ _ = app.Services.GetRequiredService<IOptions<LessonGenerationOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<LessonAssessmentOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<LessonRolePlayOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<LessonMediaStorageOptions>>().Value;
-_ = app.Services.GetRequiredService<IOptions<AntigravityCliOptions>>().Value;
+var antigravityCliOptions = app.Services.GetRequiredService<IOptions<AntigravityCliOptions>>().Value;
+AntigravityCliStartupValidator.Validate(app.Environment, antigravityCliOptions);
 _ = app.Services.GetRequiredService<IJwtTokenService>();
 
 // Ensure SQL Server Schema & Seed Starter Data Safely on Startup
 bool migrateOnStartup = app.Configuration.GetValue<bool>("Database:MigrateOnStartup");
 bool seedOnStartup = app.Configuration.GetValue<bool>("Database:SeedOnStartup");
 
-if (migrateOnStartup || seedOnStartup)
+if (migrateOnStartup)
 {
     try
     {
-        var dbFactory = app.Services.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var migrationRunner = app.Services.GetRequiredService<IDatabaseMigrationRunner>();
+        await DatabaseSeeder.EnsureSchemaAndSeedAsync(
+            app.Services,
+            migrationRunner: migrationRunner,
+            environment: app.Environment,
+            logger: app.Logger,
+            migrate: true,
+            seed: false);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogCritical(
+            ex,
+            "Database migration failed during startup. The application will stop.");
+        throw;
+    }
+}
+
+if (seedOnStartup)
+{
+    try
+    {
         var adminOptions = app.Services.GetService<IOptions<AdminUserSeedOptions>>()?.Value;
         var demoOptions = app.Services.GetService<IOptions<DemoLearnerSeedOptions>>()?.Value;
         await DatabaseSeeder.EnsureSchemaAndSeedAsync(
-            dbFactory,
+            app.Services,
             adminOptions: adminOptions,
             demoLearnerOptions: demoOptions,
             environment: app.Environment,
             logger: app.Logger,
-            migrate: migrateOnStartup,
-            seed: seedOnStartup);
+            migrate: false,
+            seed: true);
     }
     catch (Exception ex)
     {
         if (app.Environment.IsDevelopment())
         {
-            app.Logger.LogWarning(ex, "Database migration or seeding skipped or deferred until SQL Server is reachable.");
+            app.Logger.LogWarning(
+                ex,
+                "Database seeding skipped or deferred until SQL Server is reachable.");
         }
         else
         {
-            app.Logger.LogError(ex, "Database migration or seeding failed in non-Development environment.");
+            app.Logger.LogCritical(
+                ex,
+                "Database seeding failed during startup in a non-Development environment.");
             throw;
         }
     }
@@ -190,26 +220,19 @@ app.UseRateLimiter();
 // Map Minimal API Endpoints (CQRS Handlers)
 app.MapHealthEndpoints();
 app.MapIdentityEndpoints();
-app.MapPromptEndpoints();
-app.MapVoiceEndpoints();
-app.MapTopicEndpoints();
-app.MapConversationEndpoints();
+app.MapCatalogEndpoints();
+app.MapLiveTutorEndpoints();
 app.MapVocabularyEndpoints();
-app.MapDailyLearningEndpoints();
-app.MapPronunciationEndpoints();
-app.MapAiModelEndpoints();
-app.MapLessonEndpoints();
-app.MapLessonAttemptEndpoints();
-app.MapLessonRubricEndpoints();
-app.MapLessonMediaEndpoints();
-app.MapVocabularyGamesEndpoints();
+app.MapSpeechEndpoints();
+app.MapLessonsEndpoints();
 app.MapGrammarEndpoints();
-app.MapAdminGrammarEndpoints();
+app.MapProgressEndpoints();
 
 // Map Realtime SignalR Hubs
 app.MapHub<TutorConversationHub>("/hubs/tutor").RequireAuthorization();
 app.MapHub<TranscribeLiveHub>("/hubs/transcribe").RequireAuthorization();
 app.MapHub<TranslateLiveHub>("/hubs/translate").RequireAuthorization();
+app.MapHub<GrammarCorrectionHub>("/hubs/grammar").RequireAuthorization();
 
 app.Run();
 
